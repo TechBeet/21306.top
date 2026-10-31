@@ -1587,14 +1587,6 @@ function updateFlyTween(dt) {
 
   camera.position.lerpVectors(flyTween.p0, flyTween.p1, k);
   controls.target.lerpVectors(flyTween.t0, flyTween.t1, k);
-  
-  // 插值相机距离（如果存在）
-  if (typeof flyTween.dist0 === 'number' && typeof flyTween.dist1 === 'number') {
-    const newDist = THREE.MathUtils.lerp(flyTween.dist0, flyTween.dist1, k);
-    const dir = camera.position.clone().sub(controls.target).normalize();
-    camera.position.copy(controls.target).addScaledVector(dir, newDist);
-  }
-  
   camera.lookAt(controls.target);
 
   if (flyTween.t >= flyTween.dur) {
