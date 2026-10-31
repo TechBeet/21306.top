@@ -673,6 +673,7 @@ let modeTransition = null;
 let focusTween2D = null;
 let flyTween = null;
 let focusState = null;
+let preFocusView = null; // 保存聚焦前的视图状态
 
 function easeInOutCubic(k) {
   return k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
