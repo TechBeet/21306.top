@@ -7,14 +7,13 @@
   <style>
     :root {
       --bg: #1a1f26;
-      --panel-bg: rgba(26, 31, 38, 0.75);
-      --border: rgba(120, 130, 150, 0.12);
+      --panel-bg: rgba(26, 31, 38, 0.78);
+      --border: rgba(120, 130, 150, 0.14);
       --txt-main: #d8e0ec;
       --txt-sub: #8a9ba8;
       --accent: #5a86ff;
       --accent-secondary: #7b5cff;
       --shadow-soft: rgba(26, 31, 38, 0.4);
-      --highlight-rgb: 255, 255, 255;
     }
     * { box-sizing: border-box; }
     html, body {
@@ -79,6 +78,39 @@
       text-shadow: 0 2px 12px rgba(0,0,0,0.35);
     }
 
+    /* ---------- 重置视图按钮 ---------- */
+    #resetViewBtn {
+      position: fixed;
+      left: 28px;
+      bottom: 28px;
+      z-index: 12;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 9px 13px;
+      background: var(--panel-bg);
+      border: 1px solid var(--border);
+      border-radius: 11px;
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      color: var(--txt-sub);
+      font-size: 12.5px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+      transition: background 0.2s, color 0.2s, border-color 0.2s, transform 0.15s;
+      font-family: inherit;
+    }
+    #resetViewBtn:hover {
+      color: var(--txt-main);
+      background: rgba(30, 45, 70, 0.92);
+      border-color: rgba(90, 150, 240, 0.38);
+    }
+    #resetViewBtn:active { transform: scale(0.96); }
+    #resetViewBtn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    #resetViewBtn svg { flex: 0 0 auto; opacity: 0.85; }
+
     /* ---------- 折叠触发按钮 ---------- */
     .panel-open-btn {
       position: fixed;
@@ -107,6 +139,7 @@
       background: rgba(30, 45, 70, 0.9);
       border-color: rgba(90, 150, 240, 0.45);
     }
+    .panel-open-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
     .panel-open-btn.hidden {
       opacity: 0;
       pointer-events: none;
@@ -158,6 +191,7 @@
       background: rgba(90, 130, 220, 0.28); color: #e8eff8;
       box-shadow: 0 2px 6px rgba(0,0,0,0.15);
     }
+    .toggle-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 
     .panel-close-btn {
       width: 26px; height: 26px;
@@ -173,6 +207,7 @@
       font-family: inherit;
     }
     .panel-close-btn:hover { background: rgba(255,255,255,0.15); color: #fff; }
+    .panel-close-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 
     #list { overflow-y: auto; padding-right: 4px; flex: 1; -webkit-overflow-scrolling: touch; }
     #list::-webkit-scrollbar { width: 4px; }
@@ -180,47 +215,54 @@
 
     .list-item {
       display: flex; align-items: center; gap: 10px;
-      padding: 9px 11px 9px 20px;
+      padding: 10px 12px;
       margin-bottom: 5px;
       background: rgba(255, 255, 255, 0.015);
       border: 1px solid rgba(255, 255, 255, 0.025);
       border-radius: 9px;
-      font-size: 12.5px; cursor: pointer;
-      transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+      font-size: 12.5px;
+      cursor: pointer;
+      transition: opacity 0.28s ease, transform 0.28s ease,
+                  background 0.18s, border-color 0.18s, box-shadow 0.18s;
       text-align: left;
       font-family: inherit;
       color: inherit;
       width: 100%;
-      pointer-events: none;
-      transform: translateX(20px) scale(0.95);
+      opacity: 0;
+      transform: translateX(16px) scale(0.98);
     }
-    .list-item:hover { background: rgba(90, 140, 230, 0.07); border-color: rgba(90, 140, 230, 0.18); transform: translateX(0) scale(0.98); }
-    .list-item.active { background: rgba(90, 140, 230, 0.14); border-color: rgba(90, 140, 230, 0.35); box-shadow: 0 3px 12px rgba(0,0,0,0.18); }
-    .list-item .indicator { width: 7px; height: 7px; border-radius: 50%; flex: 0 0 auto; box-shadow: 0 0 8px currentColor; }
+    .list-item.shown { opacity: 1; transform: translateX(0) scale(1); }
+    .list-item:hover {
+      background: rgba(90, 140, 230, 0.07);
+      border-color: rgba(90, 140, 230, 0.18);
+      transform: translateX(2px);
+    }
+    .list-item.active {
+      background: rgba(90, 140, 230, 0.14);
+      border-color: rgba(90, 140, 230, 0.35);
+      box-shadow: 0 3px 12px rgba(0,0,0,0.18);
+    }
+    .list-item:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+    .list-item .indicator {
+      width: 8px; height: 8px; border-radius: 50%; flex: 0 0 auto;
+      box-shadow: 0 0 8px currentColor;
+      transition: transform 0.18s ease;
+    }
+    .list-item:hover .indicator { transform: scale(1.3); }
     .list-item .nm { font-weight: 550; color: #c8d8e8; }
     .list-item .ps { margin-left: auto; color: var(--txt-sub); font-size: 10.5px; font-weight: 500; white-space: nowrap; }
-
-    #legend {
-      position: fixed; left: 28px; bottom: 28px; z-index: 12;
-      background: var(--panel-bg);
-      border: 1px solid var(--border);
-      border-radius: 14px; padding: 16px 20px;
-      backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
-      font-size: 13px; line-height: 1.5; color: var(--txt-main);
-      max-width: 320px; pointer-events: none;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.4);
-    }
-    #legend .lg-title { color: #b0c8e8; font-weight: 700; font-size: 11px; letter-spacing: 1.5px; margin-bottom: 8px; text-transform: uppercase;}
 
     #card {
       position: fixed; right: 24px; bottom: 24px; width: 250px; z-index: 11;
       background: rgba(16, 23, 38, 0.92);
       border: 1px solid rgba(90, 140, 210, 0.3);
+      border-left: 3px solid var(--pc, #5a86ff);
       border-radius: 16px; padding: 18px;
       backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
       box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.1);
       opacity: 0; transform: translateY(20px); pointer-events: none;
-      transition: all 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+      transition: opacity 0.35s cubic-bezier(0.2, 0.8, 0.2, 1),
+                  transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
       max-height: calc(100vh - 200px);
       overflow-y: auto;
     }
@@ -245,6 +287,7 @@
       font-family: inherit;
     }
     #card .card-close:hover { background: rgba(255, 255, 255, 0.15); color: #fff; }
+    #card .card-close:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 
     /* ---------- 3D 悬浮标签 ---------- */
     .bunk-label {
@@ -286,9 +329,7 @@
       box-shadow: 0 4px 16px rgba(0,0,0,0.6);
       z-index: 100;
     }
-    .bunk-label.is-active:hover {
-      transform: none;
-    }
+    .bunk-label.is-active:hover { transform: none; }
 
     /* ---------- 2D 标签 ---------- */
     body.mode-2d .bunk-label {
@@ -305,12 +346,11 @@
       text-shadow: 0 1px 2px rgba(0,0,0,0.6);
       opacity: 1;
       white-space: nowrap;
+      pointer-events: none;
     }
-    body.mode-2d .bunk-label::before { display: none; }
-    body.mode-2d .bunk-label { pointer-events: none; }
-    body.mode-2d .bunk-label:hover { background: rgba(255,255,255,0.08); color: #fff; opacity: 1; }
+    body.mode-2d .bunk-label::after { display: none; }
     body.mode-2d .bunk-label.is-active {
-      background: rgba(255,255,255,0.12); border: none; box-shadow: none; color: #fff; opacity: 1;
+      background: rgba(255,255,255,0.12); color: #fff;
       text-shadow: 0 0 6px rgba(255,255,255,0.4), 0 1px 3px rgba(0,0,0,0.5);
     }
 
@@ -334,6 +374,12 @@
       .hud { left: 16px; top: 16px; max-width: calc(100% - 140px); }
       .hud h1 { font-size: 15px; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
+      #resetViewBtn {
+        left: 16px; bottom: 16px;
+        padding: 8px 10px;
+        font-size: 11px;
+      }
+
       .panel-open-btn {
         right: 16px; top: 16px;
         padding: 8px 12px;
@@ -347,13 +393,9 @@
         max-height: 48vh;
         border-radius: 16px;
       }
-      #panel.collapsed {
-        transform: translateY(24px) scale(0.96);
-      }
+      #panel.collapsed { transform: translateY(24px) scale(0.96); }
       .panel-title { font-size: 11px; letter-spacing: 1px; }
       .panel-close-btn { width: 24px; height: 24px; font-size: 14px; }
-
-      #legend { display: none; }
 
       #card {
         left: 16px; right: 16px;
@@ -363,6 +405,14 @@
       }
 
       body.mode-2d .bunk-label { font-size: 8px; letter-spacing: 0; }
+    }
+
+    /* ---------- 减少动效偏好 ---------- */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+      }
     }
   </style>
 </head>
@@ -381,6 +431,14 @@
 <div class="hud">
   <h1>福建线去程部分同学位置</h1>
 </div>
+
+<button id="resetViewBtn" aria-label="重置视图">
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M3 12a9 9 0 1 0 3-6.7"/>
+    <polyline points="3 4 3 10 9 10"/>
+  </svg>
+  <span>重置视图</span>
+</button>
 
 <button id="panelOpenBtn" class="panel-open-btn" aria-label="打开乘客列表">
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -417,7 +475,7 @@
 }
 </script>
 
-<script>
+<script type="text/javascript">
   window.addEventListener('error', () => {
     var t = document.getElementById('loadText');
     var l = document.getElementById('loading');
@@ -455,7 +513,6 @@ function applyLoadUI() {
   if (loadBarEl) loadBarEl.style.width = loadDisplayPct.toFixed(2) + '%';
   if (loadPctEl) loadPctEl.textContent = Math.round(loadDisplayPct) + '%';
 }
-
 function stepLoadSmooth() {
   const diff = loadTargetPct - loadDisplayPct;
   if (diff <= 0.05) {
@@ -469,7 +526,6 @@ function stepLoadSmooth() {
   applyLoadUI();
   requestAnimationFrame(stepLoadSmooth);
 }
-
 function setLoadProgress(pct, text) {
   const v = Math.max(0, Math.min(100, pct));
   if (v > loadTargetPct) loadTargetPct = v;
@@ -479,11 +535,9 @@ function setLoadProgress(pct, text) {
     requestAnimationFrame(stepLoadSmooth);
   }
 }
-
 function nextFrame() {
   return new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
 }
-
 function escapeHtml(str) {
   return String(str).replace(/[&<>"']/g, c => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
@@ -567,7 +621,6 @@ function compute2DEndState(aspect) {
 
 /* ---------- 3D 总览自适应距离 ---------- */
 const FOV_3D = 42;
-const LABEL_LIFT_3D = 1.05;
 const LABEL_LIFT_FOCUS = 0.10;
 
 const LABEL_LIFT_3D_BY_LEVEL = {
@@ -578,7 +631,7 @@ const LABEL_LIFT_3D_BY_LEVEL = {
 const LABEL_LIFT_SIDE_OFFSET = 0.16;
 
 /* ---------- 标签引导线布局参数 ---------- */
-const LABEL_FAN_OUT_X = 0.24;   /* 水平扇出距离：左右错开防止重叠 */
+const LABEL_FAN_OUT_X = 0.28;
 
 const SCENE_BOX = {
   minX: -CAR_WIDTH / 2 - 0.5,
@@ -664,62 +717,41 @@ controls.enableAutoRotate = false;
 // 覆盖默认的鼠标滚轮缩放逻辑，在捕获阶段设置自适应 zoomSpeed
 controls.domElement.addEventListener('wheel', (event) => {
   if (!controls.enabled || !controls.enableZoom) return;
-  
-  // 获取滚轮的 deltaY 幅度因子
   const deltaMode = event.deltaMode;
   let magFactor;
   if (deltaMode === WheelEvent.DOM_DELTA_PIXEL) {
-    // 像素模式（触控板）：根据滚动幅度动态调整
     const baseMag = Math.min(Math.abs(event.deltaY), 500) / 50;
     magFactor = THREE.MathUtils.clamp(baseMag, 1, 8);
   } else if (deltaMode === WheelEvent.DOM_DELTA_LINE) {
-    // 行模式（鼠标滚轮）：每次滚动的固定系数
     magFactor = 2.0;
   } else {
-    // 页面模式或未知
     magFactor = 1.0;
   }
-
   applyAdaptiveZoomSpeed(magFactor);
 }, { capture: true });
-
 
 const MOUSE_3D = { LEFT: THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.PAN };
 const TOUCH_3D = { ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN };
 const MOUSE_2D = { LEFT: THREE.MOUSE.PAN, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.PAN };
 const TOUCH_2D = { ONE: THREE.TOUCH.PAN, TWO: THREE.TOUCH.DOLLY_PAN };
 
-// 自适应缩放灵敏度配置
 const ZOOM_SENSITIVITY_CONFIG = {
-  baseSpeed: 1.9,               // 基础缩放速度（较默认 1.0 明显增强）
-  minSpeed: 1.2,                // 下限
-  maxSpeed: 5.5,                // 上限
-  refDiagonal: 1900,            // 参考屏幕对角线（像素）
-  refDistance: 60               // 参考相机距离
+  baseSpeed: 1.9,
+  minSpeed: 1.2,
+  maxSpeed: 5.5,
+  refDiagonal: 1900,
+  refDistance: 60
 };
 
-/**
- * 计算自适应缩放速度（返回 OrbitControls.zoomSpeed 的值）。
- * 综合考虑：窗口尺寸（越小越灵敏）、相机距离（越远步进越大）、
- * 以及滚轮 deltaY 幅度（区分鼠标滚轮与触控板）。
- * @param {number} magFactor 滚轮幅度系数（触控捏合传 1）
- */
 function computeAdaptiveZoomSpeed(magFactor = 1) {
   const cfg = ZOOM_SENSITIVITY_CONFIG;
-
-  // 窗口越小 → 灵敏度越高（移动端补偿）
   const diag = Math.hypot(innerWidth, innerHeight) || cfg.refDiagonal;
   const windowFactor = THREE.MathUtils.clamp(cfg.refDiagonal / diag, 0.85, 2.4);
-
-  // 相机距离越远 → 步进越大，保证远近手感一致
   const dist = camera.position.distanceTo(controls.target);
   const distFactor = THREE.MathUtils.clamp(Math.sqrt(dist / cfg.refDistance), 0.7, 2.6);
-
   const speed = cfg.baseSpeed * windowFactor * distFactor * magFactor;
   return THREE.MathUtils.clamp(speed, cfg.minSpeed, cfg.maxSpeed);
 }
-
-/** 将自适应缩放速度写入 controls（供滚轮 / 中键 / 触摸捏合共用） */
 function applyAdaptiveZoomSpeed(magFactor = 1) {
   controls.zoomSpeed = computeAdaptiveZoomSpeed(magFactor);
 }
@@ -731,7 +763,7 @@ let modeTransition = null;
 let focusTween2D = null;
 let flyTween = null;
 let focusState = null;
-let preFocusView = null; // 保存聚焦前的视图状态
+let preFocusView = null;
 
 function easeInOutCubic(k) {
   return k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
@@ -1132,7 +1164,7 @@ for (let i = 0; i < LABEL_TOTAL; i++) {
 
     const inCompNum = (p.num - 1) % 6 + 1;
     const isLeftBunk = (inCompNum % 2 !== 0);
-    const lift3D = (LABEL_LIFT_3D_BY_LEVEL[p.level] ?? LABEL_LIFT_3D) +
+    const lift3D = (LABEL_LIFT_3D_BY_LEVEL[p.level] ?? CEIL_Y * 1.05) +
                    (isLeftBunk ? LABEL_LIFT_SIDE_OFFSET : -LABEL_LIFT_SIDE_OFFSET);
 
     const div = document.createElement('div');
@@ -1155,14 +1187,12 @@ for (let i = 0; i < LABEL_TOTAL; i++) {
     const lineMat = new THREE.LineBasicMaterial({
       color: new THREE.Color(p.color),
       transparent: true,
-      opacity: 0.5,
+      opacity: 0.48,
       depthWrite: false,
       linewidth: 1
     });
 
-    /* ---- 引导线：锚点 → 折点 → 标签，采用两段式折线（肘形）----
-       折点先水平向外（远离走道/车窗中线）再竖直上升，
-       使相邻标签在水平方向错开，避免重叠遮挡。 */
+    /* ---- 引导线：锚点 → 折点 → 标签（真正的 L 形）---- */
     const linePts = [
       basePos.clone(),
       basePos.clone(),
@@ -1172,7 +1202,7 @@ for (let i = 0; i < LABEL_TOTAL; i++) {
     const line = new THREE.Line(lineGeo, lineMat);
     carGroup.add(line);
 
-    /* ---- 锚点小圆点：标示床位真实位置，弱化视觉突兀感 ---- */
+    /* ---- 锚点小圆点 ---- */
     const anchorDot = new THREE.Mesh(
       new THREE.CircleGeometry(0.045, 12),
       new THREE.MeshBasicMaterial({
@@ -1187,11 +1217,9 @@ for (let i = 0; i < LABEL_TOTAL; i++) {
     anchorDot.userData.noHide = true;
     carGroup.add(anchorDot);
 
-    /* ---- 记录床位侧别（左/右）用于智能连接，复用上方已声明的变量 ---- */
     labelEntries[i] = {
       label, line, lineMat, anchorDot,
       basePos, levelY, lift3D, isLeftBunk,
-      /* 水平扇出偏移：窗侧向左、门侧向右，避免同排标签堆叠 */
       fanX: isLeftBunk ? -LABEL_FAN_OUT_X : LABEL_FAN_OUT_X
     };
   }
@@ -1207,39 +1235,39 @@ function updateLabelLayout(i) {
   const e = labelEntries[i];
   if (!e) return;
   const isFocus = (i === selected);
-  let ty;
+  const bx = e.basePos.x, by = e.basePos.y, bz = e.basePos.z;
+
+  let ty, labelX;
   if (is2DMode) {
     ty = e.levelY + 0.05;
+    labelX = bx;
+  } else if (isFocus) {
+    ty = by + LABEL_LIFT_FOCUS;
+    labelX = bx;
   } else {
-    ty = e.basePos.y + (isFocus ? LABEL_LIFT_FOCUS : e.lift3D);
+    ty = by + e.lift3D;
+    labelX = bx + e.fanX;
   }
-  e.label.position.set(e.basePos.x, ty, e.basePos.z);
 
-  /* ---- 肘形引导线：锚点 → 折点 (水平偏移后) → 标签 ----
-     当非聚焦模式时，折点水平向外扇出，使同排标签错开；
-     聚焦时恢复垂直对齐。 */
-  const bx = e.basePos.x, by = e.basePos.y, bz = e.basePos.z;
+  e.label.position.set(labelX, ty, bz);
+
   const attr = e.line.geometry.attributes.position;
-
-  if (isFocus || is2DMode) {
-    /* 聚焦或 2D 模式：三点共线垂直向上 */
+  if (is2DMode || isFocus) {
     attr.setXYZ(0, bx, by, bz);
     attr.setXYZ(1, bx, by, bz);
-    attr.setXYZ(2, bx, ty, bz);
+    attr.setXYZ(2, labelX, ty, bz);
     e.anchorDot.visible = false;
   } else {
-    /* 普通模式：肘形布局，先水平扇出再上升 */
-    const elbowX = bx + e.fanX * 0.35;
-    attr.setXYZ(0, bx, by, bz);          /* 锚点 */
-    attr.setXYZ(1, elbowX, by + 0.18, bz); /* 折点 */
-    attr.setXYZ(2, bx, ty, bz);          /* 标签位置 */
+    attr.setXYZ(0, bx, by, bz);
+    attr.setXYZ(1, labelX, by, bz);
+    attr.setXYZ(2, labelX, ty, bz);
     e.anchorDot.visible = true;
   }
   attr.needsUpdate = true;
   e.line.geometry.computeBoundingSphere();
 
   e.line.visible = !is2DMode && !isFocus;
-  e.lineMat.opacity = isFocus ? 0 : 0.48;
+  e.lineMat.opacity = 0.48;
 }
 
 function updateAllLabelLayouts() {
@@ -1398,7 +1426,6 @@ function switchMode(to2D) {
         controls.touches = TOUCH_3D;
         controls.minDistance = 4;
         controls.screenSpacePanning = false;
-
         controls.maxDistance = 500;
       }
 
@@ -1414,7 +1441,6 @@ function switchMode(to2D) {
 
 function refreshTransitionEndOrbit() {
   if (!modeTransition) return;
-
   let st;
   if (modeTransition.to2D) {
     st = compute2DEndState(innerWidth / innerHeight);
@@ -1442,21 +1468,25 @@ const listEl = document.getElementById('list');
 
 function selectPassenger(i, fly) {
   if (modeTransition) return;
+  if (selected === i && cardEl.classList.contains('show')) {
+    deselect();
+    return;
+  }
 
   selected = i;
   const p = PASSENGERS[i];
 
   [...listEl.children].forEach((el, k) => el.classList.toggle('active', k === i));
 
-  // 保存当前视图状态作为预聚焦状态
   preFocusView = {
     target: controls.target.clone(),
     dist: camera.position.distanceTo(controls.target),
     position: camera.position.clone()
   };
 
+  cardEl.style.setProperty('--pc', p.color);
   cardEl.innerHTML = `
-    <button class="card-close" id="cardClose">✕</button>
+    <button class="card-close" id="cardClose" aria-label="关闭详情">✕</button>
     <div class="card-head">
       <span class="indicator" style="background:${p.color}; box-shadow:0 0 15px ${p.color}"></span>
       <span class="card-name">${escapeHtml(p.name)}</span>
@@ -1466,30 +1496,31 @@ function selectPassenger(i, fly) {
   `;
   cardEl.classList.add('show');
 
-  const oldCloseBtn = cardEl.querySelector('#cardClose');
-  if (oldCloseBtn) oldCloseBtn.replaceWith(oldCloseBtn.cloneNode(true));
-  document.getElementById('cardClose').addEventListener('click', (e) => {
-    e.stopPropagation();
-    if (preFocusView) {
-      // 使用飞行动画精确返回到聚焦前的视图（位置 + 目标点）
-      flyTween = {
-        t: 0, dur: 850,
-        p0: camera.position.clone(),
-        p1: preFocusView.position.clone(),
-        t0: controls.target.clone(),
-        t1: preFocusView.target.clone(),
-        onComplete: () => {
-          flyTween = null;
-          preFocusView = null;
-          deselect();
-          if (!modeTransition) controls.enabled = true;
-        }
-      };
-      controls.enabled = false;
-    } else {
-      deselect();
-    }
-  });
+  const closeBtn = document.getElementById('cardClose');
+  if (closeBtn) {
+    closeBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      cardEl.classList.remove('show');
+      if (preFocusView) {
+        const pv = preFocusView;
+        flyTween = {
+          t: 0, dur: 850,
+          p0: camera.position.clone(),
+          p1: pv.position.clone(),
+          t0: controls.target.clone(),
+          t1: pv.target.clone(),
+          onComplete: () => {
+            preFocusView = null;
+            deselect();
+            if (!modeTransition) controls.enabled = true;
+          }
+        };
+        controls.enabled = false;
+      } else {
+        deselect();
+      }
+    });
+  }
 
   applyHighlight(p);
   updateAllLabelLayouts();
@@ -1543,10 +1574,10 @@ function selectPassenger(i, fly) {
 function deselect() {
   selected = -1;
   focusState = null;
-
-  /* 取消进行中的飞行动画与 2D 聚焦动画，避免相机停在半路且 controls 被锁死 */
   flyTween = null;
   focusTween2D = null;
+  preFocusView = null;
+
   if (!modeTransition) controls.enabled = true;
 
   cardEl.classList.remove('show');
@@ -1568,7 +1599,6 @@ function flyTo(targetPos, camPos, dur = 1100) {
     t1: targetPos.clone(),
     onComplete: () => {
       if (!modeTransition && !is2DMode) controls.enabled = true;
-      flyTween = null;
       if (selected >= 0) {
         focusState = {
           target: controls.target.clone(),
@@ -1591,6 +1621,7 @@ function updateFlyTween(dt) {
 
   if (flyTween.t >= flyTween.dur) {
     const cb = flyTween.onComplete;
+    flyTween = null;
     if (cb) cb();
   }
 }
@@ -1603,7 +1634,7 @@ controls.addEventListener('change', () => {
   const targetDelta = controls.target.distanceTo(focusState.target);
   const distDelta = Math.abs(dist - focusState.dist);
 
-  if (targetDelta > 0.12 || distDelta > focusState.dist * 0.06) {
+  if (targetDelta > 0.2 || distDelta > focusState.dist * 0.08) {
     deselect();
   }
 });
@@ -1662,6 +1693,7 @@ renderer.domElement.addEventListener('pointerup', (e) => {
 
 PASSENGERS.forEach((p, i) => {
   const item = document.createElement('button');
+  item.type = 'button';
   item.className = 'list-item';
   item.innerHTML = `
     <span class="indicator" style="background:${p.color}; box-shadow:0 0 8px ${p.color}"></span>
@@ -1672,6 +1704,38 @@ PASSENGERS.forEach((p, i) => {
   item.addEventListener('pointerenter', () => { hovered = i; });
   item.addEventListener('pointerleave', () => { if (hovered === i) hovered = -1; });
   listEl.appendChild(item);
+});
+
+/* ---- 列表错峰入场动画 ---- */
+requestAnimationFrame(() => {
+  requestAnimationFrame(() => {
+    [...listEl.children].forEach((el, i) => {
+      setTimeout(() => el.classList.add('shown'), 40 + i * 45);
+    });
+  });
+});
+
+/* ---- 重置视图 ---- */
+const resetViewBtn = document.getElementById('resetViewBtn');
+resetViewBtn.addEventListener('click', () => {
+  if (modeTransition) return;
+  deselect();
+
+  const st = is2DMode
+    ? compute2DEndState(innerWidth / innerHeight)
+    : compute3DOverviewState(innerWidth / innerHeight);
+
+  flyTween = {
+    t: 0, dur: 900,
+    p0: camera.position.clone(),
+    p1: st.camPos.clone(),
+    t0: controls.target.clone(),
+    t1: st.target.clone(),
+    onComplete: () => {
+      if (!modeTransition) controls.enabled = true;
+    }
+  };
+  controls.enabled = false;
 });
 
 /* =========================================================
@@ -1686,7 +1750,6 @@ let loadHideScheduled = false;
 function hideLoading() {
   if (!loadingEl.classList.contains('hidden')) loadingEl.classList.add('hidden');
 }
-
 function tryHideLoadingWhenProgressDone() {
   if (loadHideScheduled) return;
   if (loadTargetPct >= 100 && loadDisplayPct >= 99.9) {
@@ -1700,16 +1763,13 @@ function tryHideLoadingWhenProgressDone() {
 function updateModeTransition(dt) {
   modeTransition.t += dt * 1000;
   const tNorm = Math.min(modeTransition.t / modeTransition.dur, 1);
-
   const k = easeInOutQuart(tNorm);
 
   controls.target.lerpVectors(modeTransition.startTarget, modeTransition.endTarget, k);
 
   const quat = modeTransition.startQuat.clone().slerp(modeTransition.endQuat, k);
   const dir = REF_AXIS.clone().applyQuaternion(quat);
-
   const dist = modeTransition.startDist + (modeTransition.endDist - modeTransition.startDist) * k;
-
   camera.position.copy(controls.target).addScaledVector(dir, dist);
 
   const fovK = easeInOutCubic(tNorm);
@@ -1727,7 +1787,7 @@ function updateModeTransition(dt) {
   mat2DFrame.opacity = 0.55 * lineOp;
   twoDLineGroup.visible = lineOp > 0.001;
 
-  /* ---- 过渡中同步插值标签 Y 位置与引线透明度，消除切换瞬间跳变 ---- */
+  /* ---- 过渡中同步插值标签位置与引线透明度 ---- */
   const isTo2D = modeTransition.to2D;
   PASSENGERS.forEach((_, i) => {
     const e = labelEntries[i];
@@ -1735,7 +1795,10 @@ function updateModeTransition(dt) {
     const y3D = e.basePos.y + e.lift3D;
     const y2D = e.levelY + 0.05;
     const ty = isTo2D ? THREE.MathUtils.lerp(y3D, y2D, k) : THREE.MathUtils.lerp(y2D, y3D, k);
-    e.label.position.set(e.basePos.x, ty, e.basePos.z);
+    const x3D = e.basePos.x + e.fanX;
+    const x2D = e.basePos.x;
+    const tx = isTo2D ? THREE.MathUtils.lerp(x3D, x2D, k) : THREE.MathUtils.lerp(x2D, x3D, k);
+    e.label.position.set(tx, ty, e.basePos.z);
 
     const lineAlpha = isTo2D ? (1 - k) : k;
     e.lineMat.opacity = 0.35 * lineAlpha;
@@ -1767,13 +1830,9 @@ function animate() {
   const dt = Math.min(clock.getDelta(), 0.05);
   elapsed += dt;
 
-  if (modeTransition) {
-    updateModeTransition(dt);
-  }
-
+  if (modeTransition) updateModeTransition(dt);
   if (!modeTransition && flyTween) updateFlyTween(dt);
 
-  // 持续应用自适应缩放速度（覆盖滚轮、中键拖动、触摸捏合）
   if (controls.enabled && controls.enableZoom) {
     applyAdaptiveZoomSpeed(1);
   }
@@ -1789,7 +1848,11 @@ function animate() {
     );
     camera.lookAt(controls.target);
 
-    if (focusTween2D.t >= focusTween2D.dur) focusTween2D.onComplete();
+    if (focusTween2D.t >= focusTween2D.dur) {
+      const cb = focusTween2D.onComplete;
+      focusTween2D = null;
+      if (cb) cb();
+    }
   }
 
   for (const m of markers) {
@@ -1822,7 +1885,6 @@ function animate() {
   }
 
   if (highlightedBunk && !modeTransition) {
-    /* 柔和脉冲：使用缓动的三角波，而非机械正弦波 */
     const t = (elapsed * 1.6) % 2;
     const pulse = t < 1 ? t : 2 - t;
     highlightedBunk.userData.materials.forEach(m => {
