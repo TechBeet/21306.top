@@ -32,7 +32,7 @@
     #loading {
       position: fixed; inset: 0; z-index: 200;
       display: grid; place-items: center;
-      background: #080b12;
+      background: #1a1f26;
       transition: opacity 0.6s ease;
     }
     #loading.hidden { opacity: 0; pointer-events: none; }
@@ -610,9 +610,9 @@ function compute3DOverviewState(aspect) {
    ========================================================= */
 const container = document.getElementById('scene');
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x080b12);
-scene.fog = new THREE.FogExp2(0x080b12, 0.0012);
-const camera = new THREE.PerspectiveCamera(FOV_3D, innerWidth / innerHeight, 0.1, 600);
+scene.background = new THREE.Color(0x1a1f26);
+scene.fog = new THREE.FogExp2(0x1a1f26, 0.0006);
+const camera = new THREE.PerspectiveCamera(FOV_3D, innerWidth / innerHeight, 0.1, 2000);
 
 const INITIAL_TARGET = new THREE.Vector3(0, CEIL_Y / 2, 0);
 {
@@ -641,8 +641,8 @@ const controls = new OrbitControls(camera, renderer.domElement);
 controls.target.copy(INITIAL_TARGET);
 controls.enableDamping = true;
 controls.dampingFactor = 0.06;
-controls.minDistance = 4;
-controls.maxDistance = 500;
+controls.minDistance = 5;
+controls.maxDistance = 1500;
 controls.maxPolarAngle = Math.PI * 0.495;
 controls.enableAutoRotate = false;
 
