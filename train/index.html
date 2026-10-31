@@ -1390,6 +1390,13 @@ function selectPassenger(i, fly) {
 
   [...listEl.children].forEach((el, k) => el.classList.toggle('active', k === i));
 
+  // 保存当前视图状态作为预聚焦状态
+  preFocusView = {
+    target: controls.target.clone(),
+    dist: camera.position.distanceTo(controls.target),
+    position: camera.position.clone()
+  };
+
   cardEl.innerHTML = `
     <button class="card-close" id="cardClose">✕</button>
     <div class="card-head">
@@ -1405,7 +1412,46 @@ function selectPassenger(i, fly) {
   if (oldCloseBtn) oldCloseBtn.replaceWith(oldCloseBtn.cloneNode(true));
   document.getElementById('cardClose').addEventListener('click', (e) => {
     e.stopPropagation();
-    deselect();
+    // 关闭卡片时恢复到聚焦前的视图状态
+    if (preFocusView) {
+      const startTarget = controls.target.clone();
+      const startDist = camera.position.distanceTo(startTarget);
+      
+      const targetPos = preFocusView.target.clone();
+      const endDist = preFocusView.dist;
+      
+      // 简单的淡入淡出过渡动画
+      const duration = 800;
+      const startTime = performance.now();
+      
+      function animateReturn(time) {
+        const elapsed = time - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const easeProgress = easeInOutCubic(progress);
+        
+        // 插值相机位置
+        const dir = camera.position.clone().sub(targetPos).normalize();
+        const currentDist = THREE.MathUtils.lerp(startDist, endDist, easeProgress);
+        camera.position.copy(targetPos).addScaledVector(dir, currentDist);
+        
+        // 插值目标点
+        controls.target.lerpVectors(startTarget, targetPos, easeProgress);
+        camera.lookAt(controls.target);
+        
+        if (progress < 1) {
+          requestAnimationFrame(animateReturn);
+        } else {
+          // 动画完成后重置状态
+          preFocusView = null;
+          deselect();
+        }
+      }
+      
+      requestAnimationFrame(animateReturn);
+    } else {
+      // 如果没有预聚焦状态，直接取消选择
+      deselect();
+    }
   });
 
   applyHighlight(p);
