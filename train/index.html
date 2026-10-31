@@ -297,21 +297,21 @@
       border-radius: 0;
       box-shadow: none;
       padding: 0;
-      font-size: 11px;
-      font-weight: 800;
-      letter-spacing: 0.3px;
-      color: #ffffff;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      color: #e8f0f8;
       text-align: center;
-      text-shadow: 0 0 2px #000, 0 0 3px #000, 0 1px 3px rgba(0,0,0,0.95);
+      text-shadow: 0 1px 2px rgba(0,0,0,0.6);
       opacity: 1;
       white-space: nowrap;
     }
     body.mode-2d .bunk-label::before { display: none; }
     body.mode-2d .bunk-label { pointer-events: none; }
-    body.mode-2d .bunk-label:hover { background: transparent; box-shadow: none; color: #fff; opacity: 1; }
+    body.mode-2d .bunk-label:hover { background: rgba(255,255,255,0.08); color: #fff; opacity: 1; }
     body.mode-2d .bunk-label.is-active {
-      background: transparent; border: none; box-shadow: none; color: #fff; opacity: 1;
-      text-shadow: 0 0 4px #fff, 0 0 2px #000, 0 0 3px #000;
+      background: rgba(255,255,255,0.12); border: none; box-shadow: none; color: #fff; opacity: 1;
+      text-shadow: 0 0 6px rgba(255,255,255,0.4), 0 1px 3px rgba(0,0,0,0.5);
     }
 
     .car-label {
@@ -1733,9 +1733,11 @@ function animate() {
   }
 
   if (highlightedBunk && !modeTransition) {
-    const pulse = 0.5 + 0.5 * Math.sin(elapsed * 3.2);
+    /* 柔和脉冲：使用缓动的三角波，而非机械正弦波 */
+    const t = (elapsed * 1.6) % 2;
+    const pulse = t < 1 ? t : 2 - t;
     highlightedBunk.userData.materials.forEach(m => {
-      if (m.emissive) m.emissiveIntensity = 0.3 + pulse * 0.5;
+      if (m.emissive) m.emissiveIntensity = 0.25 + pulse * 0.35;
     });
   }
 
