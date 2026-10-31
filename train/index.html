@@ -431,6 +431,126 @@
       body.mode-2d .bunk-label { font-size: 8px; letter-spacing: 0; }
     }
 
+    /* ---------- 使用指南弹窗 ---------- */
+    .modal-overlay {
+      position: fixed; inset: 0; z-index: 300;
+      display: flex; align-items: center; justify-content: center;
+      padding: 20px;
+      background: rgba(10, 14, 20, 0.72);
+      backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+      opacity: 0; visibility: hidden;
+      transition: opacity 0.35s ease, visibility 0.35s ease;
+    }
+    .modal-overlay.show { opacity: 1; visibility: visible; }
+    .modal-content {
+      width: 100%; max-width: 520px;
+      max-height: calc(100vh - 40px);
+      display: flex; flex-direction: column;
+      background: linear-gradient(160deg, #232a34 0%, #1a1f26 100%);
+      border: 1px solid rgba(120, 130, 150, 0.18);
+      border-radius: 18px;
+      box-shadow: 0 24px 70px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+      transform: translateY(16px) scale(0.97);
+      transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+      overflow: hidden;
+    }
+    .modal-overlay.show .modal-content { transform: translateY(0) scale(1); }
+    .modal-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 20px 22px 14px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .modal-header h2 {
+      margin: 0; font-size: 17px; font-weight: 600; letter-spacing: 0.6px;
+      color: #e2ecf8;
+    }
+    .modal-close {
+      width: 30px; height: 30px; flex: 0 0 auto;
+      border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.07);
+      background: rgba(255, 255, 255, 0.04); color: var(--txt-sub);
+      font-size: 20px; line-height: 1; cursor: pointer; padding: 0;
+      display: grid; place-items: center;
+      transition: 0.2s; font-family: inherit;
+    }
+    .modal-close:hover { background: rgba(255, 255, 255, 0.12); color: #fff; }
+    .modal-body {
+      padding: 16px 22px 8px;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .modal-body::-webkit-scrollbar { width: 4px; }
+    .modal-body::-webkit-scrollbar-thumb { background: rgba(120, 170, 240, 0.2); border-radius: 4px; }
+    .tutorial-list {
+      margin: 0; padding: 0; list-style: none;
+      counter-reset: tutorial;
+    }
+    .tutorial-list li {
+      position: relative;
+      padding: 12px 0 12px 40px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.035);
+      counter-increment: tutorial;
+    }
+    .tutorial-list li:last-child { border-bottom: none; }
+    .tutorial-list li::before {
+      content: counter(tutorial);
+      position: absolute; left: 0; top: 13px;
+      width: 24px; height: 24px; border-radius: 7px;
+      display: grid; place-items: center;
+      font-size: 12px; font-weight: 700; color: #cfe0ff;
+      background: linear-gradient(135deg, rgba(90, 134, 255, 0.28), rgba(123, 92, 255, 0.22));
+      border: 1px solid rgba(120, 150, 235, 0.28);
+    }
+    .tutorial-list strong {
+      display: block; font-size: 13.5px; font-weight: 600;
+      color: #dfe8f4; margin-bottom: 3px; letter-spacing: 0.3px;
+    }
+    .tutorial-list p {
+      margin: 0; font-size: 12.5px; line-height: 1.6;
+      color: var(--txt-sub);
+    }
+    .modal-footer {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 12px; padding: 14px 22px 20px;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .checkbox-label {
+      display: flex; align-items: center; gap: 7px;
+      font-size: 12.5px; color: var(--txt-sub);
+      cursor: pointer; user-select: none;
+    }
+    .checkbox-label input {
+      width: 15px; height: 15px; accent-color: var(--accent);
+      cursor: pointer; margin: 0;
+    }
+    .modal-btn {
+      padding: 9px 22px; border-radius: 10px;
+      border: 1px solid rgba(120, 150, 235, 0.35);
+      background: linear-gradient(135deg, rgba(90, 134, 255, 0.9), rgba(108, 126, 245, 0.85));
+      color: #fff; font-size: 13px; font-weight: 600; letter-spacing: 0.4px;
+      cursor: pointer; transition: 0.2s; font-family: inherit;
+      box-shadow: 0 4px 14px rgba(90, 134, 255, 0.3);
+    }
+    .modal-btn:hover { filter: brightness(1.1); transform: translateY(-1px); }
+    .modal-btn:active { transform: translateY(0); }
+    .modal-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+    /* 移动端适配 */
+    @media (max-width: 600px) {
+      .modal-overlay { padding: 12px; }
+      .modal-content { max-height: calc(100vh - 24px); }
+      .modal-header { padding: 16px 16px 10px; }
+      .modal-header h2 { font-size: 15px; }
+      .modal-close { width: 26px; height: 26px; font-size: 17px; }
+      .modal-body { padding: 12px 16px 6px; }
+      .tutorial-list li { padding: 10px 0 10px 34px; }
+      .tutorial-list li::before { width: 21px; height: 21px; font-size: 11px; top: 11px; }
+      .tutorial-list strong { font-size: 12.5px; }
+      .tutorial-list p { font-size: 11.5px; }
+      .modal-footer { padding: 12px 16px 16px; flex-direction: column; align-items: stretch; }
+      .checkbox-label { justify-content: center; margin-bottom: 8px; }
+      .modal-btn { padding: 10px 20px; font-size: 13.5px; }
+    }
+
     /* ---------- 减少动效偏好 ---------- */
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after {
@@ -447,6 +567,51 @@
     <div class="load-tip"><span class="spinner"></span><span id="loadText">正在启动…</span></div>
     <div class="load-track"><div id="loadBar"></div></div>
     <div class="load-pct" id="loadPct">0%</div>
+  </div>
+</div>
+
+<!-- 使用指南弹窗 -->
+<div id="tutorialModal" class="modal-overlay">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>🚄 使用指南</h2>
+      <button class="modal-close" aria-label="关闭">×</button>
+    </div>
+    <div class="modal-body">
+      <ol class="tutorial-list">
+        <li>
+          <strong>视图操作</strong>
+          <p>手机：双指缩放/旋转，单指移动视图<br>电脑：左键旋转，右键移动，中键缩放</p>
+        </li>
+        <li>
+          <strong>乘客列表</strong>
+          <p>右上角乘客列表可展开，展开后可在顶部切换 2D/3D 视图，点击姓名可聚焦到对应位置</p>
+        </li>
+        <li>
+          <strong>快速聚焦</strong>
+          <p>在 2D 或 3D 视图中，直接点击姓名标签即可聚焦到对应乘客位置</p>
+        </li>
+        <li>
+          <strong>详细信息</strong>
+          <p>聚焦模式下，右下角卡片显示该乘客的详细信息</p>
+        </li>
+        <li>
+          <strong>退出聚焦</strong>
+          <p>聚焦时，可通过移动视图或点击右下角卡片的叉号返回之前的视图状态</p>
+        </li>
+        <li>
+          <strong>重置视图</strong>
+          <p>如果视图出现异常，点击左下角"重置视图"按钮恢复正常</p>
+        </li>
+      </ol>
+    </div>
+    <div class="modal-footer">
+      <label class="checkbox-label">
+        <input type="checkbox" id="dontShowAgain">
+        <span>下次不再显示</span>
+      </label>
+      <button class="modal-btn" id="modalConfirm">我知道了</button>
+    </div>
   </div>
 </div>
 
@@ -598,6 +763,64 @@ function escapeHtml(str) {
 }
 function hideLoading() {
   if (!loadingEl.classList.contains('hidden')) loadingEl.classList.add('hidden');
+  // 加载完成后显示使用指南（除非用户勾选了不再显示）
+  if (!localStorage.getItem('tutorialShown')) {
+    setTimeout(showTutorialModal, 300);
+  }
+}
+
+function showTutorialModal() {
+  const modal = document.getElementById('tutorialModal');
+  if (modal) modal.classList.add('show');
+}
+
+function initTutorialModal() {
+  const modal = document.getElementById('tutorialModal');
+  const closeBtn = document.getElementById('tutorialModal')?.querySelector('.modal-close');
+  const confirmBtn = document.getElementById('modalConfirm');
+  const checkbox = document.getElementById('dontShowAgain');
+
+  if (!modal) return;
+
+  // 关闭按钮点击事件
+  if (closeBtn) {
+    closeBtn.addEventListener('click', () => {
+      modal.classList.remove('show');
+      if (checkbox?.checked) {
+        localStorage.setItem('tutorialShown', 'true');
+      }
+    });
+  }
+
+  // 确认按钮点击事件
+  if (confirmBtn) {
+    confirmBtn.addEventListener('click', () => {
+      modal.classList.remove('show');
+      if (checkbox?.checked) {
+        localStorage.setItem('tutorialShown', 'true');
+      }
+    });
+  }
+
+  // 点击遮罩层关闭
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) {
+      modal.classList.remove('show');
+      if (checkbox?.checked) {
+        localStorage.setItem('tutorialShown', 'true');
+      }
+    }
+  });
+
+  // ESC 键关闭
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && modal.classList.contains('show')) {
+      modal.classList.remove('show');
+      if (checkbox?.checked) {
+        localStorage.setItem('tutorialShown', 'true');
+      }
+    }
+  });
 }
 function tryHideLoadingWhenProgressDone() {
   if (loadHideScheduled) return;
@@ -1989,6 +2212,9 @@ try {
 
 setLoadProgress(warmS + (warmE - warmS) * 0.9, '正在准备首帧渲染…');
 await nextFrame();
+
+// 初始化使用指南弹窗
+initTutorialModal();
 
 animate();
 
