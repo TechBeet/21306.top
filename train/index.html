@@ -55,7 +55,6 @@
       background: rgba(90, 140, 210, 0.16);
       overflow: hidden;
     }
-    /* 进度条由 JS 每帧驱动，不用 CSS transition，保证连续平滑 */
     #loading #loadBar {
       height: 100%; width: 0%;
       border-radius: 999px;
@@ -78,7 +77,7 @@
       text-shadow: 0 4px 20px rgba(77, 163, 255, 0.3);
     }
 
-    /* ---------- 折叠触发按钮（面板隐藏时显示） ---------- */
+    /* ---------- 折叠触发按钮 ---------- */
     .panel-open-btn {
       position: fixed;
       right: 24px;
@@ -198,7 +197,7 @@
     .list-item .ps { margin-left: auto; color: var(--txt-sub); font-size: 11px; font-weight: 500; white-space: nowrap; }
 
     #legend {
-      position: fixed; left: 28px; bottom: 28px; z-index: 10;
+      position: fixed; left: 28px; bottom: 28px; z-index: 12;
       background: var(--panel-bg);
       border: 1px solid var(--border);
       border-radius: 14px; padding: 16px 20px;
@@ -247,27 +246,36 @@
     .bunk-label {
       font-size: 11px; font-weight: 700; letter-spacing: 0.5px;
       padding: 4px 10px; border-radius: 999px; white-space: nowrap;
-      background: rgba(10, 15, 25, 0.85);
+      background: rgba(10, 15, 25, 0.92);
       border: 1px solid var(--pc, #4da3ff);
       color: var(--pc, #4da3ff);
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6), inset 0 0 10px rgba(255,255,255,0.05);
+      box-shadow: 0 3px 12px rgba(0, 0, 0, 0.7), inset 0 0 8px rgba(255,255,255,0.03);
       pointer-events: auto;
       cursor: pointer;
       user-select: none;
       transition: background 0.2s, border-color 0.2s, box-shadow 0.2s, opacity 0.25s, color 0.2s;
     }
+    @media (max-width: 820px) {
+      .bunk-label {
+        backdrop-filter: blur(2px);
+        -webkit-backdrop-filter: blur(2px);
+      }
+    }
     .bunk-label:hover {
-      background: rgba(25, 38, 62, 0.95);
-      box-shadow: 0 0 16px var(--pc, #4da3ff);
+      background: rgba(20, 30, 50, 0.98);
+      box-shadow: 0 0 18px var(--pc, #4da3ff), 0 4px 20px rgba(0,0,0,0.8);
     }
     .bunk-label.is-active {
-      background: rgba(20, 30, 50, 0.95);
+      background: rgba(25, 40, 65, 0.98);
       border-color: #fff;
-      box-shadow: 0 0 20px var(--pc, #4da3ff);
+      box-shadow: 0 0 24px var(--pc, #4da3ff), 0 6px 25px rgba(0,0,0,0.9);
       z-index: 100;
     }
+    .bunk-label.is-active:hover {
+      transform: none;
+    }
 
-    /* ---------- 2D 工程图风格标签：名字直接显示在床位方块内 ---------- */
+    /* ---------- 2D 标签 ---------- */
     body.mode-2d .bunk-label {
       background: transparent;
       border: none;
@@ -368,7 +376,7 @@
     <line x1="3.5" y1="12" x2="3.51" y2="12"></line>
     <line x1="3.5" y1="18" x2="3.51" y2="18"></line>
   </svg>
-  <span>乘客</span>
+  <span>乘客列表</span>
 </button>
 
 <aside id="panel" class="collapsed">
@@ -417,12 +425,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
 
 /* =========================================================
-   0. 加载进度系统（细分 + 平滑）
-   ---------------------------------------------------------
-   - 目标进度 loadTargetPct 只增不减；
-   - 显示进度 loadDisplayPct 每帧向目标逼近，进度条连续滚动；
-   - 每帧由 rAF 驱动，避免 CSS transition 造成的跳变/滞后；
-   - 加载完成且显示进度到 100% 后才隐藏 Loading，确保首帧已就绪。
+   0. 加载进度系统
    ========================================================= */
 const loadingEl = document.getElementById('loading');
 const loadBarEl = document.getElementById('loadBar');
@@ -446,7 +449,6 @@ function stepLoadSmooth() {
     loadSmoothRunning = false;
     return;
   }
-  /* 自适应逼近：差距大时快、差距小时慢，末尾不拖沓也不会骤停 */
   const step = Math.max(diff * 0.14, 0.15);
   loadDisplayPct = Math.min(loadTargetPct, loadDisplayPct + step);
   applyLoadUI();
@@ -550,21 +552,21 @@ function compute2DEndState(aspect) {
 
 /* ---------- 3D 总览自适应距离 ---------- */
 const FOV_3D = 42;
-const LABEL_LIFT_3D = 1.05;
-const LABEL_LIFT_FOCUS = 0.10;
+const LABEL_LIFT_3D = 1.15;
+const LABEL_LIFT_FOCUS = 0.12;
 
 const LABEL_LIFT_3D_BY_LEVEL = {
-  1: CEIL_Y * 1.0,
-  2: CEIL_Y * 2.0,
-  3: CEIL_Y * 3.0
+  1: CEIL_Y * 1.15,
+  2: CEIL_Y * 2.15,
+  3: CEIL_Y * 3.15
 };
-const LABEL_LIFT_SIDE_OFFSET = 0.15;
+const LABEL_LIFT_SIDE_OFFSET = 0.18;
 
 const SCENE_BOX = {
   minX: -CAR_WIDTH / 2 - 0.3,
   maxX:  CAR_WIDTH / 2 + 0.3,
   minY: -0.25,
-  maxY:  LEVEL_Y[3] + 0.25 + CEIL_Y * 3 + LABEL_LIFT_SIDE_OFFSET + 0.6,
+  maxY:  LEVEL_Y[3] + 0.25 + CEIL_Y * 3.15 + LABEL_LIFT_SIDE_OFFSET + 0.7,
   minZ: -CAR_LEN - CAR_GAP / 2,
   maxZ:  CAR_LEN + CAR_GAP / 2
 };
@@ -629,7 +631,7 @@ labelRenderer.domElement.style.position = 'absolute';
 labelRenderer.domElement.style.top = '0';
 labelRenderer.domElement.style.left = '0';
 labelRenderer.domElement.style.pointerEvents = 'none';
-labelRenderer.domElement.style.zIndex = '5';
+labelRenderer.domElement.style.zIndex = '10';
 container.appendChild(labelRenderer.domElement);
 
 const controls = new OrbitControls(camera, renderer.domElement);
@@ -637,10 +639,7 @@ controls.target.copy(INITIAL_TARGET);
 controls.enableDamping = true;
 controls.dampingFactor = 0.06;
 controls.minDistance = 4;
-{
-  const initialDist = camera.position.distanceTo(controls.target);
-  controls.maxDistance = Math.max(initialDist * 2, 160);
-}
+controls.maxDistance = 500;
 controls.maxPolarAngle = Math.PI * 0.495;
 controls.enableAutoRotate = false;
 
@@ -808,7 +807,7 @@ function buildFoldingSeat(parent, xWall, zPos) {
   parent.add(g);
 }
 
-/* ---- 车厢构建：逐车厢推进进度 ---- */
+/* ---- 车厢构建 ---- */
 setLoadProgress(10, '正在准备车厢结构…');
 await nextFrame();
 
@@ -862,7 +861,7 @@ setLoadProgress(39, '2D 工程框架完成');
 await nextFrame();
 
 /* =========================================================
-   8. 3D 床铺（同时创建 2D 床位线框）
+   8. 3D 床铺
    ========================================================= */
 const bunkBoardGeo = new THREE.BoxGeometry(BUNK_LEN_X, 0.05, BUNK_WIDTH_Z);
 const mattressGeo = new THREE.BoxGeometry(BUNK_LEN_X - 0.04, 0.08, BUNK_WIDTH_Z - 0.04);
@@ -905,10 +904,10 @@ function createBunk(pos, carGroup) {
   return bunkGroup;
 }
 
-/* ---- 床铺铺设：按隔间单元细分推进 39 → 68 ---- */
+/* ---- 床铺铺设 ---- */
 const BUNK_PCT_START = 39;
 const BUNK_PCT_END = 68;
-const BUNK_UNITS_TOTAL = 2 * COMP_COUNT; // 22 个隔间单元（每单元含左右两侧 6 张铺）
+const BUNK_UNITS_TOTAL = 2 * COMP_COUNT;
 let bunkUnitsDone = 0;
 
 setLoadProgress(BUNK_PCT_START, '正在铺设床铺…');
@@ -926,7 +925,6 @@ for (let c = 0; c < 2; c++) {
     bunkUnitsDone++;
     const pct = BUNK_PCT_START + (BUNK_PCT_END - BUNK_PCT_START) * (bunkUnitsDone / BUNK_UNITS_TOTAL);
     setLoadProgress(pct, `正在铺设床铺… ${bunkUnitsDone}/${BUNK_UNITS_TOTAL}`);
-    /* 每 2 个隔间让出一帧，进度可见且不卡顿 */
     if (bunkUnitsDone % 2 === 0) await nextFrame();
   }
 }
@@ -995,7 +993,7 @@ function findBunkByLocalPos(carGroup, pos) {
 let hovered = -1;
 let selected = -1;
 
-/* ---- 乘客标签生成：按乘客逐个细分推进 68 → 90 ---- */
+/* ---- 乘客标签生成 ---- */
 const LABEL_PCT_START = 68;
 const LABEL_PCT_END = 90;
 const LABEL_TOTAL = PASSENGERS.length;
@@ -1016,7 +1014,11 @@ for (let i = 0; i < LABEL_TOTAL; i++) {
     const bunk = findBunkByLocalPos(carGroup, localPos);
     passengerBunkMap.set(p, bunk);
 
-    const hitbox = new THREE.Mesh(new THREE.SphereGeometry(0.38, 8, 8), new THREE.MeshBasicMaterial({ visible: false }));
+    /* ---- Hitbox：透明材质隐藏，仍可被 Raycaster 检测 ---- */
+    const hitbox = new THREE.Mesh(
+      new THREE.SphereGeometry(0.38, 8, 8),
+      new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false })
+    );
     hitbox.position.copy(localPos);
     hitbox.userData.index = i;
     hitbox.userData.noHide = true;
@@ -1076,15 +1078,22 @@ for (let i = 0; i < LABEL_TOTAL; i++) {
     const lineMat = new THREE.LineBasicMaterial({
       color: new THREE.Color(p.color),
       transparent: true,
-      opacity: 0.42,
-      depthWrite: false
+      opacity: 0.35,
+      depthWrite: false,
+      linewidth: 1
     });
-    const linePts = [basePos.clone(), label.position.clone()];
+
+    const linePts = [
+      basePos.clone(),
+      basePos.clone(),
+      label.position.clone()
+    ];
     const lineGeo = new THREE.BufferGeometry().setFromPoints(linePts);
     const line = new THREE.Line(lineGeo, lineMat);
     carGroup.add(line);
 
-    labelEntries[i] = { label, line, lineMat, basePos, levelY, lift3D };
+    /* ---- 记录床位侧别（左/右）用于智能连接，复用上方已声明的变量 ---- */
+    labelEntries[i] = { label, line, lineMat, basePos, levelY, lift3D, isLeftBunk };
   }
 
   const pct = LABEL_PCT_START + (LABEL_PCT_END - LABEL_PCT_START) * ((i + 1) / LABEL_TOTAL);
@@ -1106,13 +1115,24 @@ function updateLabelLayout(i) {
   }
   e.label.position.set(e.basePos.x, ty, e.basePos.z);
 
+  const bx = e.basePos.x, by = e.basePos.y, bz = e.basePos.z;
+  const riseLen = Math.min(Math.abs(ty - by) * 0.45, 0.55);
   const attr = e.line.geometry.attributes.position;
-  attr.setXYZ(0, e.basePos.x, e.basePos.y, e.basePos.z);
-  attr.setXYZ(1, e.basePos.x, ty, e.basePos.z);
+
+  if (isFocus || is2DMode) {
+    attr.setXYZ(0, bx, by, bz);
+    attr.setXYZ(1, bx, by, bz);
+    attr.setXYZ(2, bx, ty, bz);
+  } else {
+    attr.setXYZ(0, bx, by, bz);
+    attr.setXYZ(1, bx, by + riseLen, bz);
+    attr.setXYZ(2, bx, ty, bz);
+  }
   attr.needsUpdate = true;
   e.line.geometry.computeBoundingSphere();
 
   e.line.visible = !is2DMode && !isFocus;
+  e.lineMat.opacity = isFocus ? 0 : 0.35;
 }
 
 function updateAllLabelLayouts() {
@@ -1132,7 +1152,12 @@ function applyHighlight(p) {
   if (!bunk) return;
   highlightedBunk = bunk;
   tmpColor.set(p.color);
-  bunk.userData.materials.forEach(m => { if (m.emissive) m.emissive.copy(tmpColor); });
+  bunk.userData.materials.forEach(m => {
+    if (m.emissive) {
+      m.emissive.copy(tmpColor);
+      m.emissiveIntensity = 0.5;
+    }
+  });
 }
 function clearHighlight() {
   if (highlightedBunk) {
@@ -1253,7 +1278,7 @@ function switchMode(to2D) {
 
         const D = camera.position.x - controls.target.x;
         controls.minDistance = Math.max(D * 0.4, 5);
-        controls.maxDistance = D * 2.5;
+        controls.maxDistance = D * 5;
 
         camera.position.set(controls.target.x + D, controls.target.y, controls.target.z);
       } else {
@@ -1267,8 +1292,7 @@ function switchMode(to2D) {
         controls.minDistance = 4;
         controls.screenSpacePanning = false;
 
-        const overviewDist = camera.position.distanceTo(controls.target);
-        controls.maxDistance = Math.max(overviewDist * 2, 160);
+        controls.maxDistance = 500;
       }
 
       controls.enabled = true;
@@ -1327,6 +1351,9 @@ function selectPassenger(i, fly) {
     <div class="card-note">${p.note ? '“' + escapeHtml(p.note) + '”' : '（无备注）'}</div>
   `;
   cardEl.classList.add('show');
+
+  const oldCloseBtn = cardEl.querySelector('#cardClose');
+  if (oldCloseBtn) oldCloseBtn.replaceWith(oldCloseBtn.cloneNode(true));
   document.getElementById('cardClose').addEventListener('click', (e) => {
     e.stopPropagation();
     deselect();
@@ -1384,6 +1411,12 @@ function selectPassenger(i, fly) {
 function deselect() {
   selected = -1;
   focusState = null;
+
+  /* 取消进行中的飞行动画与 2D 聚焦动画，避免相机停在半路且 controls 被锁死 */
+  flyTween = null;
+  focusTween2D = null;
+  if (!modeTransition) controls.enabled = true;
+
   cardEl.classList.remove('show');
   [...listEl.children].forEach(el => el.classList.remove('active'));
   clearHighlight();
@@ -1522,12 +1555,10 @@ function hideLoading() {
   if (!loadingEl.classList.contains('hidden')) loadingEl.classList.add('hidden');
 }
 
-/* 首帧渲染后，等待进度条真正走到 100% 再隐藏 Loading */
 function tryHideLoadingWhenProgressDone() {
   if (loadHideScheduled) return;
   if (loadTargetPct >= 100 && loadDisplayPct >= 99.9) {
     loadHideScheduled = true;
-    /* 留一点时间让 100% 清晰可见，再淡出 */
     setTimeout(hideLoading, 220);
   } else {
     requestAnimationFrame(tryHideLoadingWhenProgressDone);
@@ -1563,6 +1594,21 @@ function updateModeTransition(dt) {
   const lineOp = modeTransition.to2D ? k : (1 - k);
   mat2DFrame.opacity = 0.55 * lineOp;
   twoDLineGroup.visible = lineOp > 0.001;
+
+  /* ---- 过渡中同步插值标签 Y 位置与引线透明度，消除切换瞬间跳变 ---- */
+  const isTo2D = modeTransition.to2D;
+  PASSENGERS.forEach((_, i) => {
+    const e = labelEntries[i];
+    if (!e) return;
+    const y3D = e.basePos.y + e.lift3D;
+    const y2D = e.levelY + 0.05;
+    const ty = isTo2D ? THREE.MathUtils.lerp(y3D, y2D, k) : THREE.MathUtils.lerp(y2D, y3D, k);
+    e.label.position.set(e.basePos.x, ty, e.basePos.z);
+
+    const lineAlpha = isTo2D ? (1 - k) : k;
+    e.lineMat.opacity = 0.35 * lineAlpha;
+    e.line.visible = lineAlpha > 0.01;
+  });
 
   const show2D = modeTransition.to2D ? (tNorm >= 0.5) : (tNorm < 0.5);
   if (show2D !== lastBunk2DVisible) {
@@ -1685,7 +1731,7 @@ addEventListener('resize', () => {
     if (currentD < D * 0.98) {
       camera.position.set(controls.target.x + D, controls.target.y, controls.target.z);
       controls.minDistance = Math.max(D * 0.4, 5);
-      controls.maxDistance = D * 2.5;
+      controls.maxDistance = D * 5;
       controls.update();
       if (focusState) focusState.dist = D;
     }
