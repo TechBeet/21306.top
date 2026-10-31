@@ -816,16 +816,22 @@ const TOUCH_2D = { ONE: THREE.TOUCH.PAN, TWO: THREE.TOUCH.DOLLY_PAN };
 setLoadProgress(PHASES.zoomCfg[0], '正在计算自适应缩放参数…');
 await nextFrame();
 const ZOOM_SENSITIVITY_CONFIG = {
-  baseSpeed: 1.9,
-  minSpeed: 1.2,
-  maxSpeed: 5.5,
+  baseSpeed: 1.3,               // 基础缩放速度降低
+  minSpeed: 0.8,                // 下限降低
+  maxSpeed: 3.5,                // 上限大幅降低（防止过敏感）
   refDiagonal: 1900,
-  refDistance: 60
+  refDistance: 60,
+  mobileScale: 0.6              // 移动端灵敏度衰减因子
 };
 function computeAdaptiveZoomSpeed(magFactor = 1) {
   const cfg = ZOOM_SENSITIVITY_CONFIG;
+  // 检测移动设备：粗指针（触摸为主）+ 触摸支持，或窄屏
+  const isCoarsePointer = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+  const isMobile = (isCoarsePointer && 'ontouchstart' in window) || innerWidth <= 768;
   const diag = Math.hypot(innerWidth, innerHeight) || cfg.refDiagonal;
-  const windowFactor = THREE.MathUtils.clamp(cfg.refDiagonal / diag, 0.85, 2.4);
+  let windowFactor = THREE.MathUtils.clamp(cfg.refDiagonal / diag, 0.85, 2.4);
+  // 移动端额外衰减，避免双指缩放过于灵敏
+  if (isMobile) windowFactor *= cfg.mobileScale;
   const dist = camera.position.distanceTo(controls.target);
   const distFactor = THREE.MathUtils.clamp(Math.sqrt(dist / cfg.refDistance), 0.7, 2.6);
   const speed = cfg.baseSpeed * windowFactor * distFactor * magFactor;
