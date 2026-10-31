@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -17,8 +18,9 @@
     }
     * { box-sizing: border-box; }
     html, body {
-      margin: 0; height: 100%; overflow: hidden;
+      margin: 0; height: 100%; height: 100dvh; overflow: hidden;
       background: var(--bg); color: var(--txt-main);
+      -webkit-text-size-adjust: 100%; text-size-adjust: 100%;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
       -webkit-font-smoothing: antialiased;
       -webkit-tap-highlight-color: transparent;
@@ -76,7 +78,10 @@
     }
 
     .hud {
-      position: fixed; left: 28px; top: 24px; pointer-events: none; z-index: 10;
+      position: fixed;
+      left: calc(28px + env(safe-area-inset-left));
+      top: calc(24px + env(safe-area-inset-top));
+      pointer-events: none; z-index: 10;
     }
     .hud h1 {
       margin: 0; font-size: 20px; font-weight: 600; letter-spacing: 1px;
@@ -104,8 +109,8 @@
     /* ---------- 重置视图按钮 ---------- */
     #resetViewBtn {
       position: fixed;
-      left: 28px;
-      bottom: 28px;
+      left: calc(28px + env(safe-area-inset-left));
+      bottom: calc(28px + env(safe-area-inset-bottom));
       z-index: 12;
       display: flex;
       align-items: center;
@@ -137,8 +142,8 @@
     /* ---------- 折叠触发按钮 ---------- */
     .panel-open-btn {
       position: fixed;
-      right: 24px;
-      top: 24px;
+      right: calc(24px + env(safe-area-inset-right));
+      top: calc(24px + env(safe-area-inset-top));
       z-index: 12;
       display: flex;
       align-items: center;
@@ -172,7 +177,10 @@
 
     /* ---------- 乘客列表面板 ---------- */
     #panel {
-      position: fixed; right: 24px; top: 24px; width: 250px; z-index: 11;
+      position: fixed;
+      right: calc(24px + env(safe-area-inset-right));
+      top: calc(24px + env(safe-area-inset-top));
+      width: 250px; z-index: 11;
       background: var(--panel-bg);
       border: 1px solid var(--border);
       border-radius: 16px;
@@ -276,7 +284,10 @@
     .list-item .ps { margin-left: auto; color: var(--txt-sub); font-size: 10.5px; font-weight: 500; white-space: nowrap; }
 
     #card {
-      position: fixed; right: 24px; bottom: 24px; width: 250px; z-index: 11;
+      position: fixed;
+      right: calc(24px + env(safe-area-inset-right));
+      bottom: calc(24px + env(safe-area-inset-bottom));
+      width: 250px; z-index: 11;
       background: rgba(16, 23, 38, 0.92);
       border: 1px solid rgba(90, 140, 210, 0.3);
       border-left: 3px solid var(--pc, #5a86ff);
@@ -394,41 +405,62 @@
 
     /* ---------- 移动端适配 ---------- */
     @media (max-width: 820px) {
-      .hud { left: 24px; top: 16px; max-width: calc(100% - 148px); }
+      .hud {
+        left: calc(16px + env(safe-area-inset-left));
+        top: calc(14px + env(safe-area-inset-top));
+        max-width: calc(100% - 132px);
+      }
       .hud h1 { font-size: 15px; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
       .hud h1::before { left: -12px; width: 3px; height: 13px; }
 
-      #resetViewBtn {
-        left: 16px; bottom: 16px;
-        padding: 8px 10px;
-        font-size: 11px;
-      }
-
+      /* 手机端：控制按钮统一收到右上角一列，底部留给面板 / 详情卡片做抽屉 */
       .panel-open-btn {
-        right: 16px; top: 16px;
-        padding: 8px 12px;
+        right: calc(16px + env(safe-area-inset-right));
+        top: calc(14px + env(safe-area-inset-top));
+        padding: 9px 13px;
         font-size: 12px;
       }
+      #resetViewBtn {
+        left: auto;
+        right: calc(16px + env(safe-area-inset-right));
+        top: calc(14px + env(safe-area-inset-top) + 48px);
+        bottom: auto;
+        width: 42px; height: 42px;
+        padding: 0;
+        display: grid; place-items: center;
+        border-radius: 12px;
+      }
+      #resetViewBtn span { display: none; }
+      #resetViewBtn svg { width: 18px; height: 18px; }
 
       #panel {
-        left: 16px; right: 16px;
+        left: calc(16px + env(safe-area-inset-left));
+        right: calc(16px + env(safe-area-inset-right));
         width: auto;
-        top: auto; bottom: 16px;
-        max-height: 48vh;
+        top: auto;
+        bottom: calc(16px + env(safe-area-inset-bottom));
+        max-height: min(54vh, calc(100dvh - 150px));
         border-radius: 16px;
       }
       #panel.collapsed { transform: translateY(24px) scale(0.96); }
       .panel-title { font-size: 11px; letter-spacing: 1px; }
-      .panel-close-btn { width: 24px; height: 24px; font-size: 14px; }
+      .panel-close-btn { width: 28px; height: 28px; font-size: 15px; }
 
       #card {
-        left: 16px; right: 16px;
+        left: calc(16px + env(safe-area-inset-left));
+        right: calc(16px + env(safe-area-inset-right));
         width: auto;
-        bottom: 16px;
-        max-height: 45vh;
+        bottom: calc(16px + env(safe-area-inset-bottom));
+        max-height: min(54vh, calc(100dvh - 150px));
       }
 
       body.mode-2d .bunk-label { font-size: 8px; letter-spacing: 0; }
+    }
+
+    /* 横屏矮屏手机：压缩底部抽屉高度，避免顶到标题 / 按钮 */
+    @media (max-width: 900px) and (orientation: landscape) and (max-height: 520px) {
+      #panel, #card { max-height: calc(100dvh - 96px); }
+      .hud { max-width: calc(100% - 150px); }
     }
 
     /* ---------- 使用指南弹窗 ---------- */
@@ -536,7 +568,10 @@
 
     /* 移动端适配 */
     @media (max-width: 600px) {
-      .modal-overlay { padding: 12px; }
+      .modal-overlay {
+        padding: calc(12px + env(safe-area-inset-top)) calc(12px + env(safe-area-inset-right))
+                 calc(12px + env(safe-area-inset-bottom)) calc(12px + env(safe-area-inset-left));
+      }
       .modal-content { max-height: calc(100vh - 24px); }
       .modal-header { padding: 16px 16px 10px; }
       .modal-header h2 { font-size: 15px; }
@@ -560,7 +595,7 @@
     }
   </style>
 </head>
-<body>
+<body class="mode-2d">
 
 <div id="loading">
   <div class="load-box">
@@ -585,7 +620,7 @@
         </li>
         <li>
           <strong>乘客列表</strong>
-          <p>右上角乘客列表可展开，展开后可在顶部切换 2D/3D 视图，点击姓名可聚焦到对应位置</p>
+          <p>点击列表按钮展开乘客列表，展开后可切换 2D/3D 视图，点击姓名即可聚焦到对应位置</p>
         </li>
         <li>
           <strong>快速聚焦</strong>
@@ -593,15 +628,15 @@
         </li>
         <li>
           <strong>详细信息</strong>
-          <p>聚焦模式下，右下角卡片显示该乘客的详细信息</p>
+          <p>聚焦模式下，详情卡片会显示该乘客的详细信息</p>
         </li>
         <li>
           <strong>退出聚焦</strong>
-          <p>聚焦时，可通过移动视图或点击右下角卡片的叉号返回之前的视图状态</p>
+          <p>聚焦时，可通过移动视图或点击详情卡片右上角的叉号返回之前的视图状态</p>
         </li>
         <li>
           <strong>重置视图</strong>
-          <p>如果视图出现异常，点击左下角"重置视图"按钮恢复正常</p>
+          <p>如果视图出现异常，点击"重置视图"按钮恢复正常</p>
         </li>
       </ol>
     </div>
@@ -902,6 +937,11 @@ function compute2DEndState(aspect) {
   return { target: new THREE.Vector3(0, 0, 0), camPos: new THREE.Vector3(D, 0, 0) };
 }
 
+const MOUSE_3D = { LEFT: THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.PAN };
+const TOUCH_3D = { ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN };
+const MOUSE_2D = { LEFT: THREE.MOUSE.PAN, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.PAN };
+const TOUCH_2D = { ONE: THREE.TOUCH.PAN, TWO: THREE.TOUCH.DOLLY_PAN };
+
 const FOV_3D = 42;
 const LABEL_LIFT_FOCUS = 0.10;
 const LABEL_LIFT_3D_BY_LEVEL = {
@@ -968,18 +1008,14 @@ scene.background = new THREE.Color(0x1a1f26);
 scene.fog = new THREE.FogExp2(0x1a1f26, 0.0006);
 
 /* ---- 3.2 相机 ---- */
-setLoadProgress(PHASES.camera[0], '正在配置 2D 透视相机（快速启动）…');
+setLoadProgress(PHASES.camera[0], '正在配置透视相机…');
 await nextFrame();
-const camera = new THREE.PerspectiveCamera(FOV_3D, innerWidth / innerHeight, 0.1, 3000);
-const INITIAL_TARGET = new THREE.Vector3(0, CEIL_Y / 2, 0);
-
-// 初始使用 2D 视角，确保最快渲染
+const camera = new THREE.PerspectiveCamera(FOV_2D, innerWidth / innerHeight, 0.1, 3000);
+const INITIAL_TARGET = new THREE.Vector3(0, 0, 0);
 {
   const st = compute2DEndState(innerWidth / innerHeight);
   camera.position.copy(st.camPos);
   camera.lookAt(st.target);
-  camera.fov = FOV_2D;
-  camera.updateProjectionMatrix();
 }
 
 /* ---- 3.3 WebGL 渲染器 ---- */
@@ -1005,37 +1041,28 @@ labelRenderer.domElement.style.zIndex = '10';
 container.appendChild(labelRenderer.domElement);
 
 /* ---- 3.5 交互控制器 ---- */
-setLoadProgress(PHASES.controls[0], '正在配置 2D 轨道控制器（快速启动）…');
+setLoadProgress(PHASES.controls[0], '正在配置轨道控制器…');
 await nextFrame();
-
-const MOUSE_3D = { LEFT: THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.PAN };
-const TOUCH_3D = { ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN };
-const MOUSE_2D = { LEFT: THREE.MOUSE.PAN, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.PAN };
-const TOUCH_2D = { ONE: THREE.TOUCH.PAN, TWO: THREE.TOUCH.DOLLY_PAN };
-
-const controls = new THREE.OrbitControls(camera, renderer.domElement);
+const controls = new OrbitControls(camera, renderer.domElement);
 controls.target.copy(INITIAL_TARGET);
 controls.enableDamping = true;
 controls.dampingFactor = 0.06;
-controls.minDistance = 5;
-controls.maxDistance = 1500;
-controls.maxPolarAngle = Math.PI * 0.495;
 controls.enableAutoRotate = false;
-controls.enableRotate = false; // 2D 模式禁用旋转
 
-// 初始化为 2D 控制模式
-controls.mouseButtons = MOUSE_2D;
-controls.touches = TOUCH_2D;
-controls.screenSpacePanning = true;
+/* 默认进入 2D 视图：锁定侧视角、禁用旋转、以平移为主要交互 */
 controls.minAzimuthAngle = SIDE_THETA;
 controls.maxAzimuthAngle = SIDE_THETA;
 controls.minPolarAngle = SIDE_PHI;
 controls.maxPolarAngle = SIDE_PHI;
-
-// 更新距离限制
-const D = compute2DDistance(innerWidth / innerHeight);
-controls.minDistance = Math.max(D * 0.4, 5);
-controls.maxDistance = D * 5;
+controls.enableRotate = false;
+controls.mouseButtons = MOUSE_2D;
+controls.touches = TOUCH_2D;
+controls.screenSpacePanning = true;
+{
+  const D = camera.position.x - controls.target.x;
+  controls.minDistance = Math.max(D * 0.4, 5);
+  controls.maxDistance = D * 5;
+}
 
 /* ---- 3.6 滚轮灵敏度接管 ---- */
 setLoadProgress(PHASES.wheel[0], '正在接管滚轮缩放…');
@@ -1054,6 +1081,7 @@ controls.domElement.addEventListener('wheel', (event) => {
   }
   applyAdaptiveZoomSpeed(magFactor);
 }, { capture: true });
+
 
 /* ---- 3.7 缩放灵敏度 ---- */
 setLoadProgress(PHASES.zoomCfg[0], '正在计算自适应缩放参数…');
@@ -1654,15 +1682,11 @@ addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && selected >= 0) deselect();
 });
 
-let is2DMode = true;  // 默认 2D 视图，确保最快启动
-let lastBunk2DVisible = true; // 初始显示 2D 床位
+let is2DMode = true;
+let lastBunk2DVisible = false;
 
 const btn3D = document.getElementById('btn3D');
 const btn2D = document.getElementById('btn2D');
-
-// 初始化按钮状态（默认 2D 激活）
-btn3D.classList.toggle('active', false);
-btn2D.classList.toggle('active', true);
 
 btn3D.addEventListener('click', () => {
   if (innerWidth <= 820) setPanelCollapsed(true);
@@ -2210,10 +2234,19 @@ function animate() {
   }
 }
 
-/* 状态初始化 */
-bunk2DMeshes.forEach(o => o.visible = true); // 默认显示 2D 床位
+/* 状态初始化（默认 2D 视图） */
+/* 关键修复：车厢组需就位于 2D 竖向堆叠布局。
+   床铺/色块/标签/引线均为 carGroup 的子对象，其局部坐标基于 2D 堆叠视图，
+   而 carGroup 在创建时被放在 3D 布局（position=(0,0,CAR_CENTERS)）。
+   若不在启动时把它们移到堆叠位（y=STACK_BASE_Y、z=0），2D 子元素会沿 z 轴
+   横向摊开、与已按堆叠坐标绘制的工程线框错位，导致首屏 2D 视图错乱；
+   切换 3D 再切回 2D 时过渡动画会把 carGroups 复位到堆叠位，于是又恢复正常。
+   这里与 switchMode(to2D) 的 endCarPositions 保持一致，确保首屏即为正确 2D 布局。*/
+carGroups.forEach((g, i) => g.position.set(0, STACK_BASE_Y[i], 0));
+bunk2DMeshes.forEach(o => o.visible = true);
 lastBunk2DVisible = true;
-is2DMode = true;
+twoDLineGroup.visible = true;
+setSolidMeshesVisible(false);
 updateAllLabelLayouts();
 
 /* =========================================================
@@ -2226,7 +2259,7 @@ await nextFrame();
 camera.updateMatrixWorld(true);
 scene.updateMatrixWorld(true);
 
-setLoadProgress(warmS + (warmE - warmS) * 0.5, '正在编译着色器…');
+setLoadProgress(warmS + (warmE - warmS) * 0.5, '正在优化 2D 视图…');
 await nextFrame();
 /* 触发一次完整着色器编译，避免首帧卡顿 */
 try {
@@ -2235,38 +2268,7 @@ try {
   console.warn('[warmup] compile 失败，将依赖首帧渲染', e);
 }
 
-setLoadProgress(warmS + (warmE - warmS) * 0.7, '正在后台预加载 3D 资源…');
-await nextFrame();
-
-// 后台预加载 3D 视图所需资源（异步，不影响 2D 启动）
-(async () => {
-  try {
-    // 强制渲染一次 3D 相关对象以编译着色器
-    const tempCamera = camera.clone();
-    tempCamera.position.set(100, 50, 100);
-    tempCamera.lookAt(0, 0, 0);
-    
-    // 遍历所有床位和标签，确保它们的材质被编译
-    allBunks.forEach(bunk => {
-      if (bunk.mesh && bunk.mesh.material) {
-        bunk.mesh.material.needsUpdate = true;
-      }
-    });
-    
-    // 短暂切换到 3D 模式编译资源后立即切回 2D
-    const oldIs2D = is2DMode;
-    is2DMode = false;
-    
-    // 临时渲染 3D 以编译着色器
-    renderer.render(scene, tempCamera);
-    
-    is2DMode = oldIs2D;
-    setLoadProgress(warmS + (warmE - warmS) * 0.9, '3D 资源已预加载');
-  } catch (err) {
-    console.warn('[preload-3D] 预加载失败，将在切换时动态加载:', err);
-  }
-})();
-
+setLoadProgress(warmS + (warmE - warmS) * 0.9, '正在准备首帧渲染…');
 await nextFrame();
 
 // 初始化使用指南弹窗
@@ -2280,16 +2282,76 @@ await nextFrame();
 setLoadProgress(100, '加载完成 ✓');
 
 /* =========================================================
+   17.5 后台预热 3D 资源（不阻塞 2D 首屏）
+   首屏以 2D 视图秒开后，利用浏览器空闲时段临时以 3D 视角
+   编译着色器并上传 GPU，用户切换到 3D 时可无缝显示。
+   ========================================================= */
+let _3dPreloaded = false;
+function preload3DAssets() {
+  /* 仅在仍处于 2D 且无切换/聚焦动画时执行；
+     整个函数同步执行，期间不会被用户交互打断 */
+  if (_3dPreloaded || !is2DMode || modeTransition) return;
+  _3dPreloaded = true;
+  const savedPos = camera.position.clone();
+  const savedTarget = controls.target.clone();
+  const savedFov = camera.fov;
+  try {
+    setSolidMeshesVisible(true);
+    const st = compute3DOverviewState(innerWidth / innerHeight);
+    camera.position.copy(st.camPos);
+    camera.fov = FOV_3D;
+    camera.updateProjectionMatrix();
+    controls.target.copy(st.target);
+    camera.lookAt(st.target);
+    scene.updateMatrixWorld(true);
+    renderer.compile(scene, camera);
+    renderer.render(scene, camera);
+  } catch (e) {
+    _3dPreloaded = false;
+    console.warn('[preload3D] 后台预热失败，切换 3D 时将以首帧编译兜底', e);
+  } finally {
+    /* 还原回 2D 视角与可见性，并刷回一帧 2D 画面，避免闪屏 */
+    controls.target.copy(savedTarget);
+    camera.position.copy(savedPos);
+    camera.fov = savedFov;
+    camera.updateProjectionMatrix();
+    camera.lookAt(savedTarget);
+    setSolidMeshesVisible(false);
+    try { renderer.render(scene, camera); } catch (e) {}
+  }
+}
+
+function schedule3DPreload() {
+  const idle = window.requestIdleCallback
+    || function (cb) { return setTimeout(function () {
+         cb({ timeRemaining: function () { return 0; }, didTimeout: false });
+       }, 300); };
+  idle(function () { preload3DAssets(); });
+}
+schedule3DPreload();
+
+/* =========================================================
    18. 窗口尺寸
    ========================================================= */
+let _lastLandscape = (window.matchMedia && matchMedia('(orientation: landscape)').matches) || false;
 addEventListener('resize', () => {
   camera.aspect = innerWidth / innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(innerWidth, innerHeight);
   labelRenderer.setSize(innerWidth, innerHeight);
 
+  const _nowLandscape = (window.matchMedia && matchMedia('(orientation: landscape)').matches) || false;
+  const _orientChanged = _nowLandscape !== _lastLandscape;
+  _lastLandscape = _nowLandscape;
+
   if (modeTransition) {
     refreshTransitionEndOrbit();
+  } else if (_orientChanged && !is2DMode && !focusState) {
+    // 手机旋转横竖屏：3D 概览按新视野比例重新取景，保证画面完整不裁切
+    const st3 = compute3DOverviewState(innerWidth / innerHeight);
+    camera.position.copy(st3.camPos);
+    controls.target.copy(st3.target);
+    controls.update();
   } else if (is2DMode) {
     const D = compute2DDistance(innerWidth / innerHeight);
     const currentD = camera.position.x - controls.target.x;
