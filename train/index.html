@@ -2,12 +2,12 @@
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
   <title>福建线动卧 · 2D/3D 空间透视</title>
   <style>
     :root {
       --bg: #080b12;
-      --panel-bg: rgba(16, 23, 38, 0.7);
+      --panel-bg: rgba(16, 23, 38, 0.82);
       --border: rgba(90, 140, 210, 0.2);
       --txt-main: #e2ecf8;
       --txt-sub: #7e95b3;
@@ -19,9 +19,11 @@
       background: var(--bg); color: var(--txt-main);
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
       -webkit-font-smoothing: antialiased;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: none;
     }
     #scene { position: fixed; inset: 0; }
-    canvas { display: block; }
+    canvas { display: block; touch-action: none; }
 
     /* ---------- Loading ---------- */
     #loading {
@@ -73,8 +75,44 @@
       text-shadow: 0 4px 20px rgba(77, 163, 255, 0.3);
     }
 
+    /* ---------- 折叠触发按钮（面板隐藏时显示） ---------- */
+    .panel-open-btn {
+      position: fixed;
+      right: 24px;
+      top: 24px;
+      z-index: 12;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      background: var(--panel-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      color: var(--txt-main);
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05);
+      transition: opacity 0.25s ease, transform 0.25s ease, background 0.2s, border-color 0.2s;
+      font-family: inherit;
+    }
+    .panel-open-btn:hover {
+      background: rgba(30, 45, 70, 0.9);
+      border-color: rgba(90, 150, 240, 0.45);
+    }
+    .panel-open-btn.hidden {
+      opacity: 0;
+      pointer-events: none;
+      transform: scale(0.92);
+    }
+    .panel-open-btn svg { flex: 0 0 auto; opacity: 0.9; }
+
+    /* ---------- 乘客列表面板 ---------- */
     #panel {
-      position: fixed; right: 24px; top: 24px; width: 250px; z-index: 10;
+      position: fixed; right: 24px; top: 24px; width: 250px; z-index: 11;
       background: var(--panel-bg);
       border: 1px solid var(--border);
       border-radius: 16px;
@@ -83,28 +121,56 @@
       max-height: calc(100vh - 180px);
       display: flex; flex-direction: column;
       box-shadow: 0 15px 50px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
     }
+    #panel.collapsed {
+      opacity: 0;
+      pointer-events: none;
+      transform: translateX(24px) scale(0.96);
+    }
+
     .panel-head {
-      display: flex; align-items: center; justify-content: space-between;
-      font-size: 12px; font-weight: 700; letter-spacing: 1.5px; color: #b0c8e8;
+      display: flex; align-items: center; gap: 8px;
       padding: 0 4px 12px; border-bottom: 1px solid rgba(255,255,255,0.05); margin-bottom: 10px;
+    }
+    .panel-title {
+      flex: 1;
+      font-size: 12px; font-weight: 700; letter-spacing: 1.5px; color: #b0c8e8;
+      white-space: nowrap;
     }
 
     .toggle-wrap {
       display: flex; align-items: center; background: rgba(0,0,0,0.3);
       border-radius: 8px; padding: 2px; border: 1px solid rgba(255,255,255,0.05);
+      flex: 0 0 auto;
     }
     .toggle-btn {
       background: transparent; border: none; color: var(--txt-sub);
       font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 6px;
       cursor: pointer; transition: all 0.2s;
+      font-family: inherit;
     }
     .toggle-btn.active {
       background: rgba(90, 150, 240, 0.2); color: #fff;
       box-shadow: 0 2px 8px rgba(0,0,0,0.2);
     }
 
-    #list { overflow-y: auto; padding-right: 4px; flex: 1; }
+    .panel-close-btn {
+      width: 26px; height: 26px;
+      border-radius: 7px;
+      border: 1px solid rgba(255,255,255,0.06);
+      background: rgba(255,255,255,0.04);
+      color: var(--txt-sub);
+      cursor: pointer;
+      display: grid; place-items: center;
+      font-size: 16px; line-height: 1; padding: 0;
+      flex: 0 0 auto;
+      transition: 0.2s;
+      font-family: inherit;
+    }
+    .panel-close-btn:hover { background: rgba(255,255,255,0.15); color: #fff; }
+
+    #list { overflow-y: auto; padding-right: 4px; flex: 1; -webkit-overflow-scrolling: touch; }
     #list::-webkit-scrollbar { width: 4px; }
     #list::-webkit-scrollbar-thumb { background: rgba(120, 170, 240, 0.2); border-radius: 4px; }
 
@@ -142,7 +208,7 @@
 
     #card {
       position: fixed; right: 24px; bottom: 24px; width: 250px; z-index: 11;
-      background: rgba(16, 23, 38, 0.9);
+      background: rgba(16, 23, 38, 0.92);
       border: 1px solid rgba(90, 140, 210, 0.3);
       border-radius: 16px; padding: 18px;
       backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
@@ -170,6 +236,7 @@
       border-radius: 6px; border: none; background: rgba(255, 255, 255, 0.06);
       color: #8fb8e8; cursor: pointer; font-size: 12px;
       display: grid; place-items: center; transition: 0.2s;
+      font-family: inherit;
     }
     #card .card-close:hover { background: rgba(255, 255, 255, 0.15); color: #fff; }
 
@@ -214,19 +281,10 @@
       white-space: nowrap;
     }
     body.mode-2d .bunk-label::before { display: none; }
-    body.mode-2d .bunk-label { pointer-events: none; }  /* 2D 模式下标签不拦截拖拽 */
-    body.mode-2d .bunk-label:hover {
-      background: transparent;
-      box-shadow: none;
-      color: #fff;
-      opacity: 1;
-    }
+    body.mode-2d .bunk-label { pointer-events: none; }
+    body.mode-2d .bunk-label:hover { background: transparent; box-shadow: none; color: #fff; opacity: 1; }
     body.mode-2d .bunk-label.is-active {
-      background: transparent;
-      border: none;
-      box-shadow: none;
-      color: #fff;
-      opacity: 1;
+      background: transparent; border: none; box-shadow: none; color: #fff; opacity: 1;
       text-shadow: 0 0 4px #fff, 0 0 2px #000, 0 0 3px #000;
     }
 
@@ -241,20 +299,43 @@
       transition: opacity 0.25s;
     }
     body.mode-2d .car-label {
-      background: transparent;
-      border: none;
-      box-shadow: none;
-      font-size: 12px;
-      letter-spacing: 3px;
-      color: #6fa8e8;
+      background: transparent; border: none; box-shadow: none;
+      font-size: 12px; letter-spacing: 3px; color: #6fa8e8;
     }
 
+    /* ---------- 移动端适配 ---------- */
     @media (max-width: 820px) {
-      .hud { left: 16px; top: 16px; }
-      .hud h1 { font-size: 16px; }
-      #panel { width: calc(100% - 32px); left: 16px; right: 16px; top: auto; bottom: 16px; max-height: 35vh; }
+      .hud { left: 16px; top: 16px; max-width: calc(100% - 140px); }
+      .hud h1 { font-size: 15px; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+      .panel-open-btn {
+        right: 16px; top: 16px;
+        padding: 8px 12px;
+        font-size: 12px;
+      }
+
+      #panel {
+        left: 16px; right: 16px;
+        width: auto;
+        top: auto; bottom: 16px;
+        max-height: 48vh;
+        border-radius: 16px;
+      }
+      #panel.collapsed {
+        transform: translateY(24px) scale(0.96);
+      }
+      .panel-title { font-size: 11px; letter-spacing: 1px; }
+      .panel-close-btn { width: 24px; height: 24px; font-size: 14px; }
+
       #legend { display: none; }
-      #card { left: 16px; right: 16px; width: auto; bottom: calc(35vh + 20px); max-height: 30vh; }
+
+      #card {
+        left: 16px; right: 16px;
+        width: auto;
+        bottom: 16px;
+        max-height: 45vh;
+      }
+
       body.mode-2d .bunk-label { font-size: 8px; letter-spacing: 0; }
     }
   </style>
@@ -275,18 +356,31 @@
   <h1>福建线去程部分同学位置</h1>
 </div>
 
-<aside id="panel">
+<button id="panelOpenBtn" class="panel-open-btn" aria-label="打开乘客列表">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+    <line x1="8" y1="6" x2="21" y2="6"></line>
+    <line x1="8" y1="12" x2="21" y2="12"></line>
+    <line x1="8" y1="18" x2="21" y2="18"></line>
+    <line x1="3.5" y1="6" x2="3.51" y2="6"></line>
+    <line x1="3.5" y1="12" x2="3.51" y2="12"></line>
+    <line x1="3.5" y1="18" x2="3.51" y2="18"></line>
+  </svg>
+  <span>乘客</span>
+</button>
+
+<aside id="panel" class="collapsed">
   <div class="panel-head">
-    <span>乘 客 列 表</span>
+    <span class="panel-title">乘 客 列 表</span>
     <div class="toggle-wrap">
       <button class="toggle-btn active" id="btn3D">3D</button>
       <button class="toggle-btn" id="btn2D">2D</button>
     </div>
+    <button id="panelCloseBtn" class="panel-close-btn" aria-label="收起乘客列表">×</button>
   </div>
   <div id="list"></div>
 </aside>
 
-  <div id="card"></div>
+<div id="card"></div>
 
 <script type="importmap">
 {
@@ -336,14 +430,9 @@ function setLoadProgress(pct, text) {
 function nextFrame() {
   return new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
 }
-
 function escapeHtml(str) {
   return String(str).replace(/[&<>"']/g, c => ({
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#39;'
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
   }[c]));
 }
 
@@ -357,7 +446,7 @@ const PASSENGERS = [
   { name:'张坤洋', shortName:'张坤洋', car:5, num:19, level:1, color:'#ff5c7a', note:'啥也别说了，你还挺厉害' },
   { name:'许芝仪', shortName:'许芝仪', car:3, num:7,  level:3, color:'#2ee6d6', note:'阿巴阿巴' },
   { name:'明子琪', shortName:'明子琪', car:3, num:11, level:1, color:'#ffd93d', note:'' },
-  { name:'胡珈宁', shortName:'胡珈宁', car:5, num:2, level:1, color:'#a97bff', note:'扎啤黑客我的功绩才写了10000000分之一太可恶了' },
+  { name:'胡珈宁', shortName:'胡珈宁', car:5, num:2,  level:1, color:'#a97bff', note:'扎啤黑客我的功绩才写了10000000分之一太可恶了' },
   { name:'薛雯月', shortName:'薛雯月', car:3, num:6,  level:3, color:'#ff8ac4', note:'' },
   { name:'周铭浩', shortName:'周铭浩', car:3, num:8,  level:2, color:'#3ddc97', note:'' },
   { name:'侯佳萱', shortName:'侯佳萱', car:5, num:18, level:3, color:'#4da3ff', note:'' },
@@ -396,13 +485,13 @@ const Z_RIGHT_BUNK_CENTER = COMP_LEN/2 - WALL_THICK/2 - BUNK_WIDTH_Z/2;
 const LEVEL_Y = { 1: 0.5, 2: 1.3, 3: 2.1 };
 const CEIL_Y = 2.6;
 
-/* ---------- 2D 床位块尺寸（可容纳 3 个汉字姓名，且不越过隔间 z 边界 ±1.0） ---------- */
+/* ---------- 2D 床位块尺寸（可容纳姓名，且不越过隔间 z 边界 ±1.0） ---------- */
 const BLOCK_W = 0.76;
 const BLOCK_H = 0.55;
 
-/* ---------- 2D 上下并排布局（间距加大，避免标签重叠） ---------- */
+/* ---------- 2D 上下并排布局 ---------- */
 const STACK_GAP = 2.8;
-const STACK_TOTAL_H = 2 * CEIL_Y + STACK_GAP;   // 8.0
+const STACK_TOTAL_H = 2 * CEIL_Y + STACK_GAP;
 const STACK_BASE_Y = [
   -STACK_TOTAL_H / 2,
   -STACK_TOTAL_H / 2 + CEIL_Y + STACK_GAP
@@ -415,18 +504,11 @@ function compute2DDistance(aspect) {
   const tanHalf = Math.tan(THREE.MathUtils.degToRad(FOV_2D / 2));
   const neededW = CAR_LEN + 3;
   const neededH = STACK_TOTAL_H + 2.5;
-  return Math.max(
-    neededW / (2 * tanHalf * aspect),
-    neededH / (2 * tanHalf)
-  );
+  return Math.max(neededW / (2 * tanHalf * aspect), neededH / (2 * tanHalf));
 }
-
 function compute2DEndState(aspect) {
   const D = compute2DDistance(aspect);
-  return {
-    target: new THREE.Vector3(0, 0, 0),
-    camPos: new THREE.Vector3(D, 0, 0)
-  };
+  return { target: new THREE.Vector3(0, 0, 0), camPos: new THREE.Vector3(D, 0, 0) };
 }
 
 /* ---------- 3D 总览自适应距离 ---------- */
@@ -434,17 +516,14 @@ const FOV_3D = 42;
 const LABEL_LIFT_3D = 1.05;
 const LABEL_LIFT_FOCUS = 0.10;
 
-/* 非聚焦状态下按铺位层级递增抬升高度：最高 3 倍车高。
-   下铺约 1 倍车高、中铺 2 倍、上铺 3 倍 —— 引线大幅拉长，同列上下铺标签彻底错开。 */
+/* 非聚焦状态下按铺位层级递增抬升高度：最高 3 倍车高 */
 const LABEL_LIFT_3D_BY_LEVEL = {
   1: CEIL_Y * 1.0,
   2: CEIL_Y * 2.0,
   3: CEIL_Y * 3.0
 };
-/* 左右两侧铺位再错开一点，避免同层左右铺标签在屏幕上叠在一起 */
 const LABEL_LIFT_SIDE_OFFSET = 0.15;
 
-/* 场景包围盒需要把抬升后的标签也包含进去，否则总览相机框不全 */
 const SCENE_BOX = {
   minX: -CAR_WIDTH / 2 - 0.3,
   maxX:  CAR_WIDTH / 2 + 0.3,
@@ -456,7 +535,6 @@ const SCENE_BOX = {
 
 function compute3DOverviewState(aspect) {
   const dir = new THREE.Vector3(1, 0.9, 1).normalize();
-
   const cx = (SCENE_BOX.minX + SCENE_BOX.maxX) / 2;
   const cy = (SCENE_BOX.minY + SCENE_BOX.maxY) / 2;
   const cz = (SCENE_BOX.minZ + SCENE_BOX.maxZ) / 2;
@@ -482,7 +560,6 @@ function compute3DOverviewState(aspect) {
     }
   }
   dist *= 1.06;
-
   const camPos = center.clone().add(dir.clone().multiplyScalar(dist));
   return { target: center, camPos, dist };
 }
@@ -516,6 +593,7 @@ labelRenderer.domElement.style.position = 'absolute';
 labelRenderer.domElement.style.top = '0';
 labelRenderer.domElement.style.left = '0';
 labelRenderer.domElement.style.pointerEvents = 'none';
+labelRenderer.domElement.style.zIndex = '5';
 container.appendChild(labelRenderer.domElement);
 
 const controls = new OrbitControls(camera, renderer.domElement);
@@ -585,8 +663,8 @@ const passengerBunkMap = new Map();
 const markers = [];
 const hitboxMeshes = [];
 const labelEntries = [];
-const bunk2DMeshes = [];   // 2D 床位示意（彩色块 + 边框 + 空床线框）
-const clickTargets2D = []; // 2D 模式下专用的点击目标（块 mesh）
+const bunk2DMeshes = [];
+const clickTargets2D = [];
 
 function buildCarriage(carIndex, carNumber) {
   const g = new THREE.Group();
@@ -632,10 +710,7 @@ function buildCarriage(carIndex, carNumber) {
     const part = new THREE.Mesh(new THREE.BoxGeometry(partLen, CEIL_Y, WALL_THICK), matWall);
     part.position.set((X_WINDOW_CENTER + X_DOOR_WALL)/2, CEIL_Y/2, zDivider);
     g.add(part);
-
-    if (i > 0 && i < COMP_COUNT) {
-      buildFoldingSeat(g, X_AISLE_WALL - WALL_THICK/2, zDivider);
-    }
+    if (i > 0 && i < COMP_COUNT) buildFoldingSeat(g, X_AISLE_WALL - WALL_THICK/2, zDivider);
   }
 
   for (let i = 0; i < COMP_COUNT; i++) {
@@ -699,13 +774,11 @@ twoDLineGroup.visible = false;
 scene.add(twoDLineGroup);
 
 const mat2DFrame = new THREE.LineBasicMaterial({ color: 0x4da3ff, transparent: true, opacity: 0.55 });
-
 const X_2D_LINE = BUNK_CENTER_X;
 
 for (let c = 0; c < 2; c++) {
   const baseY = STACK_BASE_Y[c];
   const cz = 0;
-
   for (let i = 0; i <= COMP_COUNT; i++) {
     const z = cz - CAR_LEN / 2 + i * COMP_LEN;
     const verts = [
@@ -715,7 +788,6 @@ for (let c = 0; c < 2; c++) {
     const geo = new THREE.BufferGeometry().setFromPoints(verts);
     twoDLineGroup.add(new THREE.Line(geo, mat2DFrame));
   }
-
   const longVerts = [
     new THREE.Vector3(X_2D_LINE, baseY, cz - CAR_LEN / 2),
     new THREE.Vector3(X_2D_LINE, baseY, cz + CAR_LEN / 2),
@@ -733,12 +805,7 @@ const bunkBoardGeo = new THREE.BoxGeometry(BUNK_LEN_X, 0.05, BUNK_WIDTH_Z);
 const mattressGeo = new THREE.BoxGeometry(BUNK_LEN_X - 0.04, 0.08, BUNK_WIDTH_Z - 0.04);
 const pillowGeo = new THREE.BoxGeometry(0.35, 0.1, BUNK_WIDTH_Z - 0.15);
 
-/* 2D 床位线框（所有床位，包含空床），尺寸与乘客彩色块一致 */
-const mat2DBunkWire = new THREE.LineBasicMaterial({
-  color: 0x5f86b8,
-  transparent: true,
-  opacity: 0.32
-});
+const mat2DBunkWire = new THREE.LineBasicMaterial({ color: 0x5f86b8, transparent: true, opacity: 0.32 });
 const bunk2DWireBaseGeo = new THREE.PlaneGeometry(BLOCK_W, BLOCK_H);
 bunk2DWireBaseGeo.rotateY(Math.PI / 2);
 const bunk2DWireEdgesGeo = new THREE.EdgesGeometry(bunk2DWireBaseGeo);
@@ -762,7 +829,6 @@ function createBunk(pos, carGroup) {
   pillow.position.set(-BUNK_LEN_X/2 + 0.25, 0.11, 0);
   bunkGroup.add(pillow);
 
-  /* 2D 线框：位置在框架线后方（x 更小），避免与框架线交叉“穿墙” */
   const wire = new THREE.LineSegments(bunk2DWireEdgesGeo, mat2DBunkWire);
   wire.position.set(pos.x - 0.04, pos.y + 0.05, pos.z);
   wire.userData.noHide = true;
@@ -864,7 +930,6 @@ PASSENGERS.forEach((p, i) => {
   const bunk = findBunkByLocalPos(carGroup, localPos);
   passengerBunkMap.set(p, bunk);
 
-  /* ---- 3D 不可见 hitbox ---- */
   const hitbox = new THREE.Mesh(new THREE.SphereGeometry(0.38, 8, 8), new THREE.MeshBasicMaterial({ visible: false }));
   hitbox.position.copy(localPos);
   hitbox.userData.index = i;
@@ -874,7 +939,6 @@ PASSENGERS.forEach((p, i) => {
   passengerHitboxes[i] = hitbox;
   hitboxMeshes.push(hitbox);
 
-  /* ---- 2D 床位示意块（填充 + 边框），位置在框架线后方 ---- */
   const blockGeo = new THREE.PlaneGeometry(BLOCK_W, BLOCK_H);
   blockGeo.rotateY(Math.PI / 2);
   const blockMat = new THREE.MeshBasicMaterial({
@@ -893,11 +957,7 @@ PASSENGERS.forEach((p, i) => {
   bunk2DMeshes.push(blockMesh);
   clickTargets2D.push(blockMesh);
 
-  const edgeMat = new THREE.LineBasicMaterial({
-    color: new THREE.Color(p.color),
-    transparent: true,
-    opacity: 0.85
-  });
+  const edgeMat = new THREE.LineBasicMaterial({ color: new THREE.Color(p.color), transparent: true, opacity: 0.85 });
   const blockEdges = new THREE.LineSegments(new THREE.EdgesGeometry(blockGeo), edgeMat);
   blockEdges.position.copy(blockMesh.position);
   blockEdges.userData.noHide = true;
@@ -905,7 +965,6 @@ PASSENGERS.forEach((p, i) => {
   carGroup.add(blockEdges);
   bunk2DMeshes.push(blockEdges);
 
-  /* ---- 3D 悬浮标签（按铺层拉开抬升高度，最高 3 倍车高） ---- */
   const inCompNum = (p.num - 1) % 6 + 1;
   const isLeftBunk = (inCompNum % 2 !== 0);
   const lift3D = (LABEL_LIFT_3D_BY_LEVEL[p.level] ?? LABEL_LIFT_3D) +
@@ -928,7 +987,6 @@ PASSENGERS.forEach((p, i) => {
   carGroup.add(label);
   markers.push({ mesh: label, type: 'label', data: p });
 
-  /* ---- 3D 引线 ---- */
   const lineMat = new THREE.LineBasicMaterial({
     color: new THREE.Color(p.color),
     transparent: true,
@@ -943,14 +1001,12 @@ PASSENGERS.forEach((p, i) => {
   labelEntries[i] = { label, line, lineMat, basePos, levelY, lift3D };
 });
 
-/* 更新单个乘客标签位置（3D 抬升 / 2D 居中于床位方块） */
 function updateLabelLayout(i) {
   const e = labelEntries[i];
   if (!e) return;
   const isFocus = (i === selected);
   let ty;
   if (is2DMode) {
-    /* 2D：标签与床位块中心完全重合，名字直接显示在方块里 */
     ty = e.levelY + 0.05;
   } else {
     ty = e.basePos.y + (isFocus ? LABEL_LIFT_FOCUS : e.lift3D);
@@ -988,7 +1044,6 @@ function applyHighlight(p) {
   tmpColor.set(p.color);
   bunk.userData.materials.forEach(m => { if (m.emissive) m.emissive.copy(tmpColor); });
 }
-
 function clearHighlight() {
   if (highlightedBunk) {
     highlightedBunk.userData.materials.forEach(m => {
@@ -999,16 +1054,39 @@ function clearHighlight() {
 }
 
 /* =========================================================
-   12. 模式切换
+   12. 面板折叠 & 模式切换
    ========================================================= */
+const panelEl = document.getElementById('panel');
+const panelOpenBtn = document.getElementById('panelOpenBtn');
+const panelCloseBtn = document.getElementById('panelCloseBtn');
+
+function setPanelCollapsed(collapsed) {
+  panelEl.classList.toggle('collapsed', collapsed);
+  panelOpenBtn.classList.toggle('hidden', !collapsed);
+}
+
+panelOpenBtn.addEventListener('click', () => setPanelCollapsed(false));
+panelCloseBtn.addEventListener('click', () => setPanelCollapsed(true));
+
+/* ESC 键取消选择 */
+addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && selected >= 0) deselect();
+});
+
 let is2DMode = false;
 let lastBunk2DVisible = false;
 
 const btn3D = document.getElementById('btn3D');
 const btn2D = document.getElementById('btn2D');
 
-btn3D.addEventListener('click', () => switchMode(false));
-btn2D.addEventListener('click', () => switchMode(true));
+btn3D.addEventListener('click', () => {
+  if (innerWidth <= 820) setPanelCollapsed(true);
+  switchMode(false);
+});
+btn2D.addEventListener('click', () => {
+  if (innerWidth <= 820) setPanelCollapsed(true);
+  switchMode(true);
+});
 
 function compute3DEndState(aspect) {
   return compute3DOverviewState(aspect);
@@ -1018,7 +1096,6 @@ function switchMode(to2D) {
   if (is2DMode === to2D || modeTransition) return;
 
   document.body.classList.toggle('mode-2d', to2D);
-
   if (selected >= 0) deselect();
 
   flyTween = null;
@@ -1035,20 +1112,14 @@ function switchMode(to2D) {
   let endCamPos, endTarget, endFov, endCarPositions, endAisleOpacity, endFogDensity;
 
   if (to2D) {
-    const aspect = innerWidth / innerHeight;
-    const st = compute2DEndState(aspect);
-    endTarget = st.target;
-    endCamPos = st.camPos;
-    endFov = FOV_2D;
+    const st = compute2DEndState(innerWidth / innerHeight);
+    endTarget = st.target; endCamPos = st.camPos; endFov = FOV_2D;
     endCarPositions = carGroups.map((g, i) => new THREE.Vector3(0, STACK_BASE_Y[i], 0));
     endAisleOpacity = 0.02;
     endFogDensity = 0.0002;
   } else {
-    const aspect = innerWidth / innerHeight;
-    const st = compute3DEndState(aspect);
-    endTarget = st.target;
-    endCamPos = st.camPos;
-    endFov = FOV_3D;
+    const st = compute3DEndState(innerWidth / innerHeight);
+    endTarget = st.target; endCamPos = st.camPos; endFov = FOV_3D;
     endCarPositions = carGroups.map((g, i) => new THREE.Vector3(0, 0, CAR_CENTERS[i]));
     endAisleOpacity = 0.22;
     endFogDensity = 0.0012;
@@ -1057,8 +1128,7 @@ function switchMode(to2D) {
   controls.enabled = false;
 
   modeTransition = {
-    t: 0,
-    dur: 1200,
+    t: 0, dur: 1200,
     startCamPos, startTarget, startFov, startCarPositions, startAisleOpacity, startFogDensity,
     endCamPos, endTarget, endFov, endCarPositions, endAisleOpacity, endFogDensity,
     to2D,
@@ -1076,11 +1146,9 @@ function switchMode(to2D) {
         controls.mouseButtons = MOUSE_2D;
         controls.touches = TOUCH_2D;
         controls.screenSpacePanning = true;
-
         const D = camera.position.x - controls.target.x;
         controls.minDistance = Math.max(D * 0.4, 5);
         controls.maxDistance = D * 2.5;
-
         camera.position.set(controls.target.x + D, controls.target.y, controls.target.z);
       } else {
         controls.enableRotate = true;
@@ -1092,10 +1160,8 @@ function switchMode(to2D) {
         controls.touches = TOUCH_3D;
         controls.minDistance = 4;
         controls.screenSpacePanning = false;
-
         const overviewDist = camera.position.distanceTo(controls.target);
         controls.maxDistance = Math.max(overviewDist * 2, 160);
-
         if (selected >= 0) applyHighlight(PASSENGERS[selected]);
       }
 
@@ -1148,6 +1214,9 @@ function selectPassenger(i, fly) {
   applyHighlight(p);
   updateAllLabelLayouts();
 
+  /* 移动端选中乘客后自动折叠面板，让场景和卡片获得更大空间 */
+  if (innerWidth <= 820) setPanelCollapsed(true);
+
   if (!fly) return;
 
   if (is2DMode) {
@@ -1158,8 +1227,7 @@ function selectPassenger(i, fly) {
     const D = camera.position.x - controls.target.x;
 
     focusTween2D = {
-      t: 0,
-      dur: 800,
+      t: 0, dur: 800,
       startTarget: controls.target.clone(),
       endTarget: worldPos.clone(),
       D,
@@ -1208,8 +1276,7 @@ function deselect() {
 function flyTo(targetPos, camPos, dur = 1100) {
   if (controls.enabled) controls.enabled = false;
   flyTween = {
-    t: 0,
-    dur,
+    t: 0, dur,
     p0: camera.position.clone(),
     p1: camPos.clone(),
     t0: controls.target.clone(),
@@ -1243,7 +1310,6 @@ function updateFlyTween(dt) {
   }
 }
 
-/* 聚焦状态下，平移/缩放操作直接失焦（旋转不触发） */
 controls.addEventListener('change', () => {
   if (selected < 0 || !focusState) return;
   if (modeTransition || flyTween || focusTween2D) return;
@@ -1265,6 +1331,8 @@ const pointer = new THREE.Vector2(-10, -10);
 
 renderer.domElement.addEventListener('pointermove', (e) => {
   if (modeTransition) return;
+  /* 移动端触屏时避免 hover 引起的高亮闪烁 */
+  if (e.pointerType === 'touch') return;
 
   pointer.x = (e.clientX / innerWidth) * 2 - 1;
   pointer.y = -(e.clientY / innerHeight) * 2 + 1;
@@ -1292,7 +1360,7 @@ renderer.domElement.addEventListener('pointerup', (e) => {
   const dx = e.clientX - pointerDownPos.x;
   const dy = e.clientY - pointerDownPos.y;
   pointerDownPos = null;
-  if (Math.hypot(dx, dy) > 6) return;
+  if (Math.hypot(dx, dy) > 8) return;  /* 移动端放宽到 8px */
 
   pointer.x = (e.clientX / innerWidth) * 2 - 1;
   pointer.y = -(e.clientY / innerHeight) * 2 + 1;
@@ -1339,7 +1407,6 @@ function animate() {
   const dt = Math.min(clock.getDelta(), 0.05);
   elapsed += dt;
 
-  /* ---- 模式过渡 ---- */
   if (modeTransition) {
     modeTransition.t += dt * 1000;
     const k = easeInOutCubic(Math.min(modeTransition.t / modeTransition.dur, 1));
@@ -1353,16 +1420,8 @@ function animate() {
       g.position.lerpVectors(modeTransition.startCarPositions[i], modeTransition.endCarPositions[i], k);
     });
 
-    matAisleWall.opacity = THREE.MathUtils.lerp(
-      modeTransition.startAisleOpacity,
-      modeTransition.endAisleOpacity,
-      k
-    );
-    scene.fog.density = THREE.MathUtils.lerp(
-      modeTransition.startFogDensity,
-      modeTransition.endFogDensity,
-      k
-    );
+    matAisleWall.opacity = THREE.MathUtils.lerp(modeTransition.startAisleOpacity, modeTransition.endAisleOpacity, k);
+    scene.fog.density = THREE.MathUtils.lerp(modeTransition.startFogDensity, modeTransition.endFogDensity, k);
 
     camera.lookAt(controls.target);
 
@@ -1370,7 +1429,6 @@ function animate() {
     mat2DFrame.opacity = 0.55 * lineOp;
     twoDLineGroup.visible = lineOp > 0.001;
 
-    /* 2D 块显示切换：过渡到 2D 后半段显示；过渡到 3D 前半段显示 */
     const show2D = modeTransition.to2D
       ? (modeTransition.t / modeTransition.dur >= 0.5)
       : (modeTransition.t / modeTransition.dur < 0.5);
@@ -1391,10 +1449,8 @@ function animate() {
     }
   }
 
-    /* ---- 3D 飞行 ---- */
   if (!modeTransition && flyTween) updateFlyTween(dt);
 
-  /* ---- 2D 聚焦平移 ---- */
   if (!modeTransition && focusTween2D) {
     focusTween2D.t += dt * 1000;
     const k = easeInOutCubic(Math.min(focusTween2D.t / focusTween2D.dur, 1));
@@ -1406,12 +1462,9 @@ function animate() {
     );
     camera.lookAt(controls.target);
 
-    if (focusTween2D.t >= focusTween2D.dur) {
-      focusTween2D.onComplete();
-    }
+    if (focusTween2D.t >= focusTween2D.dur) focusTween2D.onComplete();
   }
 
-  /* ---- 标签 active ---- */
   for (const m of markers) {
     if (m.type === 'label') {
       const isActive = (m.data === PASSENGERS[selected] || m.data === PASSENGERS[hovered]);
@@ -1419,7 +1472,6 @@ function animate() {
     }
   }
 
-  /* ---- 环境虚化（仅 3D） ---- */
   if (!is2DMode && !modeTransition) {
     const focused = selected >= 0;
     const targetEnv = focused ? 0.1 : 1;
@@ -1442,7 +1494,6 @@ function animate() {
     });
   }
 
-  /* ---- 高亮脉动（仅床位，无光柱） ---- */
   if (highlightedBunk && !modeTransition) {
     const pulse = 0.5 + 0.5 * Math.sin(elapsed * 3.2);
     highlightedBunk.userData.materials.forEach(m => {
@@ -1450,7 +1501,6 @@ function animate() {
     });
   }
 
-  /* ---- 控制器更新 ---- */
   if (controls.enabled && !modeTransition && !focusTween2D && !flyTween) {
     controls.update();
   }
@@ -1464,7 +1514,6 @@ function animate() {
   }
 }
 
-/* 初始化 2D 块隐藏状态 & 标签布局 */
 bunk2DMeshes.forEach(o => o.visible = false);
 lastBunk2DVisible = false;
 updateAllLabelLayouts();
@@ -1473,7 +1522,6 @@ setLoadProgress(96, '正在准备渲染场景…');
 await nextFrame();
 
 animate();
-
 setLoadProgress(100, '加载完成');
 
 /* =========================================================
@@ -1501,9 +1549,7 @@ addEventListener('resize', () => {
       controls.minDistance = Math.max(D * 0.4, 5);
       controls.maxDistance = D * 2.5;
       controls.update();
-      if (focusState) {
-        focusState.dist = D;
-      }
+      if (focusState) focusState.dist = D;
     }
   }
 });
