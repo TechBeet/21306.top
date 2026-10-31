@@ -485,7 +485,7 @@ const Z_RIGHT_BUNK_CENTER = COMP_LEN/2 - WALL_THICK/2 - BUNK_WIDTH_Z/2;
 const LEVEL_Y = { 1: 0.5, 2: 1.3, 3: 2.1 };
 const CEIL_Y = 2.6;
 
-/* ---------- 2D 床位块尺寸（可容纳姓名，且不越过隔间 z 边界 ±1.0） ---------- */
+/* ---------- 2D 床位块尺寸 ---------- */
 const BLOCK_W = 0.76;
 const BLOCK_H = 0.55;
 
@@ -621,8 +621,23 @@ let focusTween2D = null;
 let flyTween = null;
 let focusState = null;
 
+/* 经典 Cubic / Quart 缓动 —— 首尾导数为 0，过渡更平滑 */
 function easeInOutCubic(k) {
   return k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
+}
+function easeInOutQuart(k) {
+  return k < 0.5 ? 8 * k * k * k * k : 1 - Math.pow(-2 * k + 2, 4) / 2;
+}
+
+/* 参考轴：用于球面插值相机方向的四元数基准 */
+const REF_AXIS = new THREE.Vector3(0, 1, 0);
+
+/* 计算相机围绕目标点的方向四元数、距离 */
+function computeOrbit(offset) {
+  const dist = offset.length();
+  const dir = dist > 1e-6 ? offset.clone().divideScalar(dist) : new THREE.Vector3(0, 0, 1);
+  const quat = new THREE.Quaternion().setFromUnitVectors(REF_AXIS, dir);
+  return { dist, dir, quat };
 }
 
 /* =========================================================
@@ -1068,7 +1083,6 @@ function setPanelCollapsed(collapsed) {
 panelOpenBtn.addEventListener('click', () => setPanelCollapsed(false));
 panelCloseBtn.addEventListener('click', () => setPanelCollapsed(true));
 
-/* ESC 键取消选择 */
 addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && selected >= 0) deselect();
 });
@@ -1092,16 +1106,21 @@ function compute3DEndState(aspect) {
   return compute3DOverviewState(aspect);
 }
 
+/* =========================================================
+   模式切换（核心：方向球面插值 + 距离平滑插值 + 目标点插值）
+   ========================================================= */
 function switchMode(to2D) {
   if (is2DMode === to2D || modeTransition) return;
 
   document.body.classList.toggle('mode-2d', to2D);
+
   if (selected >= 0) deselect();
 
   flyTween = null;
   focusTween2D = null;
   clearHighlight();
 
+  /* 抓取起点状态 */
   const startCamPos = camera.position.clone();
   const startTarget = controls.target.clone();
   const startFov = camera.fov;
@@ -1109,28 +1128,44 @@ function switchMode(to2D) {
   const startAisleOpacity = matAisleWall.opacity;
   const startFogDensity = scene.fog.density;
 
+  /* 计算终点状态 */
   let endCamPos, endTarget, endFov, endCarPositions, endAisleOpacity, endFogDensity;
-
   if (to2D) {
     const st = compute2DEndState(innerWidth / innerHeight);
-    endTarget = st.target; endCamPos = st.camPos; endFov = FOV_2D;
+    endTarget = st.target.clone();
+    endCamPos = st.camPos.clone();
+    endFov = FOV_2D;
     endCarPositions = carGroups.map((g, i) => new THREE.Vector3(0, STACK_BASE_Y[i], 0));
     endAisleOpacity = 0.02;
     endFogDensity = 0.0002;
   } else {
     const st = compute3DEndState(innerWidth / innerHeight);
-    endTarget = st.target; endCamPos = st.camPos; endFov = FOV_3D;
+    endTarget = st.target.clone();
+    endCamPos = st.camPos.clone();
+    endFov = FOV_3D;
     endCarPositions = carGroups.map((g, i) => new THREE.Vector3(0, 0, CAR_CENTERS[i]));
     endAisleOpacity = 0.22;
     endFogDensity = 0.0012;
   }
 
+  /* 起点 / 终点：围绕目标点的方向、距离 */
+  const startOrbit = computeOrbit(startCamPos.clone().sub(startTarget));
+  const endOrbit = computeOrbit(endCamPos.clone().sub(endTarget));
+
   controls.enabled = false;
 
   modeTransition = {
-    t: 0, dur: 1200,
-    startCamPos, startTarget, startFov, startCarPositions, startAisleOpacity, startFogDensity,
-    endCamPos, endTarget, endFov, endCarPositions, endAisleOpacity, endFogDensity,
+    t: 0,
+    dur: 1400, /* 稍长，过渡更从容 */
+    startTarget, endTarget,
+    startFov, endFov,
+    startDist: startOrbit.dist,
+    endDist: endOrbit.dist,
+    startQuat: startOrbit.quat.clone(),
+    endQuat: endOrbit.quat.clone(),
+    startCarPositions, endCarPositions,
+    startAisleOpacity, endAisleOpacity,
+    startFogDensity, endFogDensity,
     to2D,
     onComplete: () => {
       is2DMode = to2D;
@@ -1146,9 +1181,11 @@ function switchMode(to2D) {
         controls.mouseButtons = MOUSE_2D;
         controls.touches = TOUCH_2D;
         controls.screenSpacePanning = true;
+
         const D = camera.position.x - controls.target.x;
         controls.minDistance = Math.max(D * 0.4, 5);
         controls.maxDistance = D * 2.5;
+
         camera.position.set(controls.target.x + D, controls.target.y, controls.target.z);
       } else {
         controls.enableRotate = true;
@@ -1160,9 +1197,9 @@ function switchMode(to2D) {
         controls.touches = TOUCH_3D;
         controls.minDistance = 4;
         controls.screenSpacePanning = false;
+
         const overviewDist = camera.position.distanceTo(controls.target);
         controls.maxDistance = Math.max(overviewDist * 2, 160);
-        if (selected >= 0) applyHighlight(PASSENGERS[selected]);
       }
 
       controls.enabled = true;
@@ -1173,6 +1210,22 @@ function switchMode(to2D) {
       updateBunk2DVisibility();
     }
   };
+}
+
+/* resize 时（若正在过渡）刷新终点轨道参数，保证过渡方向仍正确 */
+function refreshTransitionEndOrbit() {
+  if (!modeTransition) return;
+
+  let st;
+  if (modeTransition.to2D) {
+    st = compute2DEndState(innerWidth / innerHeight);
+  } else {
+    st = compute3DEndState(innerWidth / innerHeight);
+  }
+  modeTransition.endTarget.copy(st.target);
+  const endOrbit = computeOrbit(st.camPos.clone().sub(st.target));
+  modeTransition.endDist = endOrbit.dist;
+  modeTransition.endQuat.copy(endOrbit.quat);
 }
 
 function updateBunk2DVisibility() {
@@ -1214,7 +1267,6 @@ function selectPassenger(i, fly) {
   applyHighlight(p);
   updateAllLabelLayouts();
 
-  /* 移动端选中乘客后自动折叠面板，让场景和卡片获得更大空间 */
   if (innerWidth <= 820) setPanelCollapsed(true);
 
   if (!fly) return;
@@ -1331,7 +1383,6 @@ const pointer = new THREE.Vector2(-10, -10);
 
 renderer.domElement.addEventListener('pointermove', (e) => {
   if (modeTransition) return;
-  /* 移动端触屏时避免 hover 引起的高亮闪烁 */
   if (e.pointerType === 'touch') return;
 
   pointer.x = (e.clientX / innerWidth) * 2 - 1;
@@ -1360,7 +1411,7 @@ renderer.domElement.addEventListener('pointerup', (e) => {
   const dx = e.clientX - pointerDownPos.x;
   const dy = e.clientY - pointerDownPos.y;
   pointerDownPos = null;
-  if (Math.hypot(dx, dy) > 8) return;  /* 移动端放宽到 8px */
+  if (Math.hypot(dx, dy) > 8) return;
 
   pointer.x = (e.clientX / innerWidth) * 2 - 1;
   pointer.y = -(e.clientY / innerHeight) * 2 + 1;
@@ -1402,51 +1453,75 @@ function hideLoading() {
   if (!loadingEl.classList.contains('hidden')) loadingEl.classList.add('hidden');
 }
 
+/* 帧循环中处理模式过渡 */
+function updateModeTransition(dt) {
+  modeTransition.t += dt * 1000;
+  const tNorm = Math.min(modeTransition.t / modeTransition.dur, 1);
+
+  /* 位置 / 方向 / 距离用 Quart（更平滑，首尾速度更慢） */
+  const k = easeInOutQuart(tNorm);
+
+  /* 目标点插值 */
+  controls.target.lerpVectors(modeTransition.startTarget, modeTransition.endTarget, k);
+
+  /* 方向球面插值（沿大圆，不会穿过目标点） */
+  const quat = modeTransition.startQuat.clone().slerp(modeTransition.endQuat, k);
+  const dir = REF_AXIS.clone().applyQuaternion(quat);
+
+  /* 距离插值 */
+  const dist = modeTransition.startDist + (modeTransition.endDist - modeTransition.startDist) * k;
+
+  /* 相机位置 = 当前目标点 + 方向 × 距离 */
+  camera.position.copy(controls.target).addScaledVector(dir, dist);
+
+  /* FOV 插值：Cubic 稍快，与位置变化协调，避免视觉挤压感 */
+  const fovK = easeInOutCubic(tNorm);
+  camera.fov = THREE.MathUtils.lerp(modeTransition.startFov, modeTransition.endFov, fovK);
+  camera.updateProjectionMatrix();
+
+  /* 车厢位置插值 */
+  carGroups.forEach((g, i) => {
+    g.position.lerpVectors(modeTransition.startCarPositions[i], modeTransition.endCarPositions[i], k);
+  });
+
+  /* 材质 / 雾效插值 */
+  matAisleWall.opacity = THREE.MathUtils.lerp(modeTransition.startAisleOpacity, modeTransition.endAisleOpacity, k);
+  scene.fog.density = THREE.MathUtils.lerp(modeTransition.startFogDensity, modeTransition.endFogDensity, k);
+
+  /* 2D 框架线透明度 */
+  const lineOp = modeTransition.to2D ? k : (1 - k);
+  mat2DFrame.opacity = 0.55 * lineOp;
+  twoDLineGroup.visible = lineOp > 0.001;
+
+  /* 2D 块切换：进入 2D 后半段显示，退出 2D 前半段隐藏 */
+  const show2D = modeTransition.to2D ? (tNorm >= 0.5) : (tNorm < 0.5);
+  if (show2D !== lastBunk2DVisible) {
+    lastBunk2DVisible = show2D;
+    bunk2DMeshes.forEach(o => o.visible = show2D);
+  }
+
+  /* 实体网格显隐在中点切换，避免与相机运动冲突 */
+  if (!modeTransition.swapped && tNorm >= 0.5) {
+    modeTransition.swapped = true;
+    setSolidMeshesVisible(!modeTransition.to2D);
+  }
+
+  camera.lookAt(controls.target);
+
+  if (modeTransition.t >= modeTransition.dur) {
+    const cb = modeTransition.onComplete;
+    modeTransition = null;
+    if (cb) cb();
+  }
+}
+
 function animate() {
   requestAnimationFrame(animate);
   const dt = Math.min(clock.getDelta(), 0.05);
   elapsed += dt;
 
   if (modeTransition) {
-    modeTransition.t += dt * 1000;
-    const k = easeInOutCubic(Math.min(modeTransition.t / modeTransition.dur, 1));
-
-    camera.position.lerpVectors(modeTransition.startCamPos, modeTransition.endCamPos, k);
-    controls.target.lerpVectors(modeTransition.startTarget, modeTransition.endTarget, k);
-    camera.fov = THREE.MathUtils.lerp(modeTransition.startFov, modeTransition.endFov, k);
-    camera.updateProjectionMatrix();
-
-    carGroups.forEach((g, i) => {
-      g.position.lerpVectors(modeTransition.startCarPositions[i], modeTransition.endCarPositions[i], k);
-    });
-
-    matAisleWall.opacity = THREE.MathUtils.lerp(modeTransition.startAisleOpacity, modeTransition.endAisleOpacity, k);
-    scene.fog.density = THREE.MathUtils.lerp(modeTransition.startFogDensity, modeTransition.endFogDensity, k);
-
-    camera.lookAt(controls.target);
-
-    const lineOp = modeTransition.to2D ? k : (1 - k);
-    mat2DFrame.opacity = 0.55 * lineOp;
-    twoDLineGroup.visible = lineOp > 0.001;
-
-    const show2D = modeTransition.to2D
-      ? (modeTransition.t / modeTransition.dur >= 0.5)
-      : (modeTransition.t / modeTransition.dur < 0.5);
-    if (show2D !== lastBunk2DVisible) {
-      lastBunk2DVisible = show2D;
-      bunk2DMeshes.forEach(o => o.visible = show2D);
-    }
-
-    if (!modeTransition.swapped && k >= 0.5) {
-      modeTransition.swapped = true;
-      setSolidMeshesVisible(!modeTransition.to2D);
-    }
-
-    if (modeTransition.t >= modeTransition.dur) {
-      const cb = modeTransition.onComplete;
-      modeTransition = null;
-      if (cb) cb();
-    }
+    updateModeTransition(dt);
   }
 
   if (!modeTransition && flyTween) updateFlyTween(dt);
@@ -1533,15 +1608,9 @@ addEventListener('resize', () => {
   renderer.setSize(innerWidth, innerHeight);
   labelRenderer.setSize(innerWidth, innerHeight);
 
-  if (modeTransition && modeTransition.to2D) {
-    const st = compute2DEndState(innerWidth / innerHeight);
-    modeTransition.endTarget.copy(st.target);
-    modeTransition.endCamPos.copy(st.camPos);
-  } else if (modeTransition && !modeTransition.to2D) {
-    const st = compute3DEndState(innerWidth / innerHeight);
-    modeTransition.endTarget.copy(st.target);
-    modeTransition.endCamPos.copy(st.camPos);
-  } else if (is2DMode && !modeTransition) {
+  if (modeTransition) {
+    refreshTransitionEndOrbit();
+  } else if (is2DMode) {
     const D = compute2DDistance(innerWidth / innerHeight);
     const currentD = camera.position.x - controls.target.x;
     if (currentD < D * 0.98) {
