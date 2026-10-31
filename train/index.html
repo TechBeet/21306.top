@@ -74,10 +74,9 @@
       position: fixed; left: 28px; top: 24px; pointer-events: none; z-index: 10;
     }
     .hud h1 {
-      margin: 0; font-size: 20px; font-weight: 800; letter-spacing: 1px;
-      background: linear-gradient(135deg, #a1d0ff, #4da3ff 50%, #8f7bff);
-      -webkit-background-clip: text; background-clip: text; color: transparent;
-      text-shadow: 0 4px 20px rgba(77, 163, 255, 0.3);
+      margin: 0; font-size: 19px; font-weight: 700; letter-spacing: 0.8px;
+      color: #d8e0ec;
+      text-shadow: 0 2px 12px rgba(0,0,0,0.35);
     }
 
     /* ---------- 折叠触发按钮 ---------- */
@@ -140,7 +139,7 @@
     }
     .panel-title {
       flex: 1;
-      font-size: 12px; font-weight: 700; letter-spacing: 1.5px; color: #b0c8e8;
+      font-size: 12px; font-weight: 600; letter-spacing: 1.2px; color: #aab8c8;
       white-space: nowrap;
     }
 
@@ -156,8 +155,8 @@
       font-family: inherit;
     }
     .toggle-btn.active {
-      background: rgba(90, 150, 240, 0.2); color: #fff;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      background: rgba(90, 130, 220, 0.28); color: #e8eff8;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
     }
 
     .panel-close-btn {
@@ -181,23 +180,25 @@
 
     .list-item {
       display: flex; align-items: center; gap: 10px;
-      padding: 10px 12px 10px 22px;
-      margin-bottom: 6px;
-      background: rgba(255, 255, 255, 0.02);
-      border: 1px solid rgba(255, 255, 255, 0.03);
-      border-radius: 10px;
-      font-size: 13px; cursor: pointer;
-      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      padding: 9px 11px 9px 20px;
+      margin-bottom: 5px;
+      background: rgba(255, 255, 255, 0.015);
+      border: 1px solid rgba(255, 255, 255, 0.025);
+      border-radius: 9px;
+      font-size: 12.5px; cursor: pointer;
+      transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
       text-align: left;
       font-family: inherit;
       color: inherit;
       width: 100%;
+      pointer-events: none;
+      transform: translateX(20px) scale(0.95);
     }
-    .list-item:hover { background: rgba(90, 150, 240, 0.08); border-color: rgba(90, 150, 240, 0.2); transform: translateX(-2px); }
-    .list-item.active { background: rgba(90, 150, 240, 0.15); border-color: rgba(90, 150, 240, 0.4); box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
-    .list-item .indicator { width: 8px; height: 8px; border-radius: 50%; flex: 0 0 auto; box-shadow: 0 0 10px currentColor; }
-    .list-item .nm { font-weight: 600; color: #d1e0f2; }
-    .list-item .ps { margin-left: auto; color: var(--txt-sub); font-size: 11px; font-weight: 500; white-space: nowrap; }
+    .list-item:hover { background: rgba(90, 140, 230, 0.07); border-color: rgba(90, 140, 230, 0.18); transform: translateX(0) scale(0.98); }
+    .list-item.active { background: rgba(90, 140, 230, 0.14); border-color: rgba(90, 140, 230, 0.35); box-shadow: 0 3px 12px rgba(0,0,0,0.18); }
+    .list-item .indicator { width: 7px; height: 7px; border-radius: 50%; flex: 0 0 auto; box-shadow: 0 0 8px currentColor; }
+    .list-item .nm { font-weight: 550; color: #c8d8e8; }
+    .list-item .ps { margin-left: auto; color: var(--txt-sub); font-size: 10.5px; font-weight: 500; white-space: nowrap; }
 
     #legend {
       position: fixed; left: 28px; bottom: 28px; z-index: 12;
