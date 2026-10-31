@@ -55,7 +55,7 @@
     @keyframes spin { to { transform: rotate(360deg); } }
     #loading .load-track {
       width: 220px; height: 4px; border-radius: 999px;
-      background: rgba(90, 140, 210, 0.16);
+      background: rgba(120, 130, 150, 0.14);
       overflow: hidden;
     }
     #loading #loadBar {
@@ -850,7 +850,7 @@ const twoDLineGroup = new THREE.Group();
 twoDLineGroup.visible = false;
 scene.add(twoDLineGroup);
 
-const mat2DFrame = new THREE.LineBasicMaterial({ color: 0x4da3ff, transparent: true, opacity: 0.55 });
+const mat2DFrame = new THREE.LineBasicMaterial({ color: 0x5a86ff, transparent: true, opacity: 0.5 });
 const X_2D_LINE = BUNK_CENTER_X;
 
 for (let c = 0; c < 2; c++) {
@@ -1156,24 +1156,31 @@ function updateLabelLayout(i) {
   }
   e.label.position.set(e.basePos.x, ty, e.basePos.z);
 
+  /* ---- 肘形引导线：锚点 → 折点 (水平偏移后) → 标签 ----
+     当非聚焦模式时，折点水平向外扇出，使同排标签错开；
+     聚焦时恢复垂直对齐。 */
   const bx = e.basePos.x, by = e.basePos.y, bz = e.basePos.z;
-  const riseLen = Math.min(Math.abs(ty - by) * 0.45, 0.55);
   const attr = e.line.geometry.attributes.position;
 
   if (isFocus || is2DMode) {
+    /* 聚焦或 2D 模式：三点共线垂直向上 */
     attr.setXYZ(0, bx, by, bz);
     attr.setXYZ(1, bx, by, bz);
     attr.setXYZ(2, bx, ty, bz);
+    e.anchorDot.visible = false;
   } else {
-    attr.setXYZ(0, bx, by, bz);
-    attr.setXYZ(1, bx, by + riseLen, bz);
-    attr.setXYZ(2, bx, ty, bz);
+    /* 普通模式：肘形布局，先水平扇出再上升 */
+    const elbowX = bx + e.fanX * 0.35;
+    attr.setXYZ(0, bx, by, bz);          /* 锚点 */
+    attr.setXYZ(1, elbowX, by + 0.18, bz); /* 折点 */
+    attr.setXYZ(2, bx, ty, bz);          /* 标签位置 */
+    e.anchorDot.visible = true;
   }
   attr.needsUpdate = true;
   e.line.geometry.computeBoundingSphere();
 
   e.line.visible = !is2DMode && !isFocus;
-  e.lineMat.opacity = isFocus ? 0 : 0.35;
+  e.lineMat.opacity = isFocus ? 0 : 0.48;
 }
 
 function updateAllLabelLayouts() {
