@@ -79,9 +79,26 @@
       position: fixed; left: 28px; top: 24px; pointer-events: none; z-index: 10;
     }
     .hud h1 {
-      margin: 0; font-size: 19px; font-weight: 700; letter-spacing: 0.8px;
-      color: #d8e0ec;
-      text-shadow: 0 2px 12px rgba(0,0,0,0.35);
+      margin: 0; font-size: 20px; font-weight: 600; letter-spacing: 1px;
+      background: linear-gradient(135deg, #e8eff8 0%, #c8d6e8 50%, #aab8c8 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      text-shadow: 0 3px 16px rgba(0,0,0,0.45), 0 1px 4px rgba(90, 130, 220, 0.18);
+      position: relative;
+    }
+    /* 标题左侧的小装饰线 */
+    .hud h1::before {
+      content: '';
+      position: absolute;
+      left: -16px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 4px;
+      height: 16px;
+      background: linear-gradient(180deg, var(--accent) 0%, var(--accent-secondary) 100%);
+      border-radius: 2px;
+      opacity: 0.85;
     }
 
     /* ---------- 重置视图按钮 ---------- */
@@ -377,8 +394,9 @@
 
     /* ---------- 移动端适配 ---------- */
     @media (max-width: 820px) {
-      .hud { left: 16px; top: 16px; max-width: calc(100% - 140px); }
+      .hud { left: 24px; top: 16px; max-width: calc(100% - 148px); }
       .hud h1 { font-size: 15px; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .hud h1::before { left: -12px; width: 3px; height: 13px; }
 
       #resetViewBtn {
         left: 16px; bottom: 16px;
