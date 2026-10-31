@@ -40,12 +40,14 @@
     #loading .load-tip {
       display: flex; align-items: center; gap: 10px;
       color: #7e95b3; font-size: 14px; letter-spacing: 1px;
+      min-height: 20px;
     }
     #loading .spinner {
       width: 16px; height: 16px; border-radius: 50%;
       border: 2px solid rgba(90,140,210,0.25);
       border-top-color: #4da3ff;
       animation: spin 0.9s linear infinite;
+      flex: 0 0 auto;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
     #loading .load-track {
@@ -53,11 +55,12 @@
       background: rgba(90, 140, 210, 0.16);
       overflow: hidden;
     }
+    /* 进度条由 JS 每帧驱动，不用 CSS transition，保证连续平滑 */
     #loading #loadBar {
       height: 100%; width: 0%;
       border-radius: 999px;
       background: linear-gradient(90deg, #4da3ff, #8f7bff);
-      transition: width 0.25s ease;
+      will-change: width;
       box-shadow: 0 0 12px rgba(77, 163, 255, 0.6);
     }
     #loading .load-pct {
@@ -414,29 +417,63 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
 
 /* =========================================================
-   0. 工具函数 & 加载进度
+   0. 加载进度系统（细分 + 平滑）
+   ---------------------------------------------------------
+   - 目标进度 loadTargetPct 只增不减；
+   - 显示进度 loadDisplayPct 每帧向目标逼近，进度条连续滚动；
+   - 每帧由 rAF 驱动，避免 CSS transition 造成的跳变/滞后；
+   - 加载完成且显示进度到 100% 后才隐藏 Loading，确保首帧已就绪。
    ========================================================= */
 const loadingEl = document.getElementById('loading');
 const loadBarEl = document.getElementById('loadBar');
 const loadPctEl = document.getElementById('loadPct');
 const loadTextEl = document.getElementById('loadText');
 
+let loadTargetPct = 0;
+let loadDisplayPct = 0;
+let loadSmoothRunning = false;
+
+function applyLoadUI() {
+  if (loadBarEl) loadBarEl.style.width = loadDisplayPct.toFixed(2) + '%';
+  if (loadPctEl) loadPctEl.textContent = Math.round(loadDisplayPct) + '%';
+}
+
+function stepLoadSmooth() {
+  const diff = loadTargetPct - loadDisplayPct;
+  if (diff <= 0.05) {
+    loadDisplayPct = loadTargetPct;
+    applyLoadUI();
+    loadSmoothRunning = false;
+    return;
+  }
+  /* 自适应逼近：差距大时快、差距小时慢，末尾不拖沓也不会骤停 */
+  const step = Math.max(diff * 0.14, 0.15);
+  loadDisplayPct = Math.min(loadTargetPct, loadDisplayPct + step);
+  applyLoadUI();
+  requestAnimationFrame(stepLoadSmooth);
+}
+
 function setLoadProgress(pct, text) {
   const v = Math.max(0, Math.min(100, pct));
-  if (loadBarEl) loadBarEl.style.width = v + '%';
-  if (loadPctEl) loadPctEl.textContent = Math.round(v) + '%';
+  if (v > loadTargetPct) loadTargetPct = v;
   if (text && loadTextEl) loadTextEl.textContent = text;
+  if (!loadSmoothRunning) {
+    loadSmoothRunning = true;
+    requestAnimationFrame(stepLoadSmooth);
+  }
 }
+
 function nextFrame() {
   return new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
 }
+
 function escapeHtml(str) {
   return String(str).replace(/[&<>"']/g, c => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
   }[c]));
 }
 
-setLoadProgress(8, '正在初始化渲染引擎…');
+setLoadProgress(5, '正在初始化渲染引擎…');
 await nextFrame();
 
 /* =========================================================
@@ -516,7 +553,6 @@ const FOV_3D = 42;
 const LABEL_LIFT_3D = 1.05;
 const LABEL_LIFT_FOCUS = 0.10;
 
-/* 非聚焦状态下按铺位层级递增抬升高度：最高 3 倍车高 */
 const LABEL_LIFT_3D_BY_LEVEL = {
   1: CEIL_Y * 1.0,
   2: CEIL_Y * 2.0,
@@ -621,7 +657,6 @@ let focusTween2D = null;
 let flyTween = null;
 let focusState = null;
 
-/* 经典 Cubic / Quart 缓动 —— 首尾导数为 0，过渡更平滑 */
 function easeInOutCubic(k) {
   return k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
 }
@@ -629,10 +664,8 @@ function easeInOutQuart(k) {
   return k < 0.5 ? 8 * k * k * k * k : 1 - Math.pow(-2 * k + 2, 4) / 2;
 }
 
-/* 参考轴：用于球面插值相机方向的四元数基准 */
 const REF_AXIS = new THREE.Vector3(0, 1, 0);
 
-/* 计算相机围绕目标点的方向四元数、距离 */
 function computeOrbit(offset) {
   const dist = offset.length();
   const dir = dist > 1e-6 ? offset.clone().divideScalar(dist) : new THREE.Vector3(0, 0, 1);
@@ -775,15 +808,27 @@ function buildFoldingSeat(parent, xWall, zPos) {
   parent.add(g);
 }
 
-setLoadProgress(38, '正在构建车厢结构…');
+/* ---- 车厢构建：逐车厢推进进度 ---- */
+setLoadProgress(10, '正在准备车厢结构…');
 await nextFrame();
 
+setLoadProgress(14, '正在构建 3 号车厢结构…');
+await nextFrame();
 buildCarriage(0, CAR_NUMBERS[0]);
+setLoadProgress(23, '3 号车厢结构完成');
+
+setLoadProgress(25, '正在构建 5 号车厢结构…');
+await nextFrame();
 buildCarriage(1, CAR_NUMBERS[1]);
+setLoadProgress(34, '5 号车厢结构完成');
+await nextFrame();
 
 /* =========================================================
    7.5 纯 2D 工程线稿（框架）
    ========================================================= */
+setLoadProgress(36, '正在绘制 2D 工程框架…');
+await nextFrame();
+
 const twoDLineGroup = new THREE.Group();
 twoDLineGroup.visible = false;
 scene.add(twoDLineGroup);
@@ -812,6 +857,9 @@ for (let c = 0; c < 2; c++) {
   const longGeo = new THREE.BufferGeometry().setFromPoints(longVerts);
   twoDLineGroup.add(new THREE.LineSegments(longGeo, mat2DFrame));
 }
+
+setLoadProgress(39, '2D 工程框架完成');
+await nextFrame();
 
 /* =========================================================
    8. 3D 床铺（同时创建 2D 床位线框）
@@ -857,6 +905,15 @@ function createBunk(pos, carGroup) {
   return bunkGroup;
 }
 
+/* ---- 床铺铺设：按隔间单元细分推进 39 → 68 ---- */
+const BUNK_PCT_START = 39;
+const BUNK_PCT_END = 68;
+const BUNK_UNITS_TOTAL = 2 * COMP_COUNT; // 22 个隔间单元（每单元含左右两侧 6 张铺）
+let bunkUnitsDone = 0;
+
+setLoadProgress(BUNK_PCT_START, '正在铺设床铺…');
+await nextFrame();
+
 for (let c = 0; c < 2; c++) {
   const carGroup = carGroups[c];
   for (let i = 0; i < COMP_COUNT; i++) {
@@ -866,10 +923,14 @@ for (let c = 0; c < 2; c++) {
       createBunk(new THREE.Vector3(BUNK_CENTER_X, y, compZ + Z_LEFT_BUNK_CENTER), carGroup);
       createBunk(new THREE.Vector3(BUNK_CENTER_X, y, compZ + Z_RIGHT_BUNK_CENTER), carGroup);
     }
+    bunkUnitsDone++;
+    const pct = BUNK_PCT_START + (BUNK_PCT_END - BUNK_PCT_START) * (bunkUnitsDone / BUNK_UNITS_TOTAL);
+    setLoadProgress(pct, `正在铺设床铺… ${bunkUnitsDone}/${BUNK_UNITS_TOTAL}`);
+    /* 每 2 个隔间让出一帧，进度可见且不卡顿 */
+    if (bunkUnitsDone % 2 === 0) await nextFrame();
   }
 }
-
-setLoadProgress(62, '正在铺设床铺…');
+setLoadProgress(BUNK_PCT_END, '床铺铺设完成');
 await nextFrame();
 
 /* =========================================================
@@ -934,87 +995,104 @@ function findBunkByLocalPos(carGroup, pos) {
 let hovered = -1;
 let selected = -1;
 
-PASSENGERS.forEach((p, i) => {
+/* ---- 乘客标签生成：按乘客逐个细分推进 68 → 90 ---- */
+const LABEL_PCT_START = 68;
+const LABEL_PCT_END = 90;
+const LABEL_TOTAL = PASSENGERS.length;
+
+setLoadProgress(LABEL_PCT_START, '正在生成乘客标签…');
+await nextFrame();
+
+for (let i = 0; i < LABEL_TOTAL; i++) {
+  const p = PASSENGERS[i];
+
   const carIdx = CAR_NUMBERS.indexOf(p.car);
-  if (carIdx === -1) return;
-  const carGroup = carGroups[carIdx];
-  const localPos = getPassengerLocalPos(p);
-  const basePos = localPos.clone();
-  const levelY = LEVEL_Y[p.level];
+  if (carIdx !== -1) {
+    const carGroup = carGroups[carIdx];
+    const localPos = getPassengerLocalPos(p);
+    const basePos = localPos.clone();
+    const levelY = LEVEL_Y[p.level];
 
-  const bunk = findBunkByLocalPos(carGroup, localPos);
-  passengerBunkMap.set(p, bunk);
+    const bunk = findBunkByLocalPos(carGroup, localPos);
+    passengerBunkMap.set(p, bunk);
 
-  const hitbox = new THREE.Mesh(new THREE.SphereGeometry(0.38, 8, 8), new THREE.MeshBasicMaterial({ visible: false }));
-  hitbox.position.copy(localPos);
-  hitbox.userData.index = i;
-  hitbox.userData.noHide = true;
-  carGroup.add(hitbox);
-  markers.push({ mesh: hitbox, type: 'hitbox', data: p });
-  passengerHitboxes[i] = hitbox;
-  hitboxMeshes.push(hitbox);
+    const hitbox = new THREE.Mesh(new THREE.SphereGeometry(0.38, 8, 8), new THREE.MeshBasicMaterial({ visible: false }));
+    hitbox.position.copy(localPos);
+    hitbox.userData.index = i;
+    hitbox.userData.noHide = true;
+    carGroup.add(hitbox);
+    markers.push({ mesh: hitbox, type: 'hitbox', data: p });
+    passengerHitboxes[i] = hitbox;
+    hitboxMeshes.push(hitbox);
 
-  const blockGeo = new THREE.PlaneGeometry(BLOCK_W, BLOCK_H);
-  blockGeo.rotateY(Math.PI / 2);
-  const blockMat = new THREE.MeshBasicMaterial({
-    color: new THREE.Color(p.color),
-    transparent: true,
-    opacity: 0.32,
-    side: THREE.DoubleSide,
-    depthWrite: false
-  });
-  const blockMesh = new THREE.Mesh(blockGeo, blockMat);
-  blockMesh.position.set(BUNK_CENTER_X - 0.02, levelY + 0.05, basePos.z);
-  blockMesh.userData.noHide = true;
-  blockMesh.userData.index = i;
-  blockMesh.visible = false;
-  carGroup.add(blockMesh);
-  bunk2DMeshes.push(blockMesh);
-  clickTargets2D.push(blockMesh);
+    const blockGeo = new THREE.PlaneGeometry(BLOCK_W, BLOCK_H);
+    blockGeo.rotateY(Math.PI / 2);
+    const blockMat = new THREE.MeshBasicMaterial({
+      color: new THREE.Color(p.color),
+      transparent: true,
+      opacity: 0.32,
+      side: THREE.DoubleSide,
+      depthWrite: false
+    });
+    const blockMesh = new THREE.Mesh(blockGeo, blockMat);
+    blockMesh.position.set(BUNK_CENTER_X - 0.02, levelY + 0.05, basePos.z);
+    blockMesh.userData.noHide = true;
+    blockMesh.userData.index = i;
+    blockMesh.visible = false;
+    carGroup.add(blockMesh);
+    bunk2DMeshes.push(blockMesh);
+    clickTargets2D.push(blockMesh);
 
-  const edgeMat = new THREE.LineBasicMaterial({ color: new THREE.Color(p.color), transparent: true, opacity: 0.85 });
-  const blockEdges = new THREE.LineSegments(new THREE.EdgesGeometry(blockGeo), edgeMat);
-  blockEdges.position.copy(blockMesh.position);
-  blockEdges.userData.noHide = true;
-  blockEdges.visible = false;
-  carGroup.add(blockEdges);
-  bunk2DMeshes.push(blockEdges);
+    const edgeMat = new THREE.LineBasicMaterial({ color: new THREE.Color(p.color), transparent: true, opacity: 0.85 });
+    const blockEdges = new THREE.LineSegments(new THREE.EdgesGeometry(blockGeo), edgeMat);
+    blockEdges.position.copy(blockMesh.position);
+    blockEdges.userData.noHide = true;
+    blockEdges.visible = false;
+    carGroup.add(blockEdges);
+    bunk2DMeshes.push(blockEdges);
 
-  const inCompNum = (p.num - 1) % 6 + 1;
-  const isLeftBunk = (inCompNum % 2 !== 0);
-  const lift3D = (LABEL_LIFT_3D_BY_LEVEL[p.level] ?? LABEL_LIFT_3D) +
-                 (isLeftBunk ? LABEL_LIFT_SIDE_OFFSET : -LABEL_LIFT_SIDE_OFFSET);
+    const inCompNum = (p.num - 1) % 6 + 1;
+    const isLeftBunk = (inCompNum % 2 !== 0);
+    const lift3D = (LABEL_LIFT_3D_BY_LEVEL[p.level] ?? LABEL_LIFT_3D) +
+                   (isLeftBunk ? LABEL_LIFT_SIDE_OFFSET : -LABEL_LIFT_SIDE_OFFSET);
 
-  const div = document.createElement('div');
-  div.className = 'bunk-label';
-  div.textContent = p.shortName;
-  div.style.setProperty('--pc', p.color);
-  div.addEventListener('click', (e) => {
-    e.stopPropagation();
-    selectPassenger(i, true);
-  });
-  div.addEventListener('pointerenter', () => { hovered = i; });
-  div.addEventListener('pointerleave', () => { if (hovered === i) hovered = -1; });
+    const div = document.createElement('div');
+    div.className = 'bunk-label';
+    div.textContent = p.shortName;
+    div.style.setProperty('--pc', p.color);
+    div.addEventListener('click', (e) => {
+      e.stopPropagation();
+      selectPassenger(i, true);
+    });
+    div.addEventListener('pointerenter', () => { hovered = i; });
+    div.addEventListener('pointerleave', () => { if (hovered === i) hovered = -1; });
 
-  const label = new CSS2DObject(div);
-  label.position.copy(basePos);
-  label.position.y += lift3D;
-  carGroup.add(label);
-  markers.push({ mesh: label, type: 'label', data: p });
+    const label = new CSS2DObject(div);
+    label.position.copy(basePos);
+    label.position.y += lift3D;
+    carGroup.add(label);
+    markers.push({ mesh: label, type: 'label', data: p });
 
-  const lineMat = new THREE.LineBasicMaterial({
-    color: new THREE.Color(p.color),
-    transparent: true,
-    opacity: 0.42,
-    depthWrite: false
-  });
-  const linePts = [basePos.clone(), label.position.clone()];
-  const lineGeo = new THREE.BufferGeometry().setFromPoints(linePts);
-  const line = new THREE.Line(lineGeo, lineMat);
-  carGroup.add(line);
+    const lineMat = new THREE.LineBasicMaterial({
+      color: new THREE.Color(p.color),
+      transparent: true,
+      opacity: 0.42,
+      depthWrite: false
+    });
+    const linePts = [basePos.clone(), label.position.clone()];
+    const lineGeo = new THREE.BufferGeometry().setFromPoints(linePts);
+    const line = new THREE.Line(lineGeo, lineMat);
+    carGroup.add(line);
 
-  labelEntries[i] = { label, line, lineMat, basePos, levelY, lift3D };
-});
+    labelEntries[i] = { label, line, lineMat, basePos, levelY, lift3D };
+  }
+
+  const pct = LABEL_PCT_START + (LABEL_PCT_END - LABEL_PCT_START) * ((i + 1) / LABEL_TOTAL);
+  setLoadProgress(pct, `正在生成乘客标签… ${i + 1}/${LABEL_TOTAL}`);
+  await nextFrame();
+}
+setLoadProgress(LABEL_PCT_END, '乘客标签生成完成');
+await nextFrame();
 
 function updateLabelLayout(i) {
   const e = labelEntries[i];
@@ -1040,9 +1118,6 @@ function updateLabelLayout(i) {
 function updateAllLabelLayouts() {
   PASSENGERS.forEach((_, i) => updateLabelLayout(i));
 }
-
-setLoadProgress(84, '正在生成乘客标签…');
-await nextFrame();
 
 /* =========================================================
    11. 高亮
@@ -1106,9 +1181,6 @@ function compute3DEndState(aspect) {
   return compute3DOverviewState(aspect);
 }
 
-/* =========================================================
-   模式切换（核心：方向球面插值 + 距离平滑插值 + 目标点插值）
-   ========================================================= */
 function switchMode(to2D) {
   if (is2DMode === to2D || modeTransition) return;
 
@@ -1120,7 +1192,6 @@ function switchMode(to2D) {
   focusTween2D = null;
   clearHighlight();
 
-  /* 抓取起点状态 */
   const startCamPos = camera.position.clone();
   const startTarget = controls.target.clone();
   const startFov = camera.fov;
@@ -1128,7 +1199,6 @@ function switchMode(to2D) {
   const startAisleOpacity = matAisleWall.opacity;
   const startFogDensity = scene.fog.density;
 
-  /* 计算终点状态 */
   let endCamPos, endTarget, endFov, endCarPositions, endAisleOpacity, endFogDensity;
   if (to2D) {
     const st = compute2DEndState(innerWidth / innerHeight);
@@ -1148,7 +1218,6 @@ function switchMode(to2D) {
     endFogDensity = 0.0012;
   }
 
-  /* 起点 / 终点：围绕目标点的方向、距离 */
   const startOrbit = computeOrbit(startCamPos.clone().sub(startTarget));
   const endOrbit = computeOrbit(endCamPos.clone().sub(endTarget));
 
@@ -1156,7 +1225,7 @@ function switchMode(to2D) {
 
   modeTransition = {
     t: 0,
-    dur: 1400, /* 稍长，过渡更从容 */
+    dur: 1400,
     startTarget, endTarget,
     startFov, endFov,
     startDist: startOrbit.dist,
@@ -1212,7 +1281,6 @@ function switchMode(to2D) {
   };
 }
 
-/* resize 时（若正在过渡）刷新终点轨道参数，保证过渡方向仍正确 */
 function refreshTransitionEndOrbit() {
   if (!modeTransition) return;
 
@@ -1448,59 +1516,60 @@ const clock = new THREE.Clock();
 let elapsed = 0;
 let firstFrame = true;
 let envOpacity = 1;
+let loadHideScheduled = false;
 
 function hideLoading() {
   if (!loadingEl.classList.contains('hidden')) loadingEl.classList.add('hidden');
 }
 
-/* 帧循环中处理模式过渡 */
+/* 首帧渲染后，等待进度条真正走到 100% 再隐藏 Loading */
+function tryHideLoadingWhenProgressDone() {
+  if (loadHideScheduled) return;
+  if (loadTargetPct >= 100 && loadDisplayPct >= 99.9) {
+    loadHideScheduled = true;
+    /* 留一点时间让 100% 清晰可见，再淡出 */
+    setTimeout(hideLoading, 220);
+  } else {
+    requestAnimationFrame(tryHideLoadingWhenProgressDone);
+  }
+}
+
 function updateModeTransition(dt) {
   modeTransition.t += dt * 1000;
   const tNorm = Math.min(modeTransition.t / modeTransition.dur, 1);
 
-  /* 位置 / 方向 / 距离用 Quart（更平滑，首尾速度更慢） */
   const k = easeInOutQuart(tNorm);
 
-  /* 目标点插值 */
   controls.target.lerpVectors(modeTransition.startTarget, modeTransition.endTarget, k);
 
-  /* 方向球面插值（沿大圆，不会穿过目标点） */
   const quat = modeTransition.startQuat.clone().slerp(modeTransition.endQuat, k);
   const dir = REF_AXIS.clone().applyQuaternion(quat);
 
-  /* 距离插值 */
   const dist = modeTransition.startDist + (modeTransition.endDist - modeTransition.startDist) * k;
 
-  /* 相机位置 = 当前目标点 + 方向 × 距离 */
   camera.position.copy(controls.target).addScaledVector(dir, dist);
 
-  /* FOV 插值：Cubic 稍快，与位置变化协调，避免视觉挤压感 */
   const fovK = easeInOutCubic(tNorm);
   camera.fov = THREE.MathUtils.lerp(modeTransition.startFov, modeTransition.endFov, fovK);
   camera.updateProjectionMatrix();
 
-  /* 车厢位置插值 */
   carGroups.forEach((g, i) => {
     g.position.lerpVectors(modeTransition.startCarPositions[i], modeTransition.endCarPositions[i], k);
   });
 
-  /* 材质 / 雾效插值 */
   matAisleWall.opacity = THREE.MathUtils.lerp(modeTransition.startAisleOpacity, modeTransition.endAisleOpacity, k);
   scene.fog.density = THREE.MathUtils.lerp(modeTransition.startFogDensity, modeTransition.endFogDensity, k);
 
-  /* 2D 框架线透明度 */
   const lineOp = modeTransition.to2D ? k : (1 - k);
   mat2DFrame.opacity = 0.55 * lineOp;
   twoDLineGroup.visible = lineOp > 0.001;
 
-  /* 2D 块切换：进入 2D 后半段显示，退出 2D 前半段隐藏 */
   const show2D = modeTransition.to2D ? (tNorm >= 0.5) : (tNorm < 0.5);
   if (show2D !== lastBunk2DVisible) {
     lastBunk2DVisible = show2D;
     bunk2DMeshes.forEach(o => o.visible = show2D);
   }
 
-  /* 实体网格显隐在中点切换，避免与相机运动冲突 */
   if (!modeTransition.swapped && tNorm >= 0.5) {
     modeTransition.swapped = true;
     setSolidMeshesVisible(!modeTransition.to2D);
@@ -1585,7 +1654,7 @@ function animate() {
 
   if (firstFrame) {
     firstFrame = false;
-    hideLoading();
+    tryHideLoadingWhenProgressDone();
   }
 }
 
@@ -1593,7 +1662,7 @@ bunk2DMeshes.forEach(o => o.visible = false);
 lastBunk2DVisible = false;
 updateAllLabelLayouts();
 
-setLoadProgress(96, '正在准备渲染场景…');
+setLoadProgress(93, '正在准备渲染场景…');
 await nextFrame();
 
 animate();
