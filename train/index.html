@@ -1471,20 +1471,13 @@ function selectPassenger(i, fly) {
   document.getElementById('cardClose').addEventListener('click', (e) => {
     e.stopPropagation();
     if (preFocusView) {
-      // 使用飞行动画返回到聚焦前的视图
-      const startTarget = controls.target.clone();
-      const startDist = camera.position.distanceTo(startTarget);
-      const targetPos = preFocusView.target.clone();
-      const endDist = preFocusView.dist;
-      
+      // 使用飞行动画精确返回到聚焦前的视图（位置 + 目标点）
       flyTween = {
-        t: 0, dur: 800,
+        t: 0, dur: 850,
         p0: camera.position.clone(),
-        p1: targetPos.clone(),
-        t0: startTarget.clone(),
-        t1: targetPos.clone(),
-        dist0: startDist,
-        dist1: endDist,
+        p1: preFocusView.position.clone(),
+        t0: controls.target.clone(),
+        t1: preFocusView.target.clone(),
         onComplete: () => {
           flyTween = null;
           preFocusView = null;
