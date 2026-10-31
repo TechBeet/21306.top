@@ -645,8 +645,8 @@
   <div class="panel-head">
     <span class="panel-title">乘 客 列 表</span>
     <div class="toggle-wrap">
-      <button class="toggle-btn active" id="btn3D">3D</button>
-      <button class="toggle-btn" id="btn2D">2D</button>
+      <button class="toggle-btn" id="btn3D">3D</button>
+      <button class="toggle-btn active" id="btn2D">2D</button>
     </div>
     <button id="panelCloseBtn" class="panel-close-btn" aria-label="收起乘客列表">×</button>
   </div>
@@ -968,14 +968,18 @@ scene.background = new THREE.Color(0x1a1f26);
 scene.fog = new THREE.FogExp2(0x1a1f26, 0.0006);
 
 /* ---- 3.2 相机 ---- */
-setLoadProgress(PHASES.camera[0], '正在配置透视相机…');
+setLoadProgress(PHASES.camera[0], '正在配置 2D 透视相机（快速启动）…');
 await nextFrame();
 const camera = new THREE.PerspectiveCamera(FOV_3D, innerWidth / innerHeight, 0.1, 3000);
 const INITIAL_TARGET = new THREE.Vector3(0, CEIL_Y / 2, 0);
+
+// 初始使用 2D 视角，确保最快渲染
 {
-  const st = compute3DOverviewState(innerWidth / innerHeight);
+  const st = compute2DEndState(innerWidth / innerHeight);
   camera.position.copy(st.camPos);
   camera.lookAt(st.target);
+  camera.fov = FOV_2D;
+  camera.updateProjectionMatrix();
 }
 
 /* ---- 3.3 WebGL 渲染器 ---- */
@@ -1001,9 +1005,15 @@ labelRenderer.domElement.style.zIndex = '10';
 container.appendChild(labelRenderer.domElement);
 
 /* ---- 3.5 交互控制器 ---- */
-setLoadProgress(PHASES.controls[0], '正在配置轨道控制器…');
+setLoadProgress(PHASES.controls[0], '正在配置 2D 轨道控制器（快速启动）…');
 await nextFrame();
-const controls = new OrbitControls(camera, renderer.domElement);
+
+const MOUSE_3D = { LEFT: THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.PAN };
+const TOUCH_3D = { ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN };
+const MOUSE_2D = { LEFT: THREE.MOUSE.PAN, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.PAN };
+const TOUCH_2D = { ONE: THREE.TOUCH.PAN, TWO: THREE.TOUCH.DOLLY_PAN };
+
+const controls = new THREE.OrbitControls(camera, renderer.domElement);
 controls.target.copy(INITIAL_TARGET);
 controls.enableDamping = true;
 controls.dampingFactor = 0.06;
@@ -1011,6 +1021,21 @@ controls.minDistance = 5;
 controls.maxDistance = 1500;
 controls.maxPolarAngle = Math.PI * 0.495;
 controls.enableAutoRotate = false;
+controls.enableRotate = false; // 2D 模式禁用旋转
+
+// 初始化为 2D 控制模式
+controls.mouseButtons = MOUSE_2D;
+controls.touches = TOUCH_2D;
+controls.screenSpacePanning = true;
+controls.minAzimuthAngle = SIDE_THETA;
+controls.maxAzimuthAngle = SIDE_THETA;
+controls.minPolarAngle = SIDE_PHI;
+controls.maxPolarAngle = SIDE_PHI;
+
+// 更新距离限制
+const D = compute2DDistance(innerWidth / innerHeight);
+controls.minDistance = Math.max(D * 0.4, 5);
+controls.maxDistance = D * 5;
 
 /* ---- 3.6 滚轮灵敏度接管 ---- */
 setLoadProgress(PHASES.wheel[0], '正在接管滚轮缩放…');
@@ -1029,11 +1054,6 @@ controls.domElement.addEventListener('wheel', (event) => {
   }
   applyAdaptiveZoomSpeed(magFactor);
 }, { capture: true });
-
-const MOUSE_3D = { LEFT: THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.PAN };
-const TOUCH_3D = { ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN };
-const MOUSE_2D = { LEFT: THREE.MOUSE.PAN, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.PAN };
-const TOUCH_2D = { ONE: THREE.TOUCH.PAN, TWO: THREE.TOUCH.DOLLY_PAN };
 
 /* ---- 3.7 缩放灵敏度 ---- */
 setLoadProgress(PHASES.zoomCfg[0], '正在计算自适应缩放参数…');
@@ -1634,11 +1654,15 @@ addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && selected >= 0) deselect();
 });
 
-let is2DMode = false;
-let lastBunk2DVisible = false;
+let is2DMode = true;  // 默认 2D 视图，确保最快启动
+let lastBunk2DVisible = true; // 初始显示 2D 床位
 
 const btn3D = document.getElementById('btn3D');
 const btn2D = document.getElementById('btn2D');
+
+// 初始化按钮状态（默认 2D 激活）
+btn3D.classList.toggle('active', false);
+btn2D.classList.toggle('active', true);
 
 btn3D.addEventListener('click', () => {
   if (innerWidth <= 820) setPanelCollapsed(true);
@@ -2187,8 +2211,9 @@ function animate() {
 }
 
 /* 状态初始化 */
-bunk2DMeshes.forEach(o => o.visible = false);
-lastBunk2DVisible = false;
+bunk2DMeshes.forEach(o => o.visible = true); // 默认显示 2D 床位
+lastBunk2DVisible = true;
+is2DMode = true;
 updateAllLabelLayouts();
 
 /* =========================================================
@@ -2210,7 +2235,38 @@ try {
   console.warn('[warmup] compile 失败，将依赖首帧渲染', e);
 }
 
-setLoadProgress(warmS + (warmE - warmS) * 0.9, '正在准备首帧渲染…');
+setLoadProgress(warmS + (warmE - warmS) * 0.7, '正在后台预加载 3D 资源…');
+await nextFrame();
+
+// 后台预加载 3D 视图所需资源（异步，不影响 2D 启动）
+(async () => {
+  try {
+    // 强制渲染一次 3D 相关对象以编译着色器
+    const tempCamera = camera.clone();
+    tempCamera.position.set(100, 50, 100);
+    tempCamera.lookAt(0, 0, 0);
+    
+    // 遍历所有床位和标签，确保它们的材质被编译
+    allBunks.forEach(bunk => {
+      if (bunk.mesh && bunk.mesh.material) {
+        bunk.mesh.material.needsUpdate = true;
+      }
+    });
+    
+    // 短暂切换到 3D 模式编译资源后立即切回 2D
+    const oldIs2D = is2DMode;
+    is2DMode = false;
+    
+    // 临时渲染 3D 以编译着色器
+    renderer.render(scene, tempCamera);
+    
+    is2DMode = oldIs2D;
+    setLoadProgress(warmS + (warmE - warmS) * 0.9, '3D 资源已预加载');
+  } catch (err) {
+    console.warn('[preload-3D] 预加载失败，将在切换时动态加载:', err);
+  }
+})();
+
 await nextFrame();
 
 // 初始化使用指南弹窗
