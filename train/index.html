@@ -567,23 +567,23 @@ function compute2DEndState(aspect) {
 
 /* ---------- 3D 总览自适应距离 ---------- */
 const FOV_3D = 42;
-const LABEL_LIFT_3D = 1.15;
-const LABEL_LIFT_FOCUS = 0.12;
+const LABEL_LIFT_3D = 1.05;
+const LABEL_LIFT_FOCUS = 0.10;
 
 const LABEL_LIFT_3D_BY_LEVEL = {
-  1: CEIL_Y * 1.15,
-  2: CEIL_Y * 2.15,
-  3: CEIL_Y * 3.15
+  1: CEIL_Y * 1.08,
+  2: CEIL_Y * 1.95,
+  3: CEIL_Y * 2.85
 };
-const LABEL_LIFT_SIDE_OFFSET = 0.18;
+const LABEL_LIFT_SIDE_OFFSET = 0.16;
 
 const SCENE_BOX = {
-  minX: -CAR_WIDTH / 2 - 0.3,
-  maxX:  CAR_WIDTH / 2 + 0.3,
-  minY: -0.25,
-  maxY:  LEVEL_Y[3] + 0.25 + CEIL_Y * 3.15 + LABEL_LIFT_SIDE_OFFSET + 0.7,
-  minZ: -CAR_LEN - CAR_GAP / 2,
-  maxZ:  CAR_LEN + CAR_GAP / 2
+  minX: -CAR_WIDTH / 2 - 0.5,
+  maxX:  CAR_WIDTH / 2 + 0.5,
+  minY: -0.4,
+  maxY:  LEVEL_Y[3] + 0.35 + CEIL_Y * 2.85 + LABEL_LIFT_SIDE_OFFSET + 0.9,
+  minZ: -CAR_LEN - CAR_GAP / 2 - 1.5,
+  maxZ:  CAR_LEN + CAR_GAP / 2 + 1.5
 };
 
 function compute3DOverviewState(aspect) {
@@ -624,7 +624,7 @@ const container = document.getElementById('scene');
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x1a1f26);
 scene.fog = new THREE.FogExp2(0x1a1f26, 0.0006);
-const camera = new THREE.PerspectiveCamera(FOV_3D, innerWidth / innerHeight, 0.1, 2000);
+const camera = new THREE.PerspectiveCamera(FOV_3D, innerWidth / innerHeight, 0.1, 3000);
 
 const INITIAL_TARGET = new THREE.Vector3(0, CEIL_Y / 2, 0);
 {
