@@ -661,10 +661,68 @@ controls.maxDistance = 1500;
 controls.maxPolarAngle = Math.PI * 0.495;
 controls.enableAutoRotate = false;
 
+// 覆盖默认的鼠标滚轮缩放逻辑，在捕获阶段设置自适应 zoomSpeed
+controls.domElement.addEventListener('wheel', (event) => {
+  if (!controls.enabled || !controls.enableZoom) return;
+  
+  // 获取滚轮的 deltaY 幅度因子
+  const deltaMode = event.deltaMode;
+  let magFactor;
+  if (deltaMode === WheelEvent.DOM_DELTA_PIXEL) {
+    // 像素模式（触控板）：根据滚动幅度动态调整
+    const baseMag = Math.min(Math.abs(event.deltaY), 500) / 50;
+    magFactor = THREE.MathUtils.clamp(baseMag, 1, 8);
+  } else if (deltaMode === WheelEvent.DOM_DELTA_LINE) {
+    // 行模式（鼠标滚轮）：每次滚动的固定系数
+    magFactor = 2.0;
+  } else {
+    // 页面模式或未知
+    magFactor = 1.0;
+  }
+
+  applyAdaptiveZoomSpeed(magFactor);
+}, { capture: true });
+
+
 const MOUSE_3D = { LEFT: THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.PAN };
 const TOUCH_3D = { ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN };
 const MOUSE_2D = { LEFT: THREE.MOUSE.PAN, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.PAN };
 const TOUCH_2D = { ONE: THREE.TOUCH.PAN, TWO: THREE.TOUCH.DOLLY_PAN };
+
+// 自适应缩放灵敏度配置
+const ZOOM_SENSITIVITY_CONFIG = {
+  baseSpeed: 1.9,               // 基础缩放速度（较默认 1.0 明显增强）
+  minSpeed: 1.2,                // 下限
+  maxSpeed: 5.5,                // 上限
+  refDiagonal: 1900,            // 参考屏幕对角线（像素）
+  refDistance: 60               // 参考相机距离
+};
+
+/**
+ * 计算自适应缩放速度（返回 OrbitControls.zoomSpeed 的值）。
+ * 综合考虑：窗口尺寸（越小越灵敏）、相机距离（越远步进越大）、
+ * 以及滚轮 deltaY 幅度（区分鼠标滚轮与触控板）。
+ * @param {number} magFactor 滚轮幅度系数（触控捏合传 1）
+ */
+function computeAdaptiveZoomSpeed(magFactor = 1) {
+  const cfg = ZOOM_SENSITIVITY_CONFIG;
+
+  // 窗口越小 → 灵敏度越高（移动端补偿）
+  const diag = Math.hypot(innerWidth, innerHeight) || cfg.refDiagonal;
+  const windowFactor = THREE.MathUtils.clamp(cfg.refDiagonal / diag, 0.85, 2.4);
+
+  // 相机距离越远 → 步进越大，保证远近手感一致
+  const dist = camera.position.distanceTo(controls.target);
+  const distFactor = THREE.MathUtils.clamp(Math.sqrt(dist / cfg.refDistance), 0.7, 2.6);
+
+  const speed = cfg.baseSpeed * windowFactor * distFactor * magFactor;
+  return THREE.MathUtils.clamp(speed, cfg.minSpeed, cfg.maxSpeed);
+}
+
+/** 将自适应缩放速度写入 controls（供滚轮 / 中键 / 触摸捏合共用） */
+function applyAdaptiveZoomSpeed(magFactor = 1) {
+  controls.zoomSpeed = computeAdaptiveZoomSpeed(magFactor);
+}
 
 /* =========================================================
    4. 缓动 & 聚焦状态
@@ -1412,44 +1470,30 @@ function selectPassenger(i, fly) {
   if (oldCloseBtn) oldCloseBtn.replaceWith(oldCloseBtn.cloneNode(true));
   document.getElementById('cardClose').addEventListener('click', (e) => {
     e.stopPropagation();
-    // 关闭卡片时恢复到聚焦前的视图状态
     if (preFocusView) {
+      // 使用飞行动画返回到聚焦前的视图
       const startTarget = controls.target.clone();
       const startDist = camera.position.distanceTo(startTarget);
-      
       const targetPos = preFocusView.target.clone();
       const endDist = preFocusView.dist;
       
-      // 简单的淡入淡出过渡动画
-      const duration = 800;
-      const startTime = performance.now();
-      
-      function animateReturn(time) {
-        const elapsed = time - startTime;
-        const progress = Math.min(elapsed / duration, 1);
-        const easeProgress = easeInOutCubic(progress);
-        
-        // 插值相机位置
-        const dir = camera.position.clone().sub(targetPos).normalize();
-        const currentDist = THREE.MathUtils.lerp(startDist, endDist, easeProgress);
-        camera.position.copy(targetPos).addScaledVector(dir, currentDist);
-        
-        // 插值目标点
-        controls.target.lerpVectors(startTarget, targetPos, easeProgress);
-        camera.lookAt(controls.target);
-        
-        if (progress < 1) {
-          requestAnimationFrame(animateReturn);
-        } else {
-          // 动画完成后重置状态
+      flyTween = {
+        t: 0, dur: 800,
+        p0: camera.position.clone(),
+        p1: targetPos.clone(),
+        t0: startTarget.clone(),
+        t1: targetPos.clone(),
+        dist0: startDist,
+        dist1: endDist,
+        onComplete: () => {
+          flyTween = null;
           preFocusView = null;
           deselect();
+          if (!modeTransition) controls.enabled = true;
         }
-      }
-      
-      requestAnimationFrame(animateReturn);
+      };
+      controls.enabled = false;
     } else {
-      // 如果没有预聚焦状态，直接取消选择
       deselect();
     }
   });
@@ -1550,6 +1594,14 @@ function updateFlyTween(dt) {
 
   camera.position.lerpVectors(flyTween.p0, flyTween.p1, k);
   controls.target.lerpVectors(flyTween.t0, flyTween.t1, k);
+  
+  // 插值相机距离（如果存在）
+  if (typeof flyTween.dist0 === 'number' && typeof flyTween.dist1 === 'number') {
+    const newDist = THREE.MathUtils.lerp(flyTween.dist0, flyTween.dist1, k);
+    const dir = camera.position.clone().sub(controls.target).normalize();
+    camera.position.copy(controls.target).addScaledVector(dir, newDist);
+  }
+  
   camera.lookAt(controls.target);
 
   if (flyTween.t >= flyTween.dur) {
@@ -1735,6 +1787,11 @@ function animate() {
   }
 
   if (!modeTransition && flyTween) updateFlyTween(dt);
+
+  // 持续应用自适应缩放速度（覆盖滚轮、中键拖动、触摸捏合）
+  if (controls.enabled && controls.enableZoom) {
+    applyAdaptiveZoomSpeed(1);
+  }
 
   if (!modeTransition && focusTween2D) {
     focusTween2D.t += dt * 1000;
