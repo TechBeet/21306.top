@@ -577,6 +577,9 @@ const LABEL_LIFT_3D_BY_LEVEL = {
 };
 const LABEL_LIFT_SIDE_OFFSET = 0.16;
 
+/* ---------- 标签引导线布局参数 ---------- */
+const LABEL_FAN_OUT_X = 0.24;   /* 水平扇出距离：左右错开防止重叠 */
+
 const SCENE_BOX = {
   minX: -CAR_WIDTH / 2 - 0.5,
   maxX:  CAR_WIDTH / 2 + 0.5,
@@ -1093,11 +1096,14 @@ for (let i = 0; i < LABEL_TOTAL; i++) {
     const lineMat = new THREE.LineBasicMaterial({
       color: new THREE.Color(p.color),
       transparent: true,
-      opacity: 0.35,
+      opacity: 0.5,
       depthWrite: false,
       linewidth: 1
     });
 
+    /* ---- 引导线：锚点 → 折点 → 标签，采用两段式折线（肘形）----
+       折点先水平向外（远离走道/车窗中线）再竖直上升，
+       使相邻标签在水平方向错开，避免重叠遮挡。 */
     const linePts = [
       basePos.clone(),
       basePos.clone(),
@@ -1107,8 +1113,28 @@ for (let i = 0; i < LABEL_TOTAL; i++) {
     const line = new THREE.Line(lineGeo, lineMat);
     carGroup.add(line);
 
+    /* ---- 锚点小圆点：标示床位真实位置，弱化视觉突兀感 ---- */
+    const anchorDot = new THREE.Mesh(
+      new THREE.CircleGeometry(0.045, 12),
+      new THREE.MeshBasicMaterial({
+        color: new THREE.Color(p.color),
+        transparent: true,
+        opacity: 0.9,
+        depthWrite: false,
+        side: THREE.DoubleSide
+      })
+    );
+    anchorDot.position.copy(basePos);
+    anchorDot.userData.noHide = true;
+    carGroup.add(anchorDot);
+
     /* ---- 记录床位侧别（左/右）用于智能连接，复用上方已声明的变量 ---- */
-    labelEntries[i] = { label, line, lineMat, basePos, levelY, lift3D, isLeftBunk };
+    labelEntries[i] = {
+      label, line, lineMat, anchorDot,
+      basePos, levelY, lift3D, isLeftBunk,
+      /* 水平扇出偏移：窗侧向左、门侧向右，避免同排标签堆叠 */
+      fanX: isLeftBunk ? -LABEL_FAN_OUT_X : LABEL_FAN_OUT_X
+    };
   }
 
   const pct = LABEL_PCT_START + (LABEL_PCT_END - LABEL_PCT_START) * ((i + 1) / LABEL_TOTAL);
