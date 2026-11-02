@@ -14,7 +14,6 @@
     </script>
     <style>
         /* ── 护眼版配色变量 ── */
-        /* 将 :root 默认设为 light */
         :root, :root[data-theme="light"] {
             --bg: #f8fafc;
             --bg-grid: #e2e8f0;
@@ -23,14 +22,12 @@
             --text: #1e293b;
             --text-dim: #64748b;
             --accent-blue: #0284c7;
-            --accent-purple: #7e22ce;
             --accent-green: #15803d;
             --accent-red: #dc2626;
             --border: #cbd5e1;
             --nav-bg: rgba(248, 250, 252, 0.85);
             --shadow-glow: rgba(2, 132, 199, 0.1);
-            --btn-text-hover: #ffffff;
-            --warning-bg: rgba(220, 38, 38, 0.05);
+            --desc-bg: #f1f5f9;
         }
 
         :root[data-theme="dark"] {
@@ -41,14 +38,12 @@
             --text: #e2e8f0; 
             --text-dim: #94a3b8; 
             --accent-blue: #38bdf8; 
-            --accent-purple: #c084fc; 
             --accent-green: #4ade80; 
             --accent-red: #f87171; 
             --border: #334155;
             --nav-bg: rgba(15, 23, 42, 0.85);
             --shadow-glow: rgba(56, 189, 248, 0.15);
-            --btn-text-hover: #0f172a;
-            --warning-bg: rgba(248, 113, 113, 0.1);
+            --desc-bg: rgba(15, 23, 42, 0.4);
         }
 
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -106,33 +101,15 @@
         [data-theme="light"] .moon-icon { display: block; }
 
         /* ── Header ── */
-        header { text-align: center; margin-bottom: 2.5rem; padding-top: 2rem; }
+        header { text-align: center; margin-bottom: 3rem; padding-top: 2rem; }
         h1 { font-size: clamp(2rem, 4vw, 2.5rem); margin-bottom: 0.5rem; color: var(--text); font-weight: 800; letter-spacing: -1px; }
         h1 .highlight { color: var(--accent-blue); }
-        p.subtitle { color: var(--text-dim); font-size: 1rem; }
-
-        /* ── Warning Banner ── */
-        .warning-banner {
-            background-color: var(--warning-bg);
-            border: 1px solid var(--accent-red);
-            border-left: 4px solid var(--accent-red);
-            color: var(--text);
-            padding: 1.25rem;
-            border-radius: 8px;
-            margin-bottom: 2.5rem;
-            font-size: 0.95rem;
-            display: flex;
-            align-items: flex-start;
-            gap: 16px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-        }
-        .warning-icon { font-size: 1.5rem; line-height: 1; color: var(--accent-red); }
-        .warning-banner strong { color: var(--accent-red); display: block; margin-bottom: 4px; }
+        p.subtitle { color: var(--text-dim); font-size: 1.05rem; }
 
         /* ── Grid & Cards ── */
         .grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
             gap: 24px;
             margin-bottom: 60px;
         }
@@ -159,9 +136,9 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
+            margin-bottom: 12px;
+            padding-bottom: 12px;
             border-bottom: 1px solid var(--border);
-            padding-bottom: 16px;
         }
 
         .coin-name { font-size: 1.25rem; font-weight: 700; color: var(--text); display: flex; align-items: baseline; gap: 8px; }
@@ -177,7 +154,7 @@
             background: rgba(0,0,0,0.1);
         }
 
-        /* 网络徽章定制颜色 (降低饱和度) */
+        /* 网络徽章定制颜色 */
         .net-bsc { color: #d97706; border-color: #d97706; background-color: rgba(217, 119, 6, 0.1); }
         .net-eth { color: #6366f1; border-color: #6366f1; background-color: rgba(99, 102, 241, 0.1); }
         .net-trx { color: #ef4444; border-color: #ef4444; background-color: rgba(239, 68, 68, 0.1); }
@@ -187,7 +164,22 @@
         :root[data-theme="dark"] .net-trx { color: #f87171; border-color: #f87171; }
         :root[data-theme="dark"] .net-sol { color: #34d399; border-color: #34d399; }
 
+        /* 新增：详细说明区块 */
+        .card-desc {
+            font-size: 0.85rem;
+            color: var(--text-dim);
+            background: var(--desc-bg);
+            padding: 10px 14px;
+            border-radius: 6px;
+            margin-bottom: 16px;
+            border-left: 3px solid var(--accent-blue);
+            line-height: 1.5;
+        }
+        
+        .card-desc strong { color: var(--text); }
+
         .data-group { margin-bottom: 16px; flex-grow: 1; }
+        .data-group:last-child { margin-bottom: 0; }
         .data-label { font-size: 0.85rem; color: var(--text-dim); margin-bottom: 8px; font-weight: 500; }
 
         .address-box {
@@ -274,7 +266,6 @@
             .grid { grid-template-columns: 1fr; }
             .address-box { flex-direction: column; align-items: stretch; gap: 8px; }
             .copy-btn { width: 100%; }
-            .warning-banner { flex-direction: column; gap: 8px; }
         }
     </style>
 </head>
@@ -304,16 +295,6 @@
             <p class="subtitle">感谢您的支持！请选择您方便的币种进行赞助。</p>
         </header>
 
-        <div class="warning-banner">
-            <span class="warning-icon">⚠️</span>
-            <div>
-                <strong>安全提示：</strong>
-                1. 请务必核对<strong>主网（网络）</strong>，网络不匹配将导致资产永久丢失。<br>
-                2. XRP 充值必须填写<strong>标签 / 备注（Tag）</strong>。<br>
-                3. 请勿向这些地址充值 NFT 或使用智能合约转账。
-            </div>
-        </div>
-
         <!-- 数据已直接硬编码 -->
         <div class="grid">
             <!-- BTC -->
@@ -321,6 +302,9 @@
                 <div class="card-header">
                     <div class="coin-name">BTC <span>Bitcoin</span></div>
                     <span class="network-badge net-mainnet">SEGWITBTC</span>
+                </div>
+                <div class="card-desc">
+                    比特币原生主网 <strong>SegWit (隔离见证)</strong> 地址。请勿使用闪电网络或其他侧链转入，转账手续费（矿工费）由发送方承担。
                 </div>
                 <div class="data-group">
                     <div class="data-label">收款地址</div>
@@ -337,6 +321,9 @@
                     <div class="coin-name">ETH <span>Ethereum</span></div>
                     <span class="network-badge net-eth">ERC20</span>
                 </div>
+                <div class="card-desc">
+                    以太坊原生代币。请确保接收网络为 <strong>Ethereum (ERC20)</strong>。转账前请确保您的钱包内有充足的 ETH 作为 Gas 费。
+                </div>
                 <div class="data-group">
                     <div class="data-label">收款地址</div>
                     <div class="address-box">
@@ -351,6 +338,9 @@
                 <div class="card-header">
                     <div class="coin-name">USDT <span>Tether</span></div>
                     <span class="network-badge net-eth">ERC20</span>
+                </div>
+                <div class="card-desc">
+                    泰达币。当前地址仅支持 <strong>Ethereum (ERC20)</strong> 网络，请勿使用 TRC20、BEP20 或其他网络转账，否则资产将丢失。需备有 ETH 付 Gas 费。
                 </div>
                 <div class="data-group">
                     <div class="data-label">收款地址</div>
@@ -367,6 +357,9 @@
                     <div class="coin-name">BNB <span>Binance Coin</span></div>
                     <span class="network-badge net-bsc">BEP20</span>
                 </div>
+                <div class="card-desc">
+                    币安币。接收网络为 <strong>BNB Smart Chain (BEP20)</strong>。请确认发送方支持 BSC 网络，转账时需预留极少量 BNB 作为网络手续费。
+                </div>
                 <div class="data-group">
                     <div class="data-label">收款地址</div>
                     <div class="address-box">
@@ -382,6 +375,9 @@
                     <div class="coin-name">SOL <span>Solana</span></div>
                     <span class="network-badge net-sol">SOL</span>
                 </div>
+                <div class="card-desc">
+                    Solana 原生代币。仅支持 <strong>Solana 主网</strong>。请勿跨链转入（例如从 BSC 直接跨链），建议从支持 Solana 钱包或交易所直接提现。
+                </div>
                 <div class="data-group">
                     <div class="data-label">收款地址</div>
                     <div class="address-box">
@@ -396,6 +392,9 @@
                 <div class="card-header">
                     <div class="coin-name">XRP <span>XRP</span></div>
                     <span class="network-badge net-mainnet">XRP Ledger</span>
+                </div>
+                <div class="card-desc">
+                    XRP 主网。转账需支付极少量的 XRP 作为手续费（通常为 0.00001 XRP）。<strong>务必填写下方 Tag</strong>，否则无法到账。
                 </div>
                 <div class="data-group">
                     <div class="data-label">收款地址</div>
@@ -419,6 +418,9 @@
                     <div class="coin-name">DOGE <span>Dogecoin</span></div>
                     <span class="network-badge net-mainnet">DOGE</span>
                 </div>
+                <div class="card-desc">
+                    狗狗币主网。请确认网络为 <strong>Dogecoin</strong>。转账需支付极低的手续费（通常为 0.01 DOGE 左右）。
+                </div>
                 <div class="data-group">
                     <div class="data-label">收款地址</div>
                     <div class="address-box">
@@ -433,6 +435,9 @@
                 <div class="card-header">
                     <div class="coin-name">TRX <span>Tron</span></div>
                     <span class="network-badge net-trx">TRC20</span>
+                </div>
+                <div class="card-desc">
+                    波场币。接收网络为 <strong>Tron (TRC20)</strong>。如需从交易所提现，请选择 TRC20 网络，转账需消耗能量或燃烧少量 TRX 作为手续费。
                 </div>
                 <div class="data-group">
                     <div class="data-label">收款地址</div>
@@ -449,6 +454,9 @@
                     <div class="coin-name">ADA <span>Cardano</span></div>
                     <span class="network-badge net-mainnet">ADA</span>
                 </div>
+                <div class="card-desc">
+                    Cardano 主网。请确保发送网络为 <strong>Cardano</strong>。转账手续费极低，需使用支持 Shelley 地址的现代钱包进行转账。
+                </div>
                 <div class="data-group">
                     <div class="data-label">收款地址</div>
                     <div class="address-box">
@@ -463,6 +471,9 @@
                 <div class="card-header">
                     <div class="coin-name">DOT <span>Polkadot</span></div>
                     <span class="network-badge net-bsc">BEP20</span>
+                </div>
+                <div class="card-desc">
+                    <strong>注意：此地址接收的是 BEP20 网络的 DOT 代币</strong>（BSC 链上的封装资产），并非 Polkadot 原生主网！请务必选择 BNB Smart Chain 转账。
                 </div>
                 <div class="data-group">
                     <div class="data-label">收款地址</div>
@@ -479,6 +490,9 @@
                     <div class="coin-name">SHIB <span>Shiba INU</span></div>
                     <span class="network-badge net-eth">ERC20</span>
                 </div>
+                <div class="card-desc">
+                    柴犬币。接收网络为 <strong>Ethereum (ERC20)</strong>。请勿使用 BSC 网络或其他链上的 SHIB 进行充值，以防资产丢失。需备有 ETH 付 Gas 费。
+                </div>
                 <div class="data-group">
                     <div class="data-label">收款地址</div>
                     <div class="address-box">
@@ -493,6 +507,9 @@
                 <div class="card-header">
                     <div class="coin-name">LTC <span>Litecoin</span></div>
                     <span class="network-badge net-mainnet">LTC</span>
+                </div>
+                <div class="card-desc">
+                    莱特币主网。请确认发送网络为 <strong>Litecoin</strong>。请勿使用其底层分叉代币，手续费极低。
                 </div>
                 <div class="data-group">
                     <div class="data-label">收款地址</div>
@@ -509,6 +526,9 @@
                     <div class="coin-name">BCH <span>Bitcoin Cash</span></div>
                     <span class="network-badge net-mainnet">BCH</span>
                 </div>
+                <div class="card-desc">
+                    比特币现金主网。请确保使用的是 <strong>BCH 网络</strong>，避免与 BTC 网络混淆。支持 Legacy 和 CashAddr 格式。
+                </div>
                 <div class="data-group">
                     <div class="data-label">收款地址</div>
                     <div class="address-box">
@@ -524,6 +544,9 @@
                     <div class="coin-name">ZEC <span>Zcash</span></div>
                     <span class="network-badge net-mainnet">ZEC</span>
                 </div>
+                <div class="card-desc">
+                    Zcash 主网。此地址为透明地址（T-Address，以 t 开头）。请确保发送网络为 <strong>Zcash</strong>。
+                </div>
                 <div class="data-group">
                     <div class="data-label">收款地址</div>
                     <div class="address-box">
@@ -538,6 +561,9 @@
                 <div class="card-header">
                     <div class="coin-name">ALGO <span>Algorand</span></div>
                     <span class="network-badge net-mainnet">ALGO</span>
+                </div>
+                <div class="card-desc">
+                    Algorand 主网。转账手续费仅需 0.001 ALGO。请确认接收网络为 <strong>Algorand</strong>。
                 </div>
                 <div class="data-group">
                     <div class="data-label">收款地址</div>
