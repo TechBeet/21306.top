@@ -1,13 +1,39 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-theme="dark">
+<html lang="zh-CN" data-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>21306.top | ZMH 的极客工作台 · 开源项目与硬核工具</title>
     <meta name="description" content="TechBeet (ZMH) 的开源项目主理人主页，涵盖 ClassIn 高速下载器、LlamaUI LLM 控制台、FlowLens 原生抓包工具、Blender 汉化插件等硬核项目。">
+    <!-- 主题初始化脚本：在页面渲染前执行，防止闪烁 -->
+    <script>
+        (function() {
+            var savedTheme = localStorage.getItem('theme');
+            var theme = savedTheme ? savedTheme : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+            document.documentElement.setAttribute('data-theme', theme);
+        })();
+    </script>
     <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         /* ── 主题变量定义 ── */
+        /* 将 :root 默认设为 light，确保即使 JS 失效也不会显示错乱 */
+        :root, :root[data-theme="light"] {
+            --bg: #f4f6fb;
+            --bg-grid: #e0e5ec;
+            --card-bg: rgba(255, 255, 255, 0.85);
+            --card-hover-bg: rgba(255, 255, 255, 1);
+            --text: #1a1d2e;
+            --text-dim: #5a6270;
+            --neon-pink: #d900d9;
+            --neon-cyan: #0088cc;
+            --neon-green: #008f00;
+            --border: #1a1d2e;
+            --shadow-glow: rgba(0, 136, 204, 0.15);
+            --nav-bg: rgba(244, 246, 251, 0.9);
+            --btn-hover-text: #fff;
+            --term-green: #008f00;
+        }
+
         :root[data-theme="dark"] {
             --bg: #050505;
             --bg-grid: #111;
@@ -23,23 +49,6 @@
             --nav-bg: rgba(5, 5, 5, 0.9);
             --btn-hover-text: #000;
             --term-green: #39ff14;
-        }
-
-        :root[data-theme="light"] {
-            --bg: #f4f6fb;
-            --bg-grid: #e0e5ec;
-            --card-bg: rgba(255, 255, 255, 0.85);
-            --card-hover-bg: rgba(255, 255, 255, 1);
-            --text: #1a1d2e;
-            --text-dim: #5a6270;
-            --neon-pink: #d900d9; /* 深洋红，保证亮色下可读 */
-            --neon-cyan: #0088cc; /* 深青色 */
-            --neon-green: #008f00; /* 深绿色 */
-            --border: #1a1d2e;
-            --shadow-glow: rgba(0, 136, 204, 0.15);
-            --nav-bg: rgba(244, 246, 251, 0.9);
-            --btn-hover-text: #fff;
-            --term-green: #008f00;
         }
 
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -88,7 +97,6 @@
         }
         .theme-btn:hover { border-color: var(--neon-cyan); color: var(--neon-cyan); box-shadow: 0 0 10px var(--shadow-glow); }
         .theme-btn svg { width: 14px; height: 14px; }
-        /* 根据主题显示不同图标 */
         [data-theme="dark"] .sun-icon { display: block; }
         [data-theme="dark"] .moon-icon { display: none; }
         [data-theme="light"] .sun-icon { display: none; }
@@ -106,7 +114,6 @@
         .hero h1 .gradient { color: var(--neon-cyan); text-shadow: 0 0 20px var(--shadow-glow); }
         .hero p { color: var(--text-dim); max-width: 640px; margin: 0 auto 40px; font-size: 16px; }
         
-        /* 按钮容器，确保按钮之间有间距 */
         .hero-actions { display: flex; justify-content: center; gap: 16px; flex-wrap: wrap; }
 
         .btn {
@@ -208,7 +215,6 @@
             <h1>构建硬核工具，<br><span class="gradient">解决真实痛点</span></h1>
             <p>这里是 TechBeet（ZMH）的开源项目枢纽。专注于桌面应用与创意工具开发，从高速下载器到原生流量分析，从 LLM 本地部署到 3D 建模汉化，致力于用代码提升数字工作流的效率。</p>
             
-            <!-- 修改：按钮容器，新增赞助按钮 -->
             <div class="hero-actions">
                 <a href="#projects" class="btn btn-primary">> 浏览项目</a>
                 <a href="https://github.com/TechBeet" target="_blank" rel="noopener" class="btn">> GitHub 主页</a>
@@ -366,7 +372,6 @@
                         <div class="tool-desc">WebGL Mandelbulb 渲染，测试设备 GPU 性能</div>
                     </div>
                 </a>
-                <!-- 删除了 Arduino 资源按钮 -->
             </div>
         </div>
     </section>
@@ -385,7 +390,6 @@
     <script>
         // 主题控制逻辑
         const root = document.documentElement;
-        const themeBtn = document.querySelector('.theme-btn');
         
         // 获取系统偏好
         const getPreferredTheme = () => {
@@ -399,9 +403,6 @@
             root.setAttribute('data-theme', theme);
             localStorage.setItem('theme', theme);
         };
-
-        // 初始加载
-        setTheme(getPreferredTheme());
 
         // 手动切换
         window.toggleTheme = () => {
