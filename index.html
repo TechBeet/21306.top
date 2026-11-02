@@ -106,6 +106,9 @@
         .hero h1 .gradient { color: var(--neon-cyan); text-shadow: 0 0 20px var(--shadow-glow); }
         .hero p { color: var(--text-dim); max-width: 640px; margin: 0 auto 40px; font-size: 16px; }
         
+        /* 按钮容器，确保按钮之间有间距 */
+        .hero-actions { display: flex; justify-content: center; gap: 16px; flex-wrap: wrap; }
+
         .btn {
             display: inline-block; padding: 12px 28px; font-family: inherit;
             font-weight: 600; text-decoration: none; border: 1px solid var(--neon-cyan);
@@ -204,8 +207,13 @@
             <div class="hero-badge">_ SYSTEM.ONLINE_ // 开放开源 · 硬核驱动</div>
             <h1>构建硬核工具，<br><span class="gradient">解决真实痛点</span></h1>
             <p>这里是 TechBeet（ZMH）的开源项目枢纽。专注于桌面应用与创意工具开发，从高速下载器到原生流量分析，从 LLM 本地部署到 3D 建模汉化，致力于用代码提升数字工作流的效率。</p>
-            <a href="#projects" class="btn btn-primary">> 浏览项目</a>
-            <a href="https://github.com/TechBeet" target="_blank" rel="noopener" class="btn">> GitHub 主页</a>
+            
+            <!-- 修改：按钮容器，新增赞助按钮 -->
+            <div class="hero-actions">
+                <a href="#projects" class="btn btn-primary">> 浏览项目</a>
+                <a href="https://github.com/TechBeet" target="_blank" rel="noopener" class="btn">> GitHub 主页</a>
+                <a href="./Sponsor/" class="btn">> 赞助支持</a>
+            </div>
         </div>
     </section>
 
@@ -342,7 +350,7 @@
         <div class="container">
             <div class="section-label">// TOOLS & EXPERIMENTS</div>
             <h2 class="section-title">实用工具与在线实验</h2>
-            <p class="section-desc">轻量级 Web 工具，无需安装，打开即用。同时也包含一些硬件与图形实验。</p>
+            <p class="section-desc">轻量级 Web 工具，无需安装，打开即用。</p>
             <div class="tools-grid">
                 <a href="./clock/" class="tool">
                     <div class="tool-icon">⏱️</div>
@@ -358,13 +366,7 @@
                         <div class="tool-desc">WebGL Mandelbulb 渲染，测试设备 GPU 性能</div>
                     </div>
                 </a>
-                <a href="./arduino/" class="tool">
-                    <div class="tool-icon">🔌</div>
-                    <div>
-                        <div class="tool-name">Arduino 资源</div>
-                        <div class="tool-desc">NullLab AVR 开发板包与 Arduino 数据文件分发</div>
-                    </div>
-                </a>
+                <!-- 删除了 Arduino 资源按钮 -->
             </div>
         </div>
     </section>
