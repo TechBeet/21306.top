@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>赞助支持 | 21306.top</title>
+    <style>
+        /* ── 护眼版配色变量 ── */
+        :root[data-theme="dark"] {
+            --bg: #0f172a; /* 深蓝灰，比纯黑柔和 */
+            --bg-grid: #1e293b;
+            --card-bg: rgba(30, 41, 59, 0.6); /* 半透明玻璃感 */
+            --card-hover-bg: rgba(30, 41, 59, 0.9);
+            --text: #e2e8f0; /* 柔和的灰白，不刺眼 */
+            --text-dim: #94a3b8; /* 稍暗的灰色 */
+            --accent-blue: #38bdf8; /* 柔光蓝 */
+            --accent-purple: #c084fc; /* 柔和紫 */
+            --accent-green: #4ade80; /* 柔和绿 */
+            --accent-red: #f87171; /* 柔和红（用于警告） */
+            --border: #334155;
+            --nav-bg: rgba(15, 23, 42, 0.85);
+            --shadow-glow: rgba(56, 189, 248, 0.15);
+            --btn-text-hover: #0f172a;
+            --warning-bg: rgba(248, 113, 113, 0.1);
+        }
+
+        :root[data-theme="light"] {
+            --bg: #f8fafc; /* 极浅的灰蓝 */
+            --bg-grid: #e2e8f0;
+            --card-bg: rgba(255, 255, 255, 0.8);
+            --card-hover-bg: #ffffff;
+            --text: #1e293b; /* 深灰蓝字体 */
+            --text-dim: #64748b;
+            --accent-blue: #0284c7;
+            --accent-purple: #7e22ce;
+            --accent-green: #15803d;
+            --accent-red: #dc2626;
+            --border: #cbd5e1;
+            --nav-bg: rgba(248, 250, 252, 0.85);
+            --shadow-glow: rgba(2, 132, 199, 0.1);
+            --btn-text-hover: #ffffff;
+            --warning-bg: rgba(220, 38, 38, 0.05);
+        }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        body {
+            background-color: var(--bg);
+            /* 网格线也调淡了 */
+            background-image: 
+                linear-gradient(var(--bg-grid) 1px, transparent 1px),
+                linear-gradient(90deg, var(--bg-grid) 1px, transparent 1px);
+            background-size: 40px 40px;
+            color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.6;
+            overflow-x: hidden;
+            transition: background-color 0.3s, color 0.3s;
+            min-height: 100vh;
+            padding-top: 80px;
+        }
+        
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg); }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
+        
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+
+        /* ── Navbar ── */
+        .navbar {
+            position: fixed; top: 0; left: 0; right: 0; height: 64px;
+            background: var(--nav-bg); backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+            z-index: 100; display: flex; align-items: center;
+            transition: background-color 0.3s, border-color 0.3s;
+        }
+        .navbar .container { display: flex; justify-content: space-between; align-items: center; width: 100%; }
+        .nav-logo { font-size: 20px; font-weight: 700; color: var(--text); letter-spacing: -0.5px; text-decoration: none; font-family: 'Courier New', Courier, monospace; }
+        .nav-logo span { color: var(--accent-blue); }
+        .nav-right { display: flex; align-items: center; gap: 20px; }
+        .nav-links { display: flex; gap: 20px; list-style: none; }
+        .nav-links a { color: var(--text-dim); text-decoration: none; transition: all 0.3s; font-size: 14px; font-weight: 500; }
+        .nav-links a:hover { color: var(--accent-blue); }
+
+        /* 主题切换按钮 */
+        .theme-btn {
+            background: var(--card-bg); border: 1px solid var(--border);
+            color: var(--text); padding: 6px 12px; border-radius: 6px;
+            font-family: inherit; cursor: pointer; transition: all 0.2s;
+            display: flex; align-items: center; gap: 8px; font-size: 13px;
+        }
+        .theme-btn:hover { border-color: var(--accent-blue); color: var(--accent-blue); }
+        .theme-btn svg { width: 16px; height: 16px; }
+        [data-theme="dark"] .sun-icon { display: block; }
+        [data-theme="dark"] .moon-icon { display: none; }
+        [data-theme="light"] .sun-icon { display: none; }
+        [data-theme="light"] .moon-icon { display: block; }
+
+        /* ── Header ── */
+        header { text-align: center; margin-bottom: 2.5rem; padding-top: 2rem; }
+        h1 { font-size: clamp(2rem, 4vw, 2.5rem); margin-bottom: 0.5rem; color: var(--text); font-weight: 800; letter-spacing: -1px; }
+        h1 .highlight { color: var(--accent-blue); }
+        p.subtitle { color: var(--text-dim); font-size: 1rem; }
+
+        /* ── Warning Banner ── */
+        .warning-banner {
+            background-color: var(--warning-bg);
+            border: 1px solid var(--accent-red);
+            border-left: 4px solid var(--accent-red);
+            color: var(--text);
+            padding: 1.25rem;
+            border-radius: 8px;
+            margin-bottom: 2.5rem;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        .warning-icon { font-size: 1.5rem; line-height: 1; color: var(--accent-red); }
+        .warning-banner strong { color: var(--accent-red); display: block; margin-bottom: 4px; }
+
+        /* ── Grid & Cards ── */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+            gap: 24px;
+            margin-bottom: 60px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px; /* 柔和圆角 */
+            padding: 24px;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            backdrop-filter: blur(10px);
+        }
+
+        .card:hover {
+            border-color: var(--accent-blue);
+            box-shadow: 0 8px 24px var(--shadow-glow);
+            transform: translateY(-4px);
+            background: var(--card-hover-bg);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 16px;
+        }
+
+        .coin-name { font-size: 1.25rem; font-weight: 700; color: var(--text); display: flex; align-items: baseline; gap: 8px; }
+        .coin-name span { font-size: 0.85rem; color: var(--text-dim); font-weight: 500; }
+
+        .network-badge {
+            font-size: 0.75rem;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-weight: 600;
+            border: 1px solid var(--border);
+            color: var(--text-dim);
+            background: rgba(0,0,0,0.1);
+        }
+
+        /* 网络徽章定制颜色 (降低饱和度) */
+        .net-bsc { color: #d97706; border-color: #d97706; background-color: rgba(217, 119, 6, 0.1); }
+        .net-eth { color: #6366f1; border-color: #6366f1; background-color: rgba(99, 102, 241, 0.1); }
+        .net-trx { color: #ef4444; border-color: #ef4444; background-color: rgba(239, 68, 68, 0.1); }
+        .net-sol { color: #10b981; border-color: #10b981; background-color: rgba(16, 185, 129, 0.1); }
+        :root[data-theme="dark"] .net-bsc { color: #fbbf24; border-color: #fbbf24; }
+        :root[data-theme="dark"] .net-eth { color: #818cf8; border-color: #818cf8; }
+        :root[data-theme="dark"] .net-trx { color: #f87171; border-color: #f87171; }
+        :root[data-theme="dark"] .net-sol { color: #34d399; border-color: #34d399; }
+
+        .data-group { margin-bottom: 16px; flex-grow: 1; }
+        .data-label { font-size: 0.85rem; color: var(--text-dim); margin-bottom: 8px; font-weight: 500; }
+
+        .address-box {
+            display: flex;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            transition: border-color 0.2s;
+        }
+        .address-box:hover { border-color: var(--text-dim); }
+
+        .address-text {
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+            font-size: 0.85rem;
+            word-break: break-all;
+            user-select: all;
+            color: var(--text);
+            line-height: 1.5;
+        }
+
+        .tag-warning { color: var(--accent-red); font-weight: 600; }
+
+        /* ── 按钮 ── */
+        .copy-btn {
+            background: var(--card-bg);
+            color: var(--text);
+            border: 1px solid var(--border);
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            white-space: nowrap;
+        }
+
+        .copy-btn:hover {
+            border-color: var(--accent-blue);
+            color: var(--accent-blue);
+            background: rgba(56, 189, 248, 0.05);
+        }
+        
+        /* 针对红色警告按钮的特殊处理 */
+        .copy-btn.danger { color: var(--accent-red); border-color: var(--accent-red); }
+        .copy-btn.danger:hover { background: rgba(248, 113, 113, 0.1); }
+
+        .copy-btn.copied {
+            border-color: var(--accent-green);
+            color: var(--accent-green);
+            background: rgba(74, 222, 128, 0.1);
+        }
+
+        /* ── 提示框 (Toast) ── */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            background-color: var(--bg);
+            color: var(--accent-green);
+            border: 1px solid var(--accent-green);
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 14px;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            z-index: 1000;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+        @media (max-width: 768px) {
+            .nav-links { display: none; }
+            .grid { grid-template-columns: 1fr; }
+            .address-box { flex-direction: column; align-items: stretch; gap: 8px; }
+            .copy-btn { width: 100%; }
+            .warning-banner { flex-direction: column; gap: 8px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 导航栏 -->
+    <nav class="navbar">
+        <div class="container">
+            <a href="../" class="nav-logo">21306<span>.top</span></a>
+            <div class="nav-right">
+                <ul class="nav-links">
+                    <li><a href="../#projects">项目展示</a></li>
+                    <li><a href="../#tools">实用工具</a></li>
+                </ul>
+                <button class="theme-btn" onclick="toggleTheme()" aria-label="切换主题">
+                    <svg class="sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+                    <svg class="moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                    <span>切换主题</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <header>
+            <h1>☕ <span class="highlight">赞助支持</span></h1>
+            <p class="subtitle">感谢您的支持！请选择您方便的币种进行赞助。</p>
+        </header>
+
+        <div class="warning-banner">
+            <span class="warning-icon">⚠️</span>
+            <div>
+                <strong>安全提示：</strong>
+                1. 请务必核对<strong>主网（网络）</strong>，网络不匹配将导致资产永久丢失。<br>
+                2. XRP 充值必须填写<strong>标签 / 备注（Tag）</strong>。<br>
+                3. 请勿向这些地址充值 NFT 或使用智能合约转账。
+            </div>
+        </div>
+
+        <!-- 数据已直接硬编码 -->
+        <div class="grid">
+            <!-- BTC -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="coin-name">BTC <span>Bitcoin</span></div>
+                    <span class="network-badge net-mainnet">SEGWITBTC</span>
+                </div>
+                <div class="data-group">
+                    <div class="data-label">收款地址</div>
+                    <div class="address-box">
+                        <span class="address-text">bc1q8lctlsas6sn7se2ltdjrkwcs0whp94pjg2gprv</span>
+                        <button class="copy-btn" onclick="copyText('bc1q8lctlsas6sn7se2ltdjrkwcs0whp94pjg2gprv', this)">复制</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ETH -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="coin-name">ETH <span>Ethereum</span></div>
+                    <span class="network-badge net-eth">ERC20</span>
+                </div>
+                <div class="data-group">
+                    <div class="data-label">收款地址</div>
+                    <div class="address-box">
+                        <span class="address-text">0xbffdb6493ea20d3ee19685698bf0a8ed1b20b536</span>
+                        <button class="copy-btn" onclick="copyText('0xbffdb6493ea20d3ee19685698bf0a8ed1b20b536', this)">复制</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- USDT -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="coin-name">USDT <span>Tether</span></div>
+                    <span class="network-badge net-eth">ERC20</span>
+                </div>
+                <div class="data-group">
+                    <div class="data-label">收款地址</div>
+                    <div class="address-box">
+                        <span class="address-text">0xbffdb6493ea20d3ee19685698bf0a8ed1b20b536</span>
+                        <button class="copy-btn" onclick="copyText('0xbffdb6493ea20d3ee19685698bf0a8ed1b20b536', this)">复制</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- BNB -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="coin-name">BNB <span>Binance Coin</span></div>
+                    <span class="network-badge net-bsc">BEP20</span>
+                </div>
+                <div class="data-group">
+                    <div class="data-label">收款地址</div>
+                    <div class="address-box">
+                        <span class="address-text">0xbffdb6493ea20d3ee19685698bf0a8ed1b20b536</span>
+                        <button class="copy-btn" onclick="copyText('0xbffdb6493ea20d3ee19685698bf0a8ed1b20b536', this)">复制</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SOL -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="coin-name">SOL <span>Solana</span></div>
+                    <span class="network-badge net-sol">SOL</span>
+                </div>
+                <div class="data-group">
+                    <div class="data-label">收款地址</div>
+                    <div class="address-box">
+                        <span class="address-text">HP929PDavzBYQjrkKmogyXAuZGXavCWTAPR6JYwEb7tU</span>
+                        <button class="copy-btn" onclick="copyText('HP929PDavzBYQjrkKmogyXAuZGXavCWTAPR6JYwEb7tU', this)">复制</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- XRP -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="coin-name">XRP <span>XRP</span></div>
+                    <span class="network-badge net-mainnet">XRP Ledger</span>
+                </div>
+                <div class="data-group">
+                    <div class="data-label">收款地址</div>
+                    <div class="address-box">
+                        <span class="address-text">rNxp4h8apvRis6mJf9Sh8C6iRxfrDWN7AV</span>
+                        <button class="copy-btn" onclick="copyText('rNxp4h8apvRis6mJf9Sh8C6iRxfrDWN7AV', this)">复制</button>
+                    </div>
+                </div>
+                <div class="data-group">
+                    <div class="data-label" style="color: var(--accent-red);">标签 / 备注 (必须填写)</div>
+                    <div class="address-box" style="border-color: var(--accent-red);">
+                        <span class="address-text tag-warning">500439599</span>
+                        <button class="copy-btn danger" onclick="copyText('500439599', this)">复制 Tag</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- DOGE -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="coin-name">DOGE <span>Dogecoin</span></div>
+                    <span class="network-badge net-mainnet">DOGE</span>
+                </div>
+                <div class="data-group">
+                    <div class="data-label">收款地址</div>
+                    <div class="address-box">
+                        <span class="address-text">DB9JAeXavR4Lr8E5LhA9njjqHg5hkR7ud1</span>
+                        <button class="copy-btn" onclick="copyText('DB9JAeXavR4Lr8E5LhA9njjqHg5hkR7ud1', this)">复制</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TRX -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="coin-name">TRX <span>Tron</span></div>
+                    <span class="network-badge net-trx">TRC20</span>
+                </div>
+                <div class="data-group">
+                    <div class="data-label">收款地址</div>
+                    <div class="address-box">
+                        <span class="address-text">TNnawuaM94JAH2XnY7HEtFzUaRwff4zQob</span>
+                        <button class="copy-btn" onclick="copyText('TNnawuaM94JAH2XnY7HEtFzUaRwff4zQob', this)">复制</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ADA -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="coin-name">ADA <span>Cardano</span></div>
+                    <span class="network-badge net-mainnet">ADA</span>
+                </div>
+                <div class="data-group">
+                    <div class="data-label">收款地址</div>
+                    <div class="address-box">
+                        <span class="address-text">addr1vylnxzlfj96cq697pd9d0wp70w0naemaf33yp5esr446qlc32an92</span>
+                        <button class="copy-btn" onclick="copyText('addr1vylnxzlfj96cq697pd9d0wp70w0naemaf33yp5esr446qlc32an92', this)">复制</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- DOT -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="coin-name">DOT <span>Polkadot</span></div>
+                    <span class="network-badge net-bsc">BEP20</span>
+                </div>
+                <div class="data-group">
+                    <div class="data-label">收款地址</div>
+                    <div class="address-box">
+                        <span class="address-text">0xbffdb6493ea20d3ee19685698bf0a8ed1b20b536</span>
+                        <button class="copy-btn" onclick="copyText('0xbffdb6493ea20d3ee19685698bf0a8ed1b20b536', this)">复制</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SHIB -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="coin-name">SHIB <span>Shiba INU</span></div>
+                    <span class="network-badge net-eth">ERC20</span>
+                </div>
+                <div class="data-group">
+                    <div class="data-label">收款地址</div>
+                    <div class="address-box">
+                        <span class="address-text">0xbffdb6493ea20d3ee19685698bf0a8ed1b20b536</span>
+                        <button class="copy-btn" onclick="copyText('0xbffdb6493ea20d3ee19685698bf0a8ed1b20b536', this)">复制</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- LTC -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="coin-name">LTC <span>Litecoin</span></div>
+                    <span class="network-badge net-mainnet">LTC</span>
+                </div>
+                <div class="data-group">
+                    <div class="data-label">收款地址</div>
+                    <div class="address-box">
+                        <span class="address-text">LRAJMfK2fckzzVnLNHdgvfx5Rm4Be5piZS</span>
+                        <button class="copy-btn" onclick="copyText('LRAJMfK2fckzzVnLNHdgvfx5Rm4Be5piZS', this)">复制</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- BCH -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="coin-name">BCH <span>Bitcoin Cash</span></div>
+                    <span class="network-badge net-mainnet">BCH</span>
+                </div>
+                <div class="data-group">
+                    <div class="data-label">收款地址</div>
+                    <div class="address-box">
+                        <span class="address-text">16GbK23PVAHNyVirS4Q6chFmjKzFwioQNQ</span>
+                        <button class="copy-btn" onclick="copyText('16GbK23PVAHNyVirS4Q6chFmjKzFwioQNQ', this)">复制</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ZEC -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="coin-name">ZEC <span>Zcash</span></div>
+                    <span class="network-badge net-mainnet">ZEC</span>
+                </div>
+                <div class="data-group">
+                    <div class="data-label">收款地址</div>
+                    <div class="address-box">
+                        <span class="address-text">tex13a0u83jhj7rluk90ltpp7m4f6uj5urhvhrxule</span>
+                        <button class="copy-btn" onclick="copyText('tex13a0u83jhj7rluk90ltpp7m4f6uj5urhvhrxule', this)">复制</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ALGO -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="coin-name">ALGO <span>Algorand</span></div>
+                    <span class="network-badge net-mainnet">ALGO</span>
+                </div>
+                <div class="data-group">
+                    <div class="data-label">收款地址</div>
+                    <div class="address-box">
+                        <span class="address-text">NVY2BU7JNI4HJRGXVSOUNZBOYX7FEKCV73XZ4HD2BJ26KXYXM3QPRLKFEQ</span>
+                        <button class="copy-btn" onclick="copyText('NVY2BU7JNI4HJRGXVSOUNZBOYX7FEKCV73XZ4HD2BJ26KXYXM3QPRLKFEQ', this)">复制</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast">✔ 已成功复制到剪贴板！</div>
+
+    <script>
+        // 主题控制逻辑
+        const root = document.documentElement;
+        const getPreferredTheme = () => {
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme) return savedTheme;
+            return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        };
+        const setTheme = (theme) => {
+            root.setAttribute('data-theme', theme);
+            localStorage.setItem('theme', theme);
+        };
+        setTheme(getPreferredTheme());
+        window.toggleTheme = () => {
+            const currentTheme = root.getAttribute('data-theme');
+            setTheme(currentTheme === 'dark' ? 'light' : 'dark');
+        };
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+            if (!localStorage.getItem('theme')) {
+                setTheme(e.matches ? 'dark' : 'light');
+            }
+        });
+
+        // 复制功能
+        const toast = document.getElementById('toast');
+        
+        function copyText(text, btnElement) {
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(text).then(() => {
+                    showSuccess(btnElement);
+                }).catch(err => {
+                    fallbackCopyTextToClipboard(text, btnElement);
+                });
+            } else {
+                fallbackCopyTextToClipboard(text, btnElement);
+            }
+        }
+
+        function fallbackCopyTextToClipboard(text, btnElement) {
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            textArea.style.position = "fixed";
+            textArea.style.left = "-999999px";
+            textArea.style.top = "-999999px";
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            try {
+                document.execCommand('copy');
+                showSuccess(btnElement);
+            } catch (err) {
+                console.error('Fallback: Oops, unable to copy', err);
+                alert('复制失败，请手动选择复制');
+            }
+            document.body.removeChild(textArea);
+        }
+
+        function showSuccess(btn) {
+            const originalText = btn.innerText;
+            btn.innerText = '✔ 已复制';
+            btn.classList.add('copied');
+            
+            toast.classList.add('show');
+            
+            setTimeout(() => {
+                btn.innerText = originalText;
+                btn.classList.remove('copied');
+                toast.classList.remove('show');
+            }, 2000);
+        }
+    </script>
+</body>
+</html>
