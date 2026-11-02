@@ -176,7 +176,7 @@
             line-height: 1.5;
         }
         
-        .card-desc strong { color: var(--text); }
+        .card-desc strong { color: var(--accent-red); font-weight: 600; }
 
         .data-group { margin-bottom: 16px; flex-grow: 1; }
         .data-group:last-child { margin-bottom: 0; }
@@ -295,7 +295,6 @@
             <p class="subtitle">感谢您的支持！请选择您方便的币种进行赞助。</p>
         </header>
 
-        <!-- 数据已直接硬编码 -->
         <div class="grid">
             <!-- BTC -->
             <div class="card">
@@ -304,7 +303,7 @@
                     <span class="network-badge net-mainnet">SEGWITBTC</span>
                 </div>
                 <div class="card-desc">
-                    比特币原生主网 <strong>SegWit (隔离见证)</strong> 地址。请勿使用闪电网络或其他侧链转入，转账手续费（矿工费）由发送方承担。
+                    比特币原生主网 <strong>SegWit (隔离见证)</strong> 地址（bc1 开头）。<strong>请勿</strong>使用闪电网络或其他侧链转入。
                 </div>
                 <div class="data-group">
                     <div class="data-label">收款地址</div>
@@ -340,7 +339,7 @@
                     <span class="network-badge net-eth">ERC20</span>
                 </div>
                 <div class="card-desc">
-                    泰达币。当前地址仅支持 <strong>Ethereum (ERC20)</strong> 网络，请勿使用 TRC20、BEP20 或其他网络转账，否则资产将丢失。需备有 ETH 付 Gas 费。
+                    泰达币。当前地址仅支持 <strong>Ethereum (ERC20)</strong> 网络。<strong>请勿</strong>使用 TRC20、BEP20 或其他网络，否则资产将丢失。
                 </div>
                 <div class="data-group">
                     <div class="data-label">收款地址</div>
@@ -358,7 +357,7 @@
                     <span class="network-badge net-bsc">BEP20</span>
                 </div>
                 <div class="card-desc">
-                    币安币。接收网络为 <strong>BNB Smart Chain (BEP20)</strong>。请确认发送方支持 BSC 网络，转账时需预留极少量 BNB 作为网络手续费。
+                    币安币。接收网络为 <strong>BNB Smart Chain (BEP20)</strong>。转账时需预留极少量 BNB 作为网络手续费。
                 </div>
                 <div class="data-group">
                     <div class="data-label">收款地址</div>
@@ -376,7 +375,7 @@
                     <span class="network-badge net-sol">SOL</span>
                 </div>
                 <div class="card-desc">
-                    Solana 原生代币。仅支持 <strong>Solana 主网</strong>。请勿跨链转入（例如从 BSC 直接跨链），建议从支持 Solana 钱包或交易所直接提现。
+                    Solana 原生代币。仅支持 <strong>Solana 主网</strong>。请勿跨链转入，建议从支持 Solana 的钱包或交易所直接提现。
                 </div>
                 <div class="data-group">
                     <div class="data-label">收款地址</div>
@@ -394,7 +393,7 @@
                     <span class="network-badge net-mainnet">XRP Ledger</span>
                 </div>
                 <div class="card-desc">
-                    XRP 主网。转账需支付极少量的 XRP 作为手续费（通常为 0.00001 XRP）。<strong>务必填写下方 Tag</strong>，否则无法到账。
+                    XRP 主网。转账需支付极少量的 XRP 作为手续费。<strong>下方 Tag 必须填写</strong>，否则资金无法到账。
                 </div>
                 <div class="data-group">
                     <div class="data-label">收款地址</div>
@@ -437,7 +436,7 @@
                     <span class="network-badge net-trx">TRC20</span>
                 </div>
                 <div class="card-desc">
-                    波场币。接收网络为 <strong>Tron (TRC20)</strong>。如需从交易所提现，请选择 TRC20 网络，转账需消耗能量或燃烧少量 TRX 作为手续费。
+                    波场币。接收网络为 <strong>Tron (TRC20)</strong>。转账需消耗能量或燃烧少量 TRX 作为手续费。
                 </div>
                 <div class="data-group">
                     <div class="data-label">收款地址</div>
@@ -455,7 +454,7 @@
                     <span class="network-badge net-mainnet">ADA</span>
                 </div>
                 <div class="card-desc">
-                    Cardano 主网。请确保发送网络为 <strong>Cardano</strong>。转账手续费极低，需使用支持 Shelley 地址的现代钱包进行转账。
+                    Cardano 主网。请确保发送网络为 <strong>Cardano</strong>。转账手续费极低，需使用支持 Shelley 地址的现代钱包。
                 </div>
                 <div class="data-group">
                     <div class="data-label">收款地址</div>
@@ -491,7 +490,7 @@
                     <span class="network-badge net-eth">ERC20</span>
                 </div>
                 <div class="card-desc">
-                    柴犬币。接收网络为 <strong>Ethereum (ERC20)</strong>。请勿使用 BSC 网络或其他链上的 SHIB 进行充值，以防资产丢失。需备有 ETH 付 Gas 费。
+                    柴犬币。接收网络为 <strong>Ethereum (ERC20)</strong>。请勿使用 BSC 网络或其他链上的 SHIB。需备有 ETH 付 Gas 费。
                 </div>
                 <div class="data-group">
                     <div class="data-label">收款地址</div>
@@ -509,7 +508,7 @@
                     <span class="network-badge net-mainnet">LTC</span>
                 </div>
                 <div class="card-desc">
-                    莱特币主网。请确认发送网络为 <strong>Litecoin</strong>。请勿使用其底层分叉代币，手续费极低。
+                    莱特币主网。请确认发送网络为 <strong>Litecoin</strong>。请勿使用其底层分叉代币。
                 </div>
                 <div class="data-group">
                     <div class="data-label">收款地址</div>
@@ -527,7 +526,7 @@
                     <span class="network-badge net-mainnet">BCH</span>
                 </div>
                 <div class="card-desc">
-                    比特币现金主网。请确保使用的是 <strong>BCH 网络</strong>，避免与 BTC 网络混淆。支持 Legacy 和 CashAddr 格式。
+                    比特币现金主网。请确保使用的是 <strong>BCH 网络</strong>，避免与 BTC 网络混淆。
                 </div>
                 <div class="data-group">
                     <div class="data-label">收款地址</div>
@@ -563,7 +562,7 @@
                     <span class="network-badge net-mainnet">ALGO</span>
                 </div>
                 <div class="card-desc">
-                    Algorand 主网。转账手续费仅需 0.001 ALGO。请确认接收网络为 <strong>Algorand</strong>。
+                    Algorand 主网。转账手续费极低（仅需 0.001 ALGO）。请确认接收网络为 <strong>Algorand</strong>。
                 </div>
                 <div class="data-group">
                     <div class="data-label">收款地址</div>
