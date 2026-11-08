@@ -878,7 +878,9 @@ const PASSENGERS = [
   { name:'孙浩翔', shortName:'孙浩翔', car:3, num:1, level:2, color:'#4da3ff', note:'' },
   { name:'朱景江', shortName:'朱景江', car:3, num:1, level:3, color:'#ff8ac4', note:'' },
   { name:'张轩逸', shortName:'张轩逸', car:3, num:7, level:3, color:'#ffa94d', note:'😀' },
-  { name:'吉吉', shortName:'吉吉', car:3, num:7, level:1, color:'#c9a0ff', note:'噜啦啦噜啦啦噜啦啦噜啦啦了' }
+  { name:'吉吉', shortName:'吉吉', car:3, num:7, level:1, color:'#c9a0ff', note:'噜啦啦噜啦啦噜啦啦噜啦啦了' },
+  { name:'桑田', shortName:'桑田', car:3, num:6, level:3, color:'#ff7b54', note:'' },
+  { name:'老师', shortName:'老师', car:3, num:5, level:1, color:'#00e5ff', note:'' }
 ];
 const LEVEL_NAMES = { 1: '下铺', 2: '中铺', 3: '上铺' };
 
@@ -1165,6 +1167,8 @@ function computeOrbit(offset) {
    5. 车厢构建（细分 8 步 / 节）
    ========================================================= */
 const modelGroup = new THREE.Group();
+/* 整体左右镜像：让 1 号隔间/车厢出现在最左侧 */
+modelGroup.scale.z = -1;
 scene.add(modelGroup);
 
 const carGroups = [];
@@ -1429,10 +1433,14 @@ function setSolidMeshesVisible(v) {
     obj.visible = v;
   });
 }
+/* 编号 1..22 表示一节车厢内的列位（每隔间左右两列），同一列位按下/中/上叠放 */
+const NUM_PER_COMP = 2;
+function bunkSlot(num) {
+  const i = num - 1;
+  return { compIndex: Math.floor(i / NUM_PER_COMP), isLeft: i % NUM_PER_COMP === 0 };
+}
 function getPassengerLocalPos(p) {
-  const compIndex = Math.floor((p.num - 1) / 6);
-  const inCompNum = (p.num - 1) % 6 + 1;
-  const isLeft = (inCompNum % 2 !== 0);
+  const { compIndex, isLeft } = bunkSlot(p.num);
   const compZ = -CAR_LEN/2 + compIndex * COMP_LEN + COMP_LEN/2;
   const zPos = compZ + (isLeft ? Z_LEFT_BUNK_CENTER : Z_RIGHT_BUNK_CENTER);
   return new THREE.Vector3(BUNK_CENTER_X, LEVEL_Y[p.level] + 0.25, zPos);
@@ -1441,7 +1449,8 @@ function getPassenger3DWorldPos(p) {
   const carIdx = CAR_NUMBERS.indexOf(p.car);
   if (carIdx === -1) return new THREE.Vector3(0, -10, 0);
   const local = getPassengerLocalPos(p);
-  return new THREE.Vector3(local.x, local.y, local.z + CAR_CENTERS[carIdx]);
+  /* modelGroup 沿 z 轴镜像，世界坐标需同步取反 */
+  return new THREE.Vector3(local.x, local.y, -(local.z + CAR_CENTERS[carIdx]));
 }
 function findBunkByLocalPos(carGroup, pos) {
   let minDist = 0.1;
@@ -1459,10 +1468,8 @@ function findBunkByLocalPos(carGroup, pos) {
   const occupied = new Map();
   PASSENGERS.forEach(p => {
     if (CAR_NUMBERS.indexOf(p.car) === -1) return;
-    if (p.num < 1 || p.num > COMP_COUNT * 6) return;
-    const compIndex = Math.floor((p.num - 1) / 6);
-    const inCompNum = (p.num - 1) % 6 + 1;
-    const isLeft = (inCompNum % 2 !== 0);
+    if (p.num < 1 || p.num > COMP_COUNT * NUM_PER_COMP) return;
+    const { compIndex, isLeft } = bunkSlot(p.num);
     const key = `${p.car}-${compIndex}-${isLeft ? 'L' : 'R'}-${p.level}`;
     if (occupied.has(key)) {
       console.warn('[床位校验] 映射冲突：', p.name, '与', occupied.get(key).name, key);
@@ -1913,10 +1920,9 @@ function selectPassenger(i, fly) {
     const targetPos = worldPos.clone().sub(new THREE.Vector3(0, 0.25, 0));
 
     const carIdx = CAR_NUMBERS.indexOf(p.car);
-    const compIndex = Math.floor((p.num - 1) / 6);
-    const inCompNum = (p.num - 1) % 6 + 1;
-    const isLeft = (inCompNum % 2 !== 0);
-    const compZ = -CAR_LEN / 2 + compIndex * COMP_LEN + COMP_LEN / 2 + CAR_CENTERS[carIdx];
+    const { compIndex, isLeft } = bunkSlot(p.num);
+    /* modelGroup 沿 z 轴镜像，世界坐标需同步取反 */
+    const compZ = -(-CAR_LEN / 2 + compIndex * COMP_LEN + COMP_LEN / 2 + CAR_CENTERS[carIdx]);
 
     const camPos = new THREE.Vector3(
       targetPos.x + 4.2,
