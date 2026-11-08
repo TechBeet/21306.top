@@ -746,8 +746,7 @@ const PHASES = {
   zoomCfg:   [ 9, 10],
   lights:    [10, 11],
   materials: [11, 13],
-  car3:      [13, 32],
-  car5:      [32, 51],
+  cars:      [13, 51],
   frame2D:   [51, 55],
   bunks:     [55, 76],
   labels:    [76, 90],
@@ -871,17 +870,10 @@ function tryHideLoadingWhenProgressDone() {
    1. 乘客数据
    ========================================================= */
 const PASSENGERS = [
-  { name:'张坤洋', shortName:'张坤洋', car:5, num:19, level:1, color:'#ff5c7a', note:'啥也别说了，你还挺厉害' },
-  { name:'许芝仪', shortName:'许芝仪', car:3, num:7,  level:3, color:'#2ee6d6', note:'阿巴阿巴' },
-  { name:'明子琪', shortName:'明子琪', car:3, num:11, level:1, color:'#ffd93d', note:'' },
-  { name:'胡珈宁', shortName:'胡珈宁', car:5, num:2,  level:1, color:'#a97bff', note:'扎啤黑客我的功绩才写了10000000分之一太可恶了' },
-  { name:'薛雯月', shortName:'薛雯月', car:3, num:6,  level:3, color:'#ff8ac4', note:'' },
-  { name:'周铭浩', shortName:'周铭浩', car:3, num:8,  level:2, color:'#3ddc97', note:'' },
-  { name:'侯佳萱', shortName:'侯佳萱', car:5, num:18, level:3, color:'#4da3ff', note:'' },
-  { name:'刘泽凯', shortName:'刘泽凯', car:3, num:8,  level:1, color:'#ffa94d', note:'' },
-  { name:'王梓懿', shortName:'王梓懿', car:5, num:13, level:1, color:'#ff7b54', note:'额没事，为什么要发这个问卷？（疑惑）我听说这个位置会改，所以现在的位置还不确定🤪' },
-  { name:'荆汉舟', shortName:'荆汉舟', car:3, num:3,  level:2, color:'#c9a0ff', note:'' },
-  { name:'张皓喆', shortName:'张皓喆', car:5, num:19, level:2, color:'#00e5ff', note:'啦啦啦' }
+  { name:'周铭浩', shortName:'周铭浩', car:3, num:2,  level:2, color:'#3ddc97', note:'' },
+  { name:'胡珈宁', shortName:'胡珈宁', car:4, num:21, level:3, color:'#a97bff', note:'' },
+  { name:'王奕璇', shortName:'王奕璇', car:4, num:17, level:2, color:'#ffd93d', note:'那是什么眼神👁️果然是那种眼神👁️已经不是第一次见到了呢😨那是什么眼神👁️快别这样了🥲明明是可爱却像变成了罪人😖脱轨❌脱轨💔崩坏🩸脱轨⚠️精神失常🆘因为一个秘密就崩毁👁️‍🗨️坏掉了💔对不起😢别看着我👀反正你是无法理解的吧🥹就像那终究还是盛开的诡化之花🌸什么都说不出口🤐无法抹消的🫥眉间粉黛尽施映得我是何等丑陋💄别看着我👀反正你是无法理解的吧🥹就像那终究还是盛开的诡化之花🌸含苞待放之时早已一去不复返😭那是什么眼神 果然是那种眼神️那就给我消失吧大家都给我消失吧' },
+  { name:'许芝仪', shortName:'许芝仪', car:5, num:19, level:2, color:'#2ee6d6', note:'咕咕嘎嘎嘎嘎嘎嘎嘎嘎嘎嘎嘎嘎嘎' }
 ];
 const LEVEL_NAMES = { 1: '下铺', 2: '中铺', 3: '上铺' };
 
@@ -891,8 +883,9 @@ const LEVEL_NAMES = { 1: '下铺', 2: '中铺', 3: '上铺' };
 const CAR_LEN = 22.0;
 const CAR_WIDTH = 3.2;
 const CAR_GAP = 4.0;
-const CAR_CENTERS = [ -(CAR_LEN+CAR_GAP)/2, (CAR_LEN+CAR_GAP)/2 ];
-const CAR_NUMBERS = [3, 5];
+const CAR_NUMBERS = [...new Set(PASSENGERS.map(p => p.car))].sort((a, b) => a - b);
+const CAR_COUNT = CAR_NUMBERS.length;
+const CAR_CENTERS = CAR_NUMBERS.map((_, i) => (i - (CAR_COUNT - 1) / 2) * (CAR_LEN + CAR_GAP));
 
 const COMP_COUNT = 11;
 const COMP_LEN = 2.0;
@@ -919,11 +912,10 @@ const BLOCK_W = 0.76;
 const BLOCK_H = 0.55;
 
 const STACK_GAP = 2.8;
-const STACK_TOTAL_H = 2 * CEIL_Y + STACK_GAP;
-const STACK_BASE_Y = [
-  -STACK_TOTAL_H / 2,
-  -STACK_TOTAL_H / 2 + CEIL_Y + STACK_GAP
-];
+const STACK_TOTAL_H = CAR_COUNT * CEIL_Y + (CAR_COUNT - 1) * STACK_GAP;
+const STACK_BASE_Y = Array.from({ length: CAR_COUNT }, (_, i) =>
+  -STACK_TOTAL_H / 2 + i * (CEIL_Y + STACK_GAP)
+);
 const SIDE_THETA = Math.PI / 2;
 const SIDE_PHI = Math.PI / 2;
 const FOV_2D = 18;
@@ -959,8 +951,8 @@ const SCENE_BOX = {
   maxX:  CAR_WIDTH / 2 + 0.5,
   minY: -0.4,
   maxY:  LEVEL_Y[3] + 0.35 + CEIL_Y * 2.85 + LABEL_LIFT_SIDE_OFFSET + 0.9,
-  minZ: -CAR_LEN - CAR_GAP / 2 - 1.5,
-  maxZ:  CAR_LEN + CAR_GAP / 2 + 1.5
+  minZ: CAR_CENTERS[0] - CAR_LEN / 2 - 1.5,
+  maxZ: CAR_CENTERS[CAR_COUNT - 1] + CAR_LEN / 2 + 1.5
 };
 
 function compute3DOverviewState(aspect) {
@@ -1306,8 +1298,11 @@ async function buildCarriage(carIndex, carNumber, range) {
   await nextFrame();
 }
 
-await buildCarriage(0, CAR_NUMBERS[0], PHASES.car3);
-await buildCarriage(1, CAR_NUMBERS[1], PHASES.car5);
+const [carS, carE] = PHASES.cars;
+const carSpan = (carE - carS) / CAR_COUNT;
+for (let c = 0; c < CAR_COUNT; c++) {
+  await buildCarriage(c, CAR_NUMBERS[c], [carS + carSpan * c, carS + carSpan * (c + 1)]);
+}
 
 /* =========================================================
    6. 2D 工程框架（细分 3 步）
@@ -1325,7 +1320,7 @@ const X_2D_LINE = BUNK_CENTER_X;
 /* 6.1 垂直分隔线 */
 setLoadProgress(f2dS + f2dSpan * 0.05, '正在绘制 2D 工程框架 · 垂直分隔线…');
 await nextFrame();
-for (let c = 0; c < 2; c++) {
+for (let c = 0; c < CAR_COUNT; c++) {
   const baseY = STACK_BASE_Y[c];
   for (let i = 0; i <= COMP_COUNT; i++) {
     const z = -CAR_LEN / 2 + i * COMP_LEN;
@@ -1341,7 +1336,7 @@ for (let c = 0; c < 2; c++) {
 /* 6.2 水平边线 */
 setLoadProgress(f2dS + f2dSpan * 0.55, '正在绘制 2D 工程框架 · 水平边线…');
 await nextFrame();
-for (let c = 0; c < 2; c++) {
+for (let c = 0; c < CAR_COUNT; c++) {
   const baseY = STACK_BASE_Y[c];
   const longVerts = [
     new THREE.Vector3(X_2D_LINE, baseY, -CAR_LEN / 2),
@@ -1398,9 +1393,9 @@ function createBunk(pos, carGroup) {
 
 const [bunkS, bunkE] = PHASES.bunks;
 const bunkSpan = bunkE - bunkS;
-const BUNK_UNITS_TOTAL = 2 * COMP_COUNT; // 22 隔间
+const BUNK_UNITS_TOTAL = CAR_COUNT * COMP_COUNT; // 每节 11 个隔间
 
-for (let c = 0; c < 2; c++) {
+for (let c = 0; c < CAR_COUNT; c++) {
   const carGroup = carGroups[c];
   const carNum = CAR_NUMBERS[c];
   for (let i = 0; i < COMP_COUNT; i++) {
