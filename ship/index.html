@@ -2,8 +2,9 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>泉州湾宋代海船 · 结构考古三维重建</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ctext y='26' font-size='26'%3E%E2%9B%B5%3C/text%3E%3C/svg%3E">
 <style>
   :root{
     color-scheme: dark;
@@ -31,16 +32,20 @@
   canvas{display:block}
 
   /* ---------- HUD ---------- */
-  #hud{position:fixed;top:14px;left:18px;z-index:6;max-width:360px}
+  #hud{position:fixed;top:14px;left:18px;z-index:6;max-width:360px;
+    background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:10px 14px;backdrop-filter:blur(14px);
+    box-shadow:0 10px 34px rgba(0,0,0,.32);
+    transition:background-color .2s,color .2s,border-color .2s}
   #hud h1{margin:0;font-size:16px;letter-spacing:.1em;font-weight:600}
   #hud .sub{margin:4px 0 0;color:var(--dim);font-size:11px}
   #hud .row2{display:flex;align-items:center;gap:6px;margin-top:8px;flex-wrap:wrap}
-  .mode-pill{display:inline-flex;background:var(--panel);border:1px solid var(--line);
+  .mode-pill{display:inline-flex;background:var(--soft);border:1px solid var(--line);
     border-radius:7px;padding:2px;backdrop-filter:blur(8px)}
   .mode-pill button{border:0;background:transparent;color:var(--dim);font:inherit;font-size:10.5px;
     padding:3px 10px;border-radius:5px;cursor:pointer;transition:.2s}
   .mode-pill button.active{background:rgba(201,162,39,.18);color:var(--accent)}
-  .mini-btn{border:1px solid var(--line);background:var(--panel);color:var(--dim);
+  .mini-btn{border:1px solid var(--line);background:var(--btn);color:var(--dim);
     font:inherit;font-size:10.5px;padding:4px 10px;border-radius:6px;cursor:pointer;
     transition:.2s;backdrop-filter:blur(8px)}
   .mini-btn:hover{color:var(--txt);border-color:#3a4d5e}
@@ -53,7 +58,8 @@
     background:var(--panel);border:1px solid var(--line);border-radius:14px;z-index:8;
     backdrop-filter:blur(16px);box-shadow:0 18px 60px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.04);
     display:flex;flex-direction:column;overflow:hidden;
-    transition:opacity .3s var(--ease),transform .3s var(--ease)}
+    transition:opacity .3s var(--ease),transform .3s var(--ease),
+                background-color .2s,color .2s,border-color .2s}
   #panel.collapsed{opacity:0;pointer-events:none;transform:translateX(26px) scale(.97)}
   .p-head{display:flex;align-items:center;gap:8px;padding:12px 14px 9px}
   .p-title{flex:1;font-size:11px;letter-spacing:.16em;color:var(--accent);font-weight:600}
@@ -186,61 +192,131 @@
     color:var(--txt);font:inherit;font-size:11.5px;cursor:pointer;backdrop-filter:blur(12px)}
   #panelOpen.show{display:flex}
 
-  /* ---------- 加载 ---------- */
+  /* ---------- 加载（始终深色，保证读得清） ---------- */
   #loading{position:fixed;inset:0;display:flex;flex-direction:column;
     align-items:center;justify-content:center;
-    background:radial-gradient(ellipse at center,rgba(18,32,46,.96) 0%,var(--bg) 72%);
-    color:var(--txt);z-index:20;transition:opacity .6s;padding:0 24px}
+    background:radial-gradient(ellipse at center,#0f1d2a 0%,#050a10 72%);
+    color:#d6e2ee;z-index:20;transition:opacity .6s;padding:0 24px}
   #loading .wrap{width:min(580px,92vw);display:flex;flex-direction:column;gap:13px}
-  #loading .title{text-align:center;font-size:13px;letter-spacing:.2em;color:var(--accent);font-weight:600}
-  #loading .subtitle{text-align:center;font-size:10.5px;color:var(--dim);letter-spacing:.12em;margin-top:-8px}
-  #loading .mainBar{position:relative;height:4px;background:var(--soft);border-radius:2px;overflow:hidden}
+  #loading .title{text-align:center;font-size:13px;letter-spacing:.2em;color:#c9a227;font-weight:600}
+  #loading .subtitle{text-align:center;font-size:10.5px;color:#7f90a2;letter-spacing:.12em;margin-top:-8px}
+  #loading .mainBar{position:relative;height:4px;background:#0c1822;border-radius:2px;overflow:hidden}
   #loading .mainBarFill{position:absolute;inset:0;width:0%;
     background:linear-gradient(90deg,#4ac8e8,#c9a227);transition:width .08s linear;box-shadow:0 0 12px rgba(201,162,39,.5)}
   #loading .stages{display:flex;gap:3px;margin-top:6px}
-  #loading .seg{flex:1;height:2px;background:var(--soft);border-radius:1px;transition:.2s}
-  #loading .seg.done{background:var(--ok)}
-  #loading .seg.active{background:var(--accent);animation:segPulse 1s ease-in-out infinite}
+  #loading .seg{flex:1;height:2px;background:#0c1822;border-radius:1px;transition:.2s}
+  #loading .seg.done{background:#5fb85f}
+  #loading .seg.active{background:#c9a227;animation:segPulse 1s ease-in-out infinite}
   @keyframes segPulse{0%,100%{opacity:.7}50%{opacity:1}}
   #loading .stageList{display:grid;grid-template-columns:1fr 1fr;gap:2px 14px;margin-top:2px}
-  #loading .stItem{display:flex;align-items:center;gap:6px;font-size:10px;color:var(--dim);
+  #loading .stItem{display:flex;align-items:center;gap:6px;font-size:10px;color:#6d7f90;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:.2s}
-  #loading .stItem .sd{width:6px;height:6px;border-radius:50%;background:var(--line);flex:none;transition:.2s}
-  #loading .stItem.done{color:var(--txt)}
-  #loading .stItem.done .sd{background:var(--ok)}
-  #loading .stItem.active{color:var(--accent)}
-  #loading .stItem.active .sd{background:var(--accent);box-shadow:0 0 7px var(--accent)}
+  #loading .stItem .sd{width:6px;height:6px;border-radius:50%;background:#22323f;flex:none;transition:.2s}
+  #loading .stItem.done{color:#aebdcc}
+  #loading .stItem.done .sd{background:#5fb85f}
+  #loading .stItem.active{color:#c9a227}
+  #loading .stItem.active .sd{background:#c9a227;box-shadow:0 0 7px #c9a227}
   #loading .status{display:grid;grid-template-columns:1fr auto;gap:8px 16px;padding:11px 14px;
-    background:var(--soft);border:1px solid var(--line);border-radius:6px;font-size:11px}
-  #loading .pct{font-size:22px;font-weight:600;color:var(--accent);font-variant-numeric:tabular-nums}
-  #loading .stageName{color:var(--dim);font-size:10.5px;letter-spacing:.06em}
-  #loading .subTask{font-size:11.5px;margin-top:2px}
-  #loading .timeRow{grid-column:1/-1;display:flex;justify-content:space-between;color:var(--dim);
-    font-size:10px;padding-top:6px;border-top:1px solid var(--line);font-variant-numeric:tabular-nums}
-  #loading .timeRow .val{color:var(--txt)}
-  #loading .logWrap{background:var(--soft);border:1px solid var(--line);border-radius:6px;
-    padding:9px 12px;height:92px;overflow:hidden;font:10.5px/1.6 "SF Mono",Consolas,monospace;color:var(--dim)}
-  #loading .logTitle{color:var(--accent);font-size:9.5px;letter-spacing:.12em;margin-bottom:4px;
+    background:rgba(255,255,255,.03);border:1px solid #1e2d3c;border-radius:6px;font-size:11px}
+  #loading .pct{font-size:22px;font-weight:600;color:#c9a227;font-variant-numeric:tabular-nums}
+  #loading .stageName{color:#7f90a2;font-size:10.5px;letter-spacing:.06em}
+  #loading .subTask{font-size:11.5px;margin-top:2px;color:#d6e2ee}
+  #loading .timeRow{grid-column:1/-1;display:flex;justify-content:space-between;color:#7f90a2;
+    font-size:10px;padding-top:6px;border-top:1px solid #1e2d3c;font-variant-numeric:tabular-nums}
+  #loading .timeRow .val{color:#d6e2ee}
+  #loading .logWrap{background:rgba(255,255,255,.03);border:1px solid #1e2d3c;border-radius:6px;
+    padding:9px 12px;height:92px;overflow:hidden;font:10.5px/1.6 "SF Mono",Consolas,monospace;color:#7f90a2}
+  #loading .logTitle{color:#c9a227;font-size:9.5px;letter-spacing:.12em;margin-bottom:4px;
     font-family:"Segoe UI",sans-serif;font-weight:600}
   #loading .logLine{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  #loading .logLine:last-child{color:var(--txt)}
-  #loading .tip{text-align:center;font-size:10px;color:var(--dim);font-style:italic;opacity:.8}
-  #loading.complete .mainBarFill{background:var(--ok)}
+  #loading .logLine:last-child{color:#d6e2ee}
+  #loading .tip{text-align:center;font-size:10px;color:#5c6f80;font-style:italic}
+  #loading.complete .mainBarFill{background:#5fb85f}
 
   /* 主题过渡 */
-  #panel,#infoCard,#infoBar,#viewTag,#panelOpen,#hud .mode-pill,.mini-btn,.btn,.row select,
+  #infoBar,#viewTag,#panelOpen,#hud .mode-pill,.mini-btn,.btn,.row select,
   #treeSearch,#loading .status,#loading .logWrap{transition:background-color .2s,color .2s,border-color .2s}
 
+  /* ---------- 多端适配 ---------- */
+  html,body{overscroll-behavior:none;-webkit-tap-highlight-color:transparent}
+  canvas{touch-action:none;user-select:none;-webkit-user-select:none}
+  button,.btn,.tab,.node,.leaf,.icon-btn,.mini-btn,.mode-pill button{touch-action:manipulation}
+  #hud,#panel,#infoCard{will-change:transform}
+
+  @media(max-width:1180px) and (min-width:901px){
+    #panel{width:308px}
+    #hud{max-width:300px}
+    #infoCard{width:300px}
+  }
+
   @media(max-width:900px){
-    #panel{width:calc(100% - 24px);max-height:52vh;top:auto;bottom:10px;right:12px}
-    #panelOpen{top:auto;bottom:10px;right:12px}
-    #hud{max-width:210px}
+    :root{--sheet-h:min(58vh,520px)}
+    #panel{width:auto;left:10px;right:10px;top:auto;
+      bottom:calc(10px + env(safe-area-inset-bottom,0px));
+      max-height:var(--sheet-h);border-radius:16px}
+    #panel .p-head{padding:10px 14px 8px;position:relative;cursor:pointer}
+    #panel .p-head::before{content:'';position:absolute;top:5px;left:50%;transform:translateX(-50%);
+      width:38px;height:4px;border-radius:2px;background:var(--line)}
+    .p-title{padding-top:6px}
+    #panel.collapsed{transform:translateY(28px) scale(.98)}
+    .icon-btn{width:34px;height:34px;font-size:16px}
+    .tab{padding:9px 0;font-size:12px}
+    .g-title{font-size:10px;margin-bottom:8px}
+    .row{margin:9px 0;min-height:34px}
+    .row label{font-size:11.5px}
+    .row input[type=range]{flex:0 0 132px;height:26px}
+    .row input[type=checkbox]{width:20px;height:20px}
+    .row .val{font-size:11px;min-width:48px}
+    .btn{padding:10px 4px;font-size:11.5px}
+    .tree{max-height:40vh;-webkit-overflow-scrolling:touch}
+    .tab-body{-webkit-overflow-scrolling:touch;padding-bottom:22px}
+    #panelOpen{top:auto;right:12px;bottom:calc(14px + env(safe-area-inset-bottom,0px));
+      padding:11px 18px;font-size:13px;border-radius:11px;z-index:9}
+    #hud{max-width:min(58vw,280px);padding:9px 12px}
     #hud h1{font-size:13px}
     #hud .sub{display:none}
+    #hud .badge{display:none}
     #viewTag{display:none}
-    #infoCard{left:12px;right:12px;width:auto;bottom:calc(52vh + 46px);max-height:32vh}
-    #infoBar{bottom:calc(52vh + 16px);font-size:10px}
-    #loading .logWrap{height:80px}
+    #infoCard{left:10px;right:10px;width:auto;
+      bottom:calc(var(--sheet-h) + 24px + env(safe-area-inset-bottom,0px));
+      max-height:36vh;border-radius:14px;padding:12px 14px}
+    #infoBar{bottom:calc(var(--sheet-h) + 8px + env(safe-area-inset-bottom,0px));font-size:10px}
+    body.panel-collapsed #infoCard{bottom:calc(76px + env(safe-area-inset-bottom,0px));max-height:46vh}
+    body.panel-collapsed #infoBar{bottom:calc(18px + env(safe-area-inset-bottom,0px))}
+    #infoBar{left:10px;right:80px;transform:none;white-space:normal;text-align:left;
+      padding:6px 10px;line-height:1.45;font-size:9.5px}
+    #loading .logWrap{height:78px}
+    #loading .wrap{gap:10px}
+  }
+
+  @media(max-width:600px){
+    :root{--sheet-h:min(62vh,560px)}
+    #hud{max-width:64vw;padding:8px 11px}
+    #hud h1{font-size:12.5px;letter-spacing:.06em}
+    #hud .row2{gap:5px;margin-top:6px}
+    .mode-pill button{padding:5px 11px;font-size:11px}
+    .mini-btn{padding:6px 10px;font-size:11px}
+    #infoCard{max-height:38vh}
+    #loading .stageList{grid-template-columns:1fr 1fr;gap:1px 10px}
+    #loading .stItem{font-size:9.5px}
+    #treeSearch{font-size:12px;padding:9px 10px}
+    .node{font-size:11.5px;padding:5px 0}
+    .lv3{font-size:10.5px;padding-top:5px;padding-bottom:5px}
+  }
+
+  @media(max-height:540px) and (orientation:landscape){
+    #panel{left:auto;right:8px;top:8px;bottom:8px;width:min(46vw,380px);max-height:none;border-radius:12px}
+    #panelOpen{top:8px;bottom:auto;right:8px}
+    #hud{max-width:38vw;padding:7px 10px}
+    #hud .sub,#hud .badge{display:none}
+    #infoCard{left:8px;right:auto;width:min(42vw,320px);bottom:8px;max-height:70vh}
+    #infoBar{display:none}
+    .tree{max-height:30vh}
+  }
+
+  @media(hover:none){
+    .node:hover,.leaf:hover{color:inherit}
+    .leaf.sel{color:var(--accent)}
   }
 </style>
 </head>
@@ -274,7 +350,8 @@
       <button data-mode="restored">复原</button>
     </div>
     <button class="mini-btn" id="btnResetView">复位视角</button>
-    <span id="modeBadge">残体 · 甲板以下结构</span>
+    <button class="mini-btn" id="soundBtn">开启声音</button>
+    <span id="modeBadge" class="badge">残体 · 甲板以下结构</span>
   </div>
 </div>
 <div id="viewTag">自由视角</div>
@@ -290,6 +367,7 @@
     <button class="tab active" data-tab="env">环境</button>
     <button class="tab" data-tab="struct">结构</button>
     <button class="tab" data-tab="disp">显示</button>
+    <button class="tab" data-tab="audio">声音</button>
     <button class="tab" data-tab="src">出处</button>
   </div>
 
@@ -321,7 +399,7 @@
 
     <div class="group">
       <div class="g-title">海况</div>
-      <div class="row"><label>浪高</label><input id="e-amp" type="range" min="0" max="100" step="1" value="30"><span class="val" id="v-amp">0.30</span></div>
+      <div class="row"><label>浪高</label><input id="e-amp" type="range" min="0" max="200" step="1" value="34"><span class="val" id="v-amp">0.34</span></div>
       <div class="row"><label>波陡</label><input id="e-chop" type="range" min="0" max="100" step="1" value="50"><span class="val" id="v-chop">0.50</span></div>
       <div class="row"><label>波长</label><input id="e-wl" type="range" min="50" max="200" step="1" value="100"><span class="val" id="v-wl">100%</span></div>
       <div class="row"><label>浪向</label><input id="e-dir" type="range" min="0" max="360" step="1" value="0"><span class="val" id="v-dir">0°</span></div>
@@ -329,6 +407,14 @@
       <div class="row"><label>水面透明</label><input id="e-alpha" type="range" min="20" max="100" step="1" value="42"><span class="val" id="v-alpha">42%</span></div>
       <div class="row"><label>深水色</label><input id="e-deep" type="color" value="#06121c"><span class="val"></span></div>
       <div class="row"><label>浅水色</label><input id="e-shallow" type="color" value="#0e3040"><span class="val"></span></div>
+      <div class="row"><label>涌浪增益</label><input id="e-gswell" type="range" min="0" max="2" step="0.01" value="1"><span class="val" id="v-gswell">100%</span></div>
+      <div class="row"><label>风浪增益</label><input id="e-gwind" type="range" min="0" max="2" step="0.01" value="1"><span class="val" id="v-gwind">100%</span></div>
+      <div class="row"><label>碎浪增益</label><input id="e-gchop" type="range" min="0" max="2" step="0.01" value="1"><span class="val" id="v-gchop">100%</span></div>
+      <div class="row"><label>白浪</label><input id="e-whitecap" type="range" min="0" max="200" step="1" value="100"><span class="val" id="v-whitecap">100%</span></div>
+      <div class="row"><label>泡沫半衰期</label><input id="e-foamdecay" type="range" min="0.6" max="8" step="0.1" value="3.2"><span class="val" id="v-foamdecay">3.2s</span></div>
+      <div class="row"><label>浪花强度</label><input id="e-splash" type="range" min="0" max="2" step="0.01" value="1"><span class="val" id="v-splash">100%</span></div>
+      <div class="row"><label for="d-splash">浪花粒子</label><input id="d-splash" type="checkbox" checked><span class="val"></span></div>
+      <div class="row"><label for="d-bed">海底 / 浅滩</label><input id="d-bed" type="checkbox" checked><span class="val"></span></div>
     </div>
 
     <div class="group">
@@ -371,6 +457,27 @@
       <div class="row"><label for="d-cut">残深参考线 1.98 m</label><input id="d-cut" type="checkbox"><span class="val"></span></div>
       <div class="row"><label for="d-auto">相机自动环绕</label><input id="d-auto" type="checkbox"><span class="val"></span></div>
       <div class="row"><label>实时帧率</label><span class="val" id="fpsText">—</span></div>
+    </div>
+  </div>
+
+  <div class="tab-body" id="tab-audio">
+    <div class="group">
+      <div class="g-title">声音总控</div>
+      <div class="row"><label for="a-on">启用声音</label><input id="a-on" type="checkbox" checked><span class="val" id="a-state">待启动</span></div>
+      <div class="row"><label>总音量</label><input id="a-master" type="range" min="0" max="1" step="0.01" value="0.8"><span class="val" id="v-amaster">80%</span></div>
+      <div class="hint">受浏览器自动播放策略限制，需一次点击或按键后才能发声；无 Web Audio 环境会自动静默。</div>
+    </div>
+    <div class="group">
+      <div class="g-title">环境与音效</div>
+      <div class="row"><label>环境声</label><input id="a-amb" type="range" min="0" max="1" step="0.01" value="0.7"><span class="val" id="v-aamb">70%</span></div>
+      <div class="row"><label>碰撞音效</label><input id="a-sfx" type="range" min="0" max="1" step="0.01" value="0.85"><span class="val" id="v-asfx">85%</span></div>
+      <div class="row"><label for="a-mute">静音</label><input id="a-mute" type="checkbox"><span class="val"></span></div>
+    </div>
+    <div class="group">
+      <div class="g-title">空间混响</div>
+      <div class="row"><label>湿声</label><input id="a-wet" type="range" min="0" max="1" step="0.01" value="0.35"><span class="val" id="v-awet">35%</span></div>
+      <div class="row"><label>衰减时间</label><input id="a-decay" type="range" min="0.5" max="5" step="0.1" value="2.4"><span class="val" id="v-adecay">2.4s</span></div>
+      <div class="hint">混响由程序化脉冲响应合成，随衰减时间实时重建。</div>
     </div>
   </div>
 
@@ -588,6 +695,8 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
         this.enabled = true; this.auto = 0;
         this._panOffset = new THREE.Vector3();
         this._drag = false; this._btn = 0; this._lx = 0; this._ly = 0;
+        this._pointers = new Map();
+        this._pinch = null;
         this.moved = 0;
         this._bind();
       }
@@ -601,11 +710,19 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
         el.addEventListener('contextmenu', e => e.preventDefault());
         el.addEventListener('pointerdown', e => {
           if (!this.enabled) return;
+          this._pointers.set(e.pointerId, { x:e.clientX, y:e.clientY });
+          try { el.setPointerCapture(e.pointerId); } catch(_) {}
+          if (this._pointers.size >= 2) {
+            this._beginPinch();
+            return;
+          }
           this._drag = true; this._btn = e.button;
           this._lx = e.clientX; this._ly = e.clientY; this.moved = 0;
-          try { el.setPointerCapture(e.pointerId); } catch(_) {}
         });
         el.addEventListener('pointermove', e => {
+          if (!this._pointers.has(e.pointerId)) return;
+          this._pointers.set(e.pointerId, { x:e.clientX, y:e.clientY });
+          if (this._pointers.size >= 2) { this._movePinch(); return; }
           if (!this._drag || !this.enabled) return;
           const dx = e.clientX - this._lx, dy = e.clientY - this._ly;
           this._lx = e.clientX; this._ly = e.clientY;
@@ -614,22 +731,56 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
             this.theta -= dx * 0.005; this.phi -= dy * 0.005;
             this.phi = Math.max(0.04, Math.min(Math.PI - 0.06, this.phi));
           } else if (this._btn === 2) {
-            const dist = this.radius;
-            const camMatrix = new THREE.Matrix4().extractRotation(this.camera.matrix);
-            const vX = new THREE.Vector3(1,0,0).applyMatrix4(camMatrix).multiplyScalar(-dx*0.0015*dist);
-            const vY = new THREE.Vector3(0,1,0).applyMatrix4(camMatrix).multiplyScalar(dy*0.0015*dist);
-            this._panOffset.add(vX).add(vY);
+            this._panByPixels(dx, dy);
           }
         });
-        el.addEventListener('pointerup', e => {
-          this._drag = false;
+        const endPointer = e => {
+          this._pointers.delete(e.pointerId);
+          if (this._pointers.size < 2) this._pinch = null;
+          if (this._pointers.size === 0) this._drag = false;
+          else {
+            const p = [...this._pointers.values()][0];
+            this._drag = true; this._lx = p.x; this._ly = p.y; this.moved += 6;
+            this._pinch = null;
+          }
           try { el.releasePointerCapture(e.pointerId); } catch(_) {}
-        });
+        };
+        el.addEventListener('pointerup', endPointer);
+        el.addEventListener('pointercancel', endPointer);
         el.addEventListener('wheel', e => {
           if (!this.enabled) return;
           e.preventDefault();
           this.radius = Math.max(this.minDistance, Math.min(this.maxDistance, this.radius * (e.deltaY > 0 ? 1.1 : 0.9)));
         }, { passive: false });
+      }
+      _panByPixels(dx, dy){
+        const dist = this.radius;
+        const camMatrix = new THREE.Matrix4().extractRotation(this.camera.matrixWorld);
+        const vX = new THREE.Vector3(1,0,0).applyMatrix4(camMatrix).multiplyScalar(-dx*0.0015*dist);
+        const vY = new THREE.Vector3(0,1,0).applyMatrix4(camMatrix).multiplyScalar(dy*0.0015*dist);
+        this._panOffset.add(vX).add(vY);
+      }
+      _beginPinch(){
+        const p = [...this._pointers.values()];
+        this._pinch = {
+          d: Math.hypot(p[0].x-p[1].x, p[0].y-p[1].y),
+          mx: (p[0].x+p[1].x)/2, my: (p[0].y+p[1].y)/2
+        };
+        this._drag = false;
+        this.moved += 100;
+      }
+      _movePinch(){
+        const p = [...this._pointers.values()];
+        const d = Math.hypot(p[0].x-p[1].x, p[0].y-p[1].y);
+        const mx = (p[0].x+p[1].x)/2, my = (p[0].y+p[1].y)/2;
+        if (this._pinch && this._pinch.d > 8 && d > 8){
+          const ratio = Math.max(0.86, Math.min(1.16, this._pinch.d / d));
+          this.radius = Math.max(this.minDistance, Math.min(this.maxDistance, this.radius * ratio));
+          const dx = mx - this._pinch.mx, dy = my - this._pinch.my;
+          this._panByPixels(dx * 0.7, dy * 0.7);
+          this.moved += Math.abs(dx) + Math.abs(dy);
+        }
+        this._pinch = { d, mx, my };
       }
       update(dt) {
         if (!this.enabled) return;
@@ -675,7 +826,7 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
        ================================================================= */
     const KEEL_W = 0.42, KEEL_H = 0.27, KEEL_HALF = KEEL_W/2, KEEL_TOP = KEEL_H;
     const MAIN_KEEL_LEN = 12.4, STERN_KEEL_LEN = 5.25, STEM_ARC = 4.5, SCARF = 0.34;
-    const DRAFT = 0.85, STERN_RISE = 0.75;
+    const DRAFT = 1.25, STERN_RISE = 0.75;
     const BULK_TH = 0.11, FLOW_HOLE = 0.12, N_STRIPES = 13;
     const PLATE_LAYERS = {
       inner: { key:'Inner', label:'内层', offIn:0, offOut:0.083, th:0.083 },
@@ -810,21 +961,21 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
       const L = Math.hypot(dx, dz) || 1;
       const sign = c.z >= 0 ? 1 : -1;
       switch (meta.coll) {
-        case '00_Keel': return new THREE.Vector3(dx*0.12, -2.4, dz*0.12);
-        case '01_Bulkheads': return new THREE.Vector3(dx*0.22, 1.25, 0);
-        case '02_Frames': return new THREE.Vector3(0, 0.9, sign*5.5);
+        case '00_Keel': return new THREE.Vector3(dx*0.12, -2.0, dz*0.12);
+        case '01_Bulkheads': return new THREE.Vector3(dx*0.18, 1.2, 0);
+        case '02_Frames': return new THREE.Vector3(0, 1.0, sign*3.8);
         case '03_Planking': {
           if (meta.id.indexOf('Transom') >= 0 || meta.id.indexOf('Caulking') >= 0)
-            return new THREE.Vector3(0, 1.6, 0);
+            return new THREE.Vector3(0, 1.4, 0);
           const lk = meta.layer;
-          const m = lk === 'outer' ? 6.8 : lk === 'mid' ? 5.0 : 3.2;
-          const up = lk === 'outer' ? 1.6 : lk === 'mid' ? 1.0 : 0.35;
-          return new THREE.Vector3((dx/L)*1.2, up, sign*m);
+          const m = lk === 'outer' ? 4.4 : lk === 'mid' ? 3.2 : 2.0;
+          const up = lk === 'outer' ? 2.7 : lk === 'mid' ? 1.6 : 0.5;
+          return new THREE.Vector3((dx/L)*1.0, up, sign*m);
         }
-        case '04_Rudder': return new THREE.Vector3(-4.0, 0.8, 0);
-        case '05_Mast_Step': return new THREE.Vector3(0, 3.0, 0);
-        case '06_Cultural_Marks': return new THREE.Vector3(0, 4.2, 0);
-        case '07_Rigging_Inferred': return new THREE.Vector3(0, 6.0, 0);
+        case '04_Rudder': return new THREE.Vector3(-3.4, 0.8, 0);
+        case '05_Mast_Step': return new THREE.Vector3(0, 2.6, 0);
+        case '06_Cultural_Marks': return new THREE.Vector3(0, 3.6, 0);
+        case '07_Rigging_Inferred': return new THREE.Vector3(0, 5.0, 0);
       }
       return new THREE.Vector3(0, 1.0, 0);
     }
@@ -904,8 +1055,9 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
     /* =================================================================
        7. 渲染器 / 场景 / 天空 / 海洋 / 灯光
        ================================================================= */
+    const IS_TOUCH = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
     const renderer = new THREE.WebGLRenderer({ antialias:true, logarithmicDepthBuffer:true, powerPreference:'high-performance' });
-    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+    renderer.setPixelRatio(Math.min(devicePixelRatio, IS_TOUCH ? 1.75 : 2));
     renderer.setSize(innerWidth, innerHeight);
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -922,6 +1074,26 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
     const controls = new Orbit(camera, renderer.domElement);
     controls.target.set(5.2, 0.5, 0);
     controls.syncFromCamera();
+    let viewOffsetPx = 176;
+    function applyViewOffset(){
+      if (innerWidth > 900 && viewOffsetPx > 1) {
+        camera.setViewOffset(innerWidth, innerHeight, viewOffsetPx, 0, innerWidth, innerHeight);
+      } else {
+        camera.clearViewOffset();
+      }
+      camera.updateProjectionMatrix();
+    }
+    function updateViewOffset(){
+      viewOffsetPx = innerWidth > 900 ? Math.min(176, innerWidth*0.2) : 0;
+      applyViewOffset();
+    }
+    updateViewOffset();
+    if (innerWidth < 900) {
+      const k = Math.max(1, Math.min(2.2, 1.2 / Math.max(0.3, innerWidth/innerHeight)));
+      const off = new THREE.Vector3().subVectors(camera.position, controls.target).multiplyScalar(k);
+      camera.position.copy(controls.target).add(off);
+      controls.syncFromCamera();
+    }
 
     // 天空穹顶
     const skyMat = new THREE.ShaderMaterial({
@@ -962,45 +1134,65 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
     scene.add(sky);
 
     const WAVES = [
-      { dir:0.60, steep:0.22, wl:34.0 }, { dir:1.15, steep:0.16, wl:19.0 },
-      { dir:0.25, steep:0.12, wl:10.5 }, { dir:1.80, steep:0.08, wl:6.2 }
+      { g:'swell', dir:0.55, wl:46.0, steep:0.0750, phase:0.0 },
+      { g:'swell', dir:0.78, wl:31.0, steep:0.0728, phase:1.7 },
+      { g:'swell', dir:0.32, wl:22.0, steep:0.0742, phase:3.1 },
+      { g:'wind',  dir:1.02, wl:15.5, steep:0.0850, phase:0.6 },
+      { g:'wind',  dir:1.28, wl:11.2, steep:0.0898, phase:2.2 },
+      { g:'wind',  dir:0.82, wl:8.4,  steep:0.0972, phase:4.0 },
+      { g:'chop',  dir:1.66, wl:5.6,  steep:0.1459, phase:1.2 },
+      { g:'chop',  dir:2.06, wl:4.2,  steep:0.1496, phase:2.8 },
+      { g:'chop',  dir:1.34, wl:3.1,  steep:0.1419, phase:5.1 }
     ];
+    const envWave = { swell: 1.0, wind: 1.0, chop: 1.0 };
+
     const oceanMat = new THREE.ShaderMaterial({
       uniforms: {
-        uWaveA:{ value:new THREE.Vector4(34,19,10.5,6.2) },
-        uWaveB:{ value:new THREE.Vector4(0.60,1.15,0.25,1.80) },
-        uWaveC:{ value:new THREE.Vector2(3.4, 2.1) },
-        uWaveD:{ value:new THREE.Vector2(2.6, 0.9) },
+        uWl:    { value: WAVES.map(w => w.wl) },
+        uDir:   { value: WAVES.map(w => w.dir) },
+        uSteep: { value: WAVES.map(w => w.steep) },
+        uPhase: { value: WAVES.map(w => w.phase) },
+        uGain:  { value: WAVES.map(() => 1.0) },
         uTime:{ value:0 }, uAmp:{ value:0.30 }, uChop:{ value:0.50 },
         uAlpha:{ value:0.42 }, uFoam:{ value:1.0 }, uG:{ value:9.81 }, uRough:{ value:0.4 },
-        uDeep:{ value:new THREE.Color(0x06121c) }, uShallow:{ value:new THREE.Color(0x0e3040) },
+        uWhitecap:{ value:1.0 },
+        uDeep:{ value:new THREE.Color(0x081a26) }, uShallow:{ value:new THREE.Color(0x2a93a6) },
+        uShallowAlpha:{ value:0.64 }, uDeepAlpha:{ value:0.93 }, uXray:{ value:1.0 }, uLockAlpha:{ value:0.42 },
+        uBedOn:{ value:1.0 },
+        uFoamTex:{ value:null }, uFoamCenter:{ value:new THREE.Vector2(4.8, 0) },
+        uFoamSize:{ value:150.0 }, uFoamOn:{ value:1.0 },
         uSunDir:{ value:new THREE.Vector3(0.55,0.72,0.42).normalize() },
         uSunCol:{ value:new THREE.Color(0xfff0d8) },
         uSkyTop:{ value:new THREE.Color(0x14304a) }, uSkyHor:{ value:new THREE.Color(0x86a0b8) },
         uFogColor:{ value:new THREE.Color(0x0d1a26) }, uFogNear:{ value:24 }, uFogFar:{ value:340 }
       },
       vertexShader: `
-        uniform float uTime, uAmp, uChop, uG; uniform vec4 uWaveA, uWaveB; uniform vec2 uWaveC, uWaveD;
-        varying vec3 vWorld; varying vec3 vNormal; varying float vCrest; varying vec2 vXZ;
+        uniform float uTime, uAmp, uChop, uG;
+        uniform float uWl[9]; uniform float uDir[9]; uniform float uSteep[9]; uniform float uPhase[9]; uniform float uGain[9];
+        varying vec3 vWorld; varying vec3 vNormal; varying float vCrest; varying vec2 vXZ; varying float vJac;
         const float TAU = 6.28318530718;
         void main(){
           vec3 pos = position; vec3 disp = vec3(0.0);
+          float axx = 0.0, azz = 0.0, axz = 0.0;
           vec3 tangent = vec3(1.0,0.0,0.0); vec3 binormal = vec3(0.0,0.0,1.0);
-          for (int i = 0; i < 6; i++){
-            float wl = (i < 4) ? uWaveA[i] : uWaveC[i-4];
-            float ang = (i < 4) ? uWaveB[i] : uWaveD[i-4];
-            float steep = (i==0)?0.22:(i==1)?0.16:(i==2)?0.12:(i==3)?0.08:(i==4)?0.05:0.035;
+          for (int i = 0; i < 9; i++){
+            float wl = max(uWl[i], 0.6);
+            float ang = uDir[i];
             vec2 D = vec2(cos(ang), sin(ang));
-            float k = TAU / max(wl, 0.7); float c = sqrt(max(uG, 0.5) / k);
-            float f = k * dot(D, pos.xz) - c * k * uTime;
-            float a = steep * uAmp / k;
+            float k = TAU / wl; float c = sqrt(max(uG, 0.5) / k);
+            float f = k * dot(D, pos.xz) - c * k * uTime + uPhase[i];
+            float st = uSteep[i] * uGain[i];
+            float a = st * uAmp / k;
             disp.x += D.x * a * cos(f); disp.z += D.y * a * cos(f);
-            disp.y += a * sin(f) * uChop * 3.0;
-            tangent  += vec3(-D.x*D.x*steep*sin(f), D.x*steep*cos(f), -D.x*D.y*steep*sin(f));
-            binormal += vec3(-D.x*D.y*steep*sin(f), D.y*steep*cos(f), -D.y*D.y*steep*sin(f));
+            disp.y += a * sin(f);
+            tangent  += vec3(-D.x*D.x*st*sin(f), D.x*st*cos(f), -D.x*D.y*st*sin(f));
+            binormal += vec3(-D.x*D.y*st*sin(f), D.y*st*cos(f), -D.y*D.y*st*sin(f));
+            float s = st * uAmp * sin(f);
+            axx -= D.x*D.x*s; azz -= D.y*D.y*s; axz -= D.x*D.y*s;
           }
           pos += disp;
           vNormal = normalize(cross(binormal, tangent));
+          vJac = (1.0 + axx) * (1.0 + azz) - axz * axz;
           vWorld = (modelMatrix * vec4(pos,1.0)).xyz;
           vXZ = pos.xz;
           vCrest = disp.y;
@@ -1008,44 +1200,81 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
         }`,
       fragmentShader: `
         uniform vec3 uDeep, uShallow, uSunDir, uSunCol, uSkyTop, uSkyHor, uFogColor;
-        uniform float uFogNear, uFogFar, uTime, uAlpha, uFoam, uRough;
-        varying vec3 vWorld; varying vec3 vNormal; varying float vCrest; varying vec2 vXZ;
+        uniform float uFogNear, uFogFar, uTime, uAlpha, uFoam, uRough, uWhitecap;
+        uniform float uShallowAlpha, uDeepAlpha, uXray, uLockAlpha, uBedOn;
+        uniform sampler2D uFoamTex; uniform vec2 uFoamCenter; uniform float uFoamSize, uFoamOn;
+        varying vec3 vWorld; varying vec3 vNormal; varying float vCrest; varying vec2 vXZ; varying float vJac;
         float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1,311.7))) * 43758.5453); }
+        float vnoise(vec2 p){
+          vec2 i = floor(p), f = fract(p);
+          f = f * f * (3.0 - 2.0 * f);
+          float a = hash(i), b = hash(i + vec2(1.0, 0.0));
+          float c = hash(i + vec2(0.0, 1.0)), d = hash(i + vec2(1.0, 1.0));
+          return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+        }
+        float seabedY(vec2 p){
+          float d = 8.0 + 4.0*sin(p.x*0.035+1.3)*cos(p.y*0.045) + 2.0*sin((p.x+p.y)*0.02);
+          float bar = max(0.0, 1.0 - length(vec2((p.x-2.0)/16.0, (p.y-16.0)/10.0))) * 6.0;
+          return -max(2.0, d - bar);
+        }
         void main(){
           vec3 N = normalize(vNormal);
           float t = uTime;
           vec3 dn = vec3(
-            sin(vXZ.x*2.3 + t*1.7)*0.5 + sin(vXZ.y*3.1 - t*1.3)*0.5,
+            sin(vXZ.x*2.3 + t*1.7)*0.5 + sin(vXZ.y*3.1 - t*1.3)*0.5
+              + sin(vXZ.x*7.7 - t*2.1)*0.25 + sin(vXZ.y*6.3 + t*1.9)*0.25,
             0.0,
             cos(vXZ.y*2.7 + t*1.5)*0.5 + cos(vXZ.x*3.7 - t*1.1)*0.5
+              + cos(vXZ.y*8.1 + t*1.7)*0.25 + cos(vXZ.x*5.9 - t*2.3)*0.25
           );
-          N = normalize(N + dn * 0.075);
+          float detail = 0.055 + 0.028 * clamp(uFoam, 0.0, 1.5);
+          N = normalize(N + dn * detail);
+
+          float depth = clamp(vWorld.y - seabedY(vWorld.xz), 0.15, 30.0);
+          depth = mix(11.0, depth, uBedOn);
+          float absorb = 1.0 - exp(-depth * 0.16);
+          vec3 base = mix(uShallow, uDeep, absorb);
+          base = mix(base, uShallow * 0.85, smoothstep(0.55, 1.15, -vJac) * 0.5);
 
           vec3 V = normalize(cameraPosition - vWorld);
           float fres = pow(1.0 - max(dot(N, V), 0.0), 5.0);
-          fres = 0.02 + 0.98 * fres;
+          fres = 0.035 + 0.965 * fres;
           vec3 skyCol = mix(uSkyHor, uSkyTop, smoothstep(0.0, 1.0, N.y*0.5+0.5));
-          vec3 base = mix(uDeep, uShallow, smoothstep(-0.2, 1.0, vCrest));
           vec3 col = mix(base, skyCol, fres);
 
           vec3 H = normalize(uSunDir + V);
-          float shin = mix(460.0, 70.0, clamp(uRough, 0.0, 1.0));
+          float shin = mix(900.0, 140.0, clamp(uRough, 0.0, 1.0));
           float spec = pow(max(dot(N, H), 0.0), shin);
-          col += uSunCol * spec * (1.4 + 1.8*(1.0 - clamp(uRough,0.0,1.0)));
+          // 高光去饱和：避免低角度暖阳在泡沫/粗浪上形成橙色油污状斑块
+          vec3 sunHi = mix(uSunCol, vec3(1.0), 0.72);
+          col += sunHi * spec * (0.28 + 0.42*(1.0 - clamp(uRough,0.0,1.0)));
 
           vec3 sFlat = normalize(vec3(uSunDir.x, 0.0001, uSunDir.z));
           vec3 nFlat = normalize(vec3(N.x, 0.0001, N.z));
           float glare = pow(max(dot(nFlat, sFlat), 0.0), 10.0);
-          col += uSunCol * glare * 0.05 * (1.0 - clamp(uSunDir.y, 0.0, 1.0));
+          col += sunHi * glare * 0.035 * (1.0 - clamp(uSunDir.y, 0.0, 1.0));
 
-          float foamMask = smoothstep(0.55, 1.35, vCrest) * smoothstep(0.3, 0.7, abs(N.x)+abs(N.z)) * uFoam;
-          float n = hash(floor(vXZ * 2.6 + t * 0.35));
-          foamMask *= 0.55 + 0.45 * n;
-          col = mix(col, vec3(0.84,0.88,0.9), clamp(foamMask, 0.0, 0.75));
+          // 白浪：雅可比 + 泡沫场 + 岸线
+          float jacFoam = smoothstep(0.78, 0.36, vJac) * uWhitecap;
+          vec2 fuv = (vWorld.xz - uFoamCenter) / uFoamSize + 0.5;
+          float inBox = step(0.0, fuv.x)*step(fuv.x, 1.0)*step(0.0, fuv.y)*step(fuv.y, 1.0);
+          float foamRaw = texture2D(uFoamTex, clamp(fuv, 0.001, 0.999)).r * inBox * uFoamOn;
+          float foamTex = smoothstep(0.20, 0.62, foamRaw);
+          float shoreFoam = smoothstep(3.0, 1.2, depth) * uBedOn;
+          float foamMask = clamp(jacFoam + foamTex + shoreFoam, 0.0, 1.0) * uFoam;
+          float n1 = vnoise(vXZ * 1.7 + vec2(t * 0.16, -t * 0.11));
+          float n2 = vnoise(vXZ * 5.3 - vec2(t * 0.27, t * 0.19));
+          foamMask *= 0.52 + 0.48 * (n1 * 0.68 + n2 * 0.32);
+          col = mix(col, vec3(0.84,0.89,0.91), clamp(foamMask, 0.0, 0.80));
 
           float d = length(cameraPosition - vWorld);
           col = mix(col, uFogColor, smoothstep(uFogNear, uFogFar, d));
-          gl_FragColor = vec4(col, uAlpha);
+
+          float alpha = mix(uShallowAlpha, uDeepAlpha, absorb);
+          alpha = mix(alpha, min(alpha, uLockAlpha), uXray);
+          alpha = clamp(max(alpha, foamMask * 0.95), 0.05, 1.0);
+
+          gl_FragColor = vec4(col, alpha);
         }`,
       side: THREE.DoubleSide, transparent: true, depthWrite: false
     });
@@ -1071,11 +1300,140 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
     oceanMesh.frustumCulled = false;
     scene.add(oceanMesh);
 
-    const hemi = new THREE.HemisphereLight(0x8fb8d8, 0x0a0e12, 0.85);
+    /* ---- 海底高度场 ---- */
+    function seabedY(x, z){
+      const d = 8.0 + 4.0*Math.sin(x*0.035+1.3)*Math.cos(z*0.045) + 2.0*Math.sin((x+z)*0.02);
+      const bar = Math.max(0, 1 - Math.hypot((x-2)/16, (z-16)/10)) * 6.0;
+      return -Math.max(2.0, d - bar);
+    }
+    let bedMesh = null;
+    {
+      const c = document.createElement('canvas'); c.width = c.height = 128;
+      const g = c.getContext('2d');
+      g.fillStyle = '#9b8a68'; g.fillRect(0,0,128,128);
+      for (let i = 0; i < 900; i++){
+        g.fillStyle = `rgba(${110+Math.random()*70|0},${92+Math.random()*55|0},64,${0.05+Math.random()*0.13})`;
+        g.fillRect(Math.random()*128, Math.random()*128, 1.6, 1.6);
+      }
+      for (let i = 0; i < 46; i++){
+        g.strokeStyle = 'rgba(255,242,214,0.05)'; g.beginPath();
+        g.moveTo(0, i*2.8);
+        g.bezierCurveTo(42, i*2.8+2, 86, i*2.8-2, 128, i*2.8);
+        g.stroke();
+      }
+      const tex = new THREE.CanvasTexture(c);
+      tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+      tex.repeat.set(26, 26);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      const BG = 260, BS = 150;
+      const bg = new THREE.PlaneGeometry(BG, BG, BS, BS);
+      bg.rotateX(-Math.PI/2);
+      const bp = bg.attributes.position;
+      for (let i = 0; i < bp.count; i++){
+        const x = bp.getX(i), z = bp.getZ(i) + 4;
+        bp.setZ(i, z);
+        bp.setY(i, seabedY(x, z));
+      }
+      bg.computeVertexNormals();
+      const bed = new THREE.Mesh(bg, new THREE.MeshStandardMaterial({
+        map: tex, color: 0x3f4a44, roughness: 1.0, metalness: 0,
+        depthWrite: false
+      }));
+      bed.receiveShadow = true;
+      bed.material.envMapIntensity = 0.25;
+      bed.name = 'seabed';
+      scene.add(bed);
+      bedMesh = bed;
+    }
+
+    /* ---- 泡沫场 ---- */
+    const FOAM_SIZE = IS_TOUCH ? 256 : 512;
+    const FOAM_WORLD = 150;
+    const foamCenter = new THREE.Vector2(4.8, 0);
+    const foamOpts = { depthBuffer:false, stencilBuffer:false, minFilter:THREE.LinearFilter, magFilter:THREE.LinearFilter };
+    const foamA = new THREE.WebGLRenderTarget(FOAM_SIZE, FOAM_SIZE, foamOpts);
+    const foamB = new THREE.WebGLRenderTarget(FOAM_SIZE, FOAM_SIZE, foamOpts);
+    let foamRead = foamA, foamWrite = foamB;
+    const foamScene = new THREE.Scene();
+    const foamCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+    const foamMat = new THREE.ShaderMaterial({
+      uniforms: {
+        uPrev:{ value:null }, uDt:{ value:0 }, uTime:{ value:0 },
+        uCenter:{ value:foamCenter }, uSize:{ value:FOAM_WORLD },
+        uDecay:{ value:3.2 }, uGen:{ value:1.0 }, uThreshold:{ value:0.46 },
+        uHull:{ value:1.0 }, uHullPos:{ value:new THREE.Vector2(4.8, 0) },
+        uDrift:{ value:new THREE.Vector2(0.35, 0.12) }, uG:{ value:9.81 },
+        uWl:{ value:WAVES.map(w=>w.wl) }, uDir:{ value:WAVES.map(w=>w.dir) },
+        uSteep:{ value:WAVES.map(w=>w.steep) }, uPhase:{ value:WAVES.map(w=>w.phase) },
+        uGain:{ value:WAVES.map(()=>1.0) }
+      },
+      vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }`,
+      fragmentShader: `
+        uniform sampler2D uPrev;
+        uniform float uDt, uTime, uSize, uDecay, uGen, uThreshold, uHull, uG;
+        uniform vec2 uCenter, uHullPos, uDrift;
+        uniform float uWl[9]; uniform float uDir[9]; uniform float uSteep[9]; uniform float uPhase[9]; uniform float uGain[9];
+        varying vec2 vUv;
+        const float TAU = 6.28318530718;
+        void main(){
+          vec2 p = uCenter + (vUv - 0.5) * uSize;
+          vec2 prevUV = vUv - uDrift * uDt / uSize;
+          vec2 tx = vec2(1.0 / uSize, 0.0);
+          vec2 ty = vec2(0.0, 1.0 / uSize);
+          // 5 点扩散：抑制网格块状残留，同时保留拖尾
+          float prev = texture2D(uPrev, prevUV).r * 0.44
+                     + texture2D(uPrev, prevUV + tx * 1.5).r * 0.14
+                     + texture2D(uPrev, prevUV - tx * 1.5).r * 0.14
+                     + texture2D(uPrev, prevUV + ty * 1.5).r * 0.14
+                     + texture2D(uPrev, prevUV - ty * 1.5).r * 0.14;
+          float axx = 0.0, azz = 0.0, axz = 0.0;
+          for (int i = 0; i < 9; i++){
+            float wl = max(uWl[i], 0.6);
+            vec2 D = vec2(cos(uDir[i]), sin(uDir[i]));
+            float k = TAU / wl; float c = sqrt(max(uG, 0.5) / k);
+            float f = k * dot(D, p) - c * k * uTime + uPhase[i];
+            float s = uSteep[i] * uGain[i] * sin(f);
+            axx -= D.x*D.x*s; azz -= D.y*D.y*s; axz -= D.x*D.y*s;
+          }
+          float J = (1.0 + axx) * (1.0 + azz) - axz * axz;
+          float src = smoothstep(uThreshold, uThreshold - 0.34, J) * uGen;
+          vec2 q = (p - uHullPos) / vec2(10.5, 4.2);
+          float r = length(q);
+          float ring = smoothstep(0.86, 0.94, r) * (1.0 - smoothstep(0.99, 1.05, r));
+          src += ring * uHull * 0.55;
+          float foam = prev * exp(-uDt / max(0.15, uDecay)) + src * min(1.0, uDt * 2.2);
+          gl_FragColor = vec4(clamp(foam, 0.0, 1.0), 0.0, 0.0, 1.0);
+        }`,
+      depthTest: false, depthWrite: false
+    });
+    const foamQuad = new THREE.Mesh(new THREE.PlaneGeometry(2,2), foamMat);
+    foamQuad.frustumCulled = false;
+    foamScene.add(foamQuad);
+    oceanMat.uniforms.uFoamTex.value = foamB.texture;
+    function renderFoam(dt, t){
+      foamMat.uniforms.uPrev.value = foamRead.texture;
+      foamMat.uniforms.uDt.value = Math.min(dt, 0.05);
+      foamMat.uniforms.uTime.value = t;
+      foamMat.uniforms.uWl.value = oceanMat.uniforms.uWl.value;
+      foamMat.uniforms.uDir.value = oceanMat.uniforms.uDir.value;
+      foamMat.uniforms.uSteep.value = oceanMat.uniforms.uSteep.value;
+      foamMat.uniforms.uPhase.value = oceanMat.uniforms.uPhase.value;
+      foamMat.uniforms.uGain.value = oceanMat.uniforms.uGain.value;
+      renderer.setRenderTarget(foamWrite);
+      renderer.clear();
+      renderer.render(foamScene, foamCam);
+      renderer.setRenderTarget(null);
+      oceanMat.uniforms.uFoamTex.value = foamWrite.texture;
+      const painted = foamWrite;
+      foamRead = painted;
+      foamWrite = (painted === foamA) ? foamB : foamA;
+    }
+
+    const hemi = new THREE.HemisphereLight(0xc2ccd6, 0x2a2018, 0.92);
     scene.add(hemi);
     const sun = new THREE.DirectionalLight(0xffe8c8, 2.1);
     sun.position.set(20, 30, 24); sun.castShadow = true;
-    sun.shadow.mapSize.set(2048, 2048);
+    sun.shadow.mapSize.set(IS_TOUCH ? 1024 : 2048, IS_TOUCH ? 1024 : 2048);
     Object.assign(sun.shadow.camera, { left:-22, right:22, top:22, bottom:-22, near:1, far:120 });
     sun.shadow.bias = -0.0007; sun.shadow.normalBias = 0.02;
     scene.add(sun);
@@ -1088,6 +1446,8 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
     const rim = new THREE.DirectionalLight(0xffd9a0, 0.30);
     rim.position.set(-8, 4, 20);
     scene.add(rim);
+    const warmFill = new THREE.DirectionalLight(0xffc98a, 0.5);
+    warmFill.position.set(9, 13, 7);
 
     /* =================================================================
        8. 材质
@@ -1179,7 +1539,7 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
       return new THREE.MeshStandardMaterial({
         map: m.map, bumpMap: m.bumpMap, bumpScale: 0.016,
         roughnessMap: m.roughnessMap, roughness: 1.0, metalness: 0.0,
-        side: THREE.DoubleSide, envMapIntensity: 0.75
+        side: THREE.DoubleSide, envMapIntensity: 0.45
       });
     }
     const MAT = {
@@ -1230,6 +1590,7 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
        ================================================================= */
     const shipRoot = new THREE.Group();
     scene.add(shipRoot);
+    scene.add(warmFill);
     COLL_DEFS.forEach(c => {
       const g = new THREE.Group(); g.name = c.id;
       GROUPS[c.id] = g; shipRoot.add(g);
@@ -1863,17 +2224,23 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
        ================================================================= */
     const env = {
       time: 10, elev: 55, azim: 150, sun: 2.1, warm: 55, amb: 0.85, exposure: 1.05,
-      fog: 0.0022, shadow: 2,
-      amp: 0.30, chop: 0.50, wl: 1.0, dir: 0, foam: 1.0, alpha: 0.42,
-      deep: '#06121c', shallow: '#0e3040',
-      g: 9.81, bk: 1.0, bc: 1.0, paused: false
+      fog: 0.0022, shadow: IS_TOUCH ? 1 : 2,
+      amp: 0.34, chop: 0.50, wl: 1.0, dir: 0, foam: 1.0, alpha: 0.42,
+      whitecap: 1.0, foamDecay: 3.2, foamGen: 1.0, bedOn: true,
+      hullFoam: 0.8, splash: 1.0, splashOn: true,
+      gSwell: 1.0, gWind: 1.0, gChop: 1.0,
+      deep: '#081a26', shallow: '#2695a8',
+      g: 9.81, bk: 1.0, bc: 1.0, paused: false, weather: 'clear'
     };
+    let xrayOn = true;
+    /* 滑杆显示值 → env 实际值的换算（滑杆用百分数，env 用小数） */
+    const UI_SCALE = { amp:0.01, chop:0.01, wl:0.01, foam:0.01, alpha:0.01, whitecap:0.01 };
     const WEATHER = {
-      clear:  { time:10.0, sun:2.3, warm:60, amb:0.90, exposure:1.06, fog:0.0018, amp:0.26, chop:0.45, wl:1.0,   foam:0.9,  alpha:0.42 },
-      cloudy: { time:14.0, sun:1.2, warm:45, amb:1.15, exposure:1.02, fog:0.0042, amp:0.38, chop:0.60, wl:1.05,  foam:1.1,  alpha:0.5 },
-      mist:   { time:7.0,  sun:0.8, warm:35, amb:1.05, exposure:1.0,  fog:0.0135, amp:0.12, chop:0.28, wl:0.9,   foam:0.5,  alpha:0.55 },
-      dusk:   { time:18.4, sun:1.6, warm:12, amb:0.55, exposure:1.12, fog:0.0032, amp:0.22, chop:0.5,  wl:1.0,   foam:0.8,  alpha:0.42 },
-      storm:  { time:15.0, sun:0.9, warm:30, amb:0.6,  exposure:0.94, fog:0.016,  amp:0.85, chop:0.92, wl:1.25,  foam:1.5,  alpha:0.62 }
+      clear:  { time:10.0, sun:2.3, warm:60, amb:0.90, exposure:1.06, fog:0.0018, amp:0.34, chop:0.45, wl:1.0,   foam:0.9,  alpha:0.42, gSwell:0.90, gWind:0.85, gChop:0.80, whitecap:0.80, foamGen:0.85, foamDecay:2.8 },
+      cloudy: { time:14.0, sun:1.2, warm:45, amb:1.15, exposure:1.02, fog:0.0042, amp:0.55, chop:0.60, wl:1.05,  foam:1.1,  alpha:0.5,  gSwell:1.05, gWind:1.15, gChop:1.10, whitecap:1.05, foamGen:1.00, foamDecay:2.6 },
+      mist:   { time:7.0,  sun:0.8, warm:35, amb:1.05, exposure:1.0,  fog:0.0135, amp:0.22, chop:0.28, wl:0.9,   foam:0.5,  alpha:0.55, gSwell:0.55, gWind:0.50, gChop:0.45, whitecap:0.45, foamGen:0.60, foamDecay:3.4 },
+      dusk:   { time:18.4, sun:1.6, warm:12, amb:0.55, exposure:1.12, fog:0.0032, amp:0.40, chop:0.5,  wl:1.0,   foam:0.8,  alpha:0.42, gSwell:0.90, gWind:0.90, gChop:0.85, whitecap:0.85, foamGen:0.85, foamDecay:3.0 },
+      storm:  { time:15.0, sun:0.9, warm:30, amb:0.6,  exposure:0.94, fog:0.016,  amp:0.75, chop:0.82, wl:1.25,  foam:1.05, alpha:0.62, gSwell:1.20, gWind:1.40, gChop:1.50, whitecap:1.35, foamGen:1.05, foamDecay:2.0 }
     };
     const C = (h) => new THREE.Color(h);
     function skyPalette(elev) {
@@ -1884,6 +2251,18 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
       return { top:0x05080f, hor:0x0c141f, fog:0x050a10 };
     }
     let sunDir = new THREE.Vector3();
+    /* 水体参数持久化（恢复完成后才写回，避免启动时覆盖存储值） */
+    const WATER_KEYS = ['amp','chop','wl','dir','foam','whitecap','foamDecay','foamGen','bedOn','splash','splashOn','gSwell','gWind','gChop','g','deep','shallow','alpha'];
+    let waterRestored = false;
+    function saveWater(){
+      if (!waterRestored) return;
+      try {
+        const o = {};
+        for (const k of WATER_KEYS) o[k] = env[k];
+        o.weather = env.weather;
+        localStorage.setItem('qs-water', JSON.stringify(o));
+      } catch(_) {}
+    }
     function applyEnv() {
       const pal = skyPalette(env.elev);
       const er = env.elev*Math.PI/180, ar = env.azim*Math.PI/180;
@@ -1917,19 +2296,41 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
       scene.fog.color.copy(C(pal.fog));
       scene.fog.density = env.fog;
 
-      const wlBase = [34,19,10.5,6.2].map(v => v*env.wl);
-      oceanMat.uniforms.uWaveA.value.set(wlBase[0], wlBase[1], wlBase[2], wlBase[3]);
-      const baseDir = [0.60,1.15,0.25,1.80];
-      const dShift = env.dir*Math.PI/180;
-      oceanMat.uniforms.uWaveB.value.set(baseDir[0]+dShift, baseDir[1]+dShift, baseDir[2]+dShift, baseDir[3]+dShift);
-      oceanMat.uniforms.uWaveC.value.set(3.4*env.wl, 2.1*env.wl);
-      oceanMat.uniforms.uWaveD.value.set(2.6+dShift, 0.9+dShift);
+      // 9 波分层：按组写入波长缩放 / 方向偏移 / 增益；波陡统一作用于所有分量的 steepness，
+      // 使位移与解析法线严格一致（不再对 y 单独夸张，否则法线错位会显得僵硬）
+      const wlScale = env.wl, dShift = env.dir*Math.PI/180;
+      const chopK = 0.6 + 0.8*env.chop;
+      envWave.swell = env.gSwell; envWave.wind = env.gWind; envWave.chop = env.gChop;
+      const uWl = oceanMat.uniforms.uWl.value;
+      const uDir = oceanMat.uniforms.uDir.value;
+      const uSteep = oceanMat.uniforms.uSteep.value;
+      const uPhase = oceanMat.uniforms.uPhase.value;
+      const uGain = oceanMat.uniforms.uGain.value;
+      for (let i = 0; i < WAVES.length; i++){
+        const w = WAVES[i];
+        uWl[i] = w.wl * wlScale;
+        uDir[i] = w.dir + dShift;
+        uSteep[i] = w.steep * chopK;
+        uPhase[i] = w.phase;
+        uGain[i] = envWave[w.g] !== undefined ? envWave[w.g] : 1;
+      }
       oceanMat.uniforms.uRough.value = 0.22 + env.chop*0.45;
       oceanMat.uniforms.uAmp.value = env.amp;
       oceanMat.uniforms.uChop.value = env.chop;
       oceanMat.uniforms.uFoam.value = env.foam;
-      oceanMat.uniforms.uAlpha.value = env.alpha;
+      oceanMat.uniforms.uWhitecap.value = env.whitecap;
+      oceanMat.uniforms.uXray.value = xrayOn ? 1 : 0;
+      oceanMat.uniforms.uLockAlpha.value = env.alpha;
+      const bedVisible = env.bedOn && !xrayOn;
+      oceanMat.uniforms.uBedOn.value = bedVisible ? 1 : 0;
+      oceanMat.uniforms.uFoamOn.value = env.foamGen > 0.02 ? 1 : 0;
       oceanMat.uniforms.uG.value = env.g;
+      if (bedMesh) bedMesh.visible = bedVisible;
+      foamMat.uniforms.uDecay.value = env.foamDecay;
+      foamMat.uniforms.uGen.value = env.foamGen;
+      foamMat.uniforms.uHull.value = env.hullFoam;
+      foamMat.uniforms.uHullPos.value.set(4.8, 0);
+      foamMat.uniforms.uDrift.value.set(Math.cos(dShift)*0.35, Math.sin(dShift)*0.35);
       oceanMat.uniforms.uSunDir.value.copy(sunDir);
       oceanMat.uniforms.uSunCol.value.copy(sunCol);
       oceanMat.uniforms.uSkyTop.value.copy(C(pal.top));
@@ -1940,9 +2341,10 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
       oceanMat.uniforms.uFogFar.value = fogFar;
       oceanMat.uniforms.uDeep.value.set(env.deep);
       oceanMat.uniforms.uShallow.value.set(env.shallow);
-      oceanMat.transparent = env.alpha < 0.995;
-      oceanMat.depthWrite = env.alpha >= 0.9;
+      oceanMat.transparent = true;
+      oceanMat.depthWrite = false;
       scheduleEnvRebuild();
+      saveWater();
     }
     function sunFromTime(t) {
       const ph = (t - 6)/13;
@@ -2214,14 +2616,17 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
        ================================================================= */
     const panelEl = document.getElementById('panel');
     const openBtn = document.getElementById('panelOpen');
-    document.getElementById('panelClose').onclick = () => {
-      panelEl.classList.add('collapsed');
-      openBtn.classList.add('show');
-    };
-    openBtn.onclick = () => {
-      panelEl.classList.remove('collapsed');
-      openBtn.classList.remove('show');
-    };
+    function setPanelCollapsed(collapsed){
+      panelEl.classList.toggle('collapsed', collapsed);
+      openBtn.classList.toggle('show', collapsed);
+      document.body.classList.toggle('panel-collapsed', collapsed);
+    }
+    document.getElementById('panelClose').onclick = () => setPanelCollapsed(true);
+    openBtn.onclick = () => setPanelCollapsed(false);
+    document.querySelector('#panel .p-head').addEventListener('click', e => {
+      if (e.target.closest('button')) return;
+      if (innerWidth <= 900) setPanelCollapsed(true);
+    });
     const themeBtn = document.getElementById('themeBtn');
     function setTheme(t){
       document.documentElement.dataset.theme = t;
@@ -2232,6 +2637,7 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
     }
     setTheme(document.documentElement.dataset.theme || 'dark');
     themeBtn.onclick = () => setTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');
+    if (innerWidth <= 900) setPanelCollapsed(true);
     document.querySelectorAll('.tab').forEach(t => {
       t.addEventListener('click', () => {
         document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
@@ -2258,24 +2664,32 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
         ['e-alpha','alpha','v-alpha', v => `${(v*100).toFixed(0)}%`],
         ['e-g','g','v-g', v => v.toFixed(2)],
         ['e-bk','bk','v-bk', v => v.toFixed(2)],
-        ['e-bc','bc','v-bc', v => v.toFixed(2)]
+        ['e-bc','bc','v-bc', v => v.toFixed(2)],
+        ['e-whitecap','whitecap','v-whitecap', v => `${(v*100).toFixed(0)}%`],
+        ['e-foamdecay','foamDecay','v-foamdecay', v => `${v.toFixed(1)}s`],
+        ['e-gswell','gSwell','v-gswell', v => `${(v*100).toFixed(0)}%`],
+        ['e-gwind','gWind','v-gwind', v => `${(v*100).toFixed(0)}%`],
+        ['e-gchop','gChop','v-gchop', v => `${(v*100).toFixed(0)}%`],
+        ['e-splash','splash','v-splash', v => `${(v*100).toFixed(0)}%`]
       ];
       for (const [id, key, vid, fmt] of map) {
         const el = document.getElementById(id);
         if (!el) continue;
-        el.value = env[key];
+        el.value = env[key] / (UI_SCALE[key] || 1);
         const vEl = document.getElementById(vid);
         if (vEl) vEl.textContent = fmt(env[key]);
       }
       document.getElementById('e-shadow').value = String(env.shadow);
       document.getElementById('e-deep').value = env.deep;
       document.getElementById('e-shallow').value = env.shallow;
+      const bedEl = document.getElementById('d-bed'); if (bedEl) bedEl.checked = !!env.bedOn;
+      const splashEl = document.getElementById('d-splash'); if (splashEl) splashEl.checked = !!env.splashOn;
     }
     function bindEnv() {
       const bindRange = (id, key, vid, fmt, after) => {
         const el = document.getElementById(id);
         el.addEventListener('input', () => {
-          env[key] = parseFloat(el.value);
+          env[key] = parseFloat(el.value) * (UI_SCALE[key] || 1);
           const vEl = document.getElementById(vid);
           if (vEl) vEl.textContent = fmt(env[key]);
           if (after) after();
@@ -2305,9 +2719,23 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
       bindRange('e-g','g','v-g', f2);
       bindRange('e-bk','bk','v-bk', f2);
       bindRange('e-bc','bc','v-bc', f2);
+      bindRange('e-whitecap','whitecap','v-whitecap', pct);
+      bindRange('e-foamdecay','foamDecay','v-foamdecay', v => `${v.toFixed(1)}s`);
+      bindRange('e-gswell','gSwell','v-gswell', pct);
+      bindRange('e-gwind','gWind','v-gwind', pct);
+      bindRange('e-gchop','gChop','v-gchop', pct);
+      bindRange('e-splash','splash','v-splash', pct);
+      const splashToggle = document.getElementById('d-splash');
+      if (splashToggle) splashToggle.addEventListener('change', e => {
+        env.splashOn = e.target.checked;
+        splashPoints.visible = env.splashOn;
+      });
       document.getElementById('e-shadow').addEventListener('change', e => { env.shadow = parseInt(e.target.value); applyEnv(); });
       document.getElementById('e-deep').addEventListener('input', e => { env.deep = e.target.value; applyEnv(); });
       document.getElementById('e-shallow').addEventListener('input', e => { env.shallow = e.target.value; applyEnv(); });
+
+      const bedToggle = document.getElementById('d-bed');
+      if (bedToggle) bedToggle.addEventListener('change', e => { env.bedOn = e.target.checked; applyEnv(); });
 
       document.querySelectorAll('[data-weather]').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -2315,6 +2743,8 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
           btn.classList.add('active');
           const w = WEATHER[btn.dataset.weather];
           Object.assign(env, w);
+          env.weather = btn.dataset.weather;
+          if (window.ShipAudio && window.ShipAudio.setWeather) window.ShipAudio.setWeather(btn.dataset.weather);
           const s = sunFromTime(env.time);
           env.elev = s.elev; env.azim = s.azim;
           env.exposure = w.exposure; env.amb = w.amb;
@@ -2330,6 +2760,24 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
     applyEnv();
     syncEnvUI();
     bindEnv();
+
+    /* 恢复上次的水体参数：必须在首次 applyEnv 之后、animate 之前 */
+    try {
+      const rawWater = localStorage.getItem('qs-water');
+      if (rawWater) {
+        const o = JSON.parse(rawWater) || {};
+        for (const k of WATER_KEYS) if (o[k] !== undefined) env[k] = o[k];
+        if (o.weather) {
+          env.weather = o.weather;
+          const wb = document.querySelector(`[data-weather="${o.weather}"]`);
+          if (wb) document.querySelectorAll('[data-weather]').forEach(b => b.classList.toggle('active', b === wb));
+        }
+        applyEnv(); syncEnvUI();
+        if (splashPoints) splashPoints.visible = env.splashOn;
+      }
+    } catch(_) {}
+    waterRestored = true;
+    saveWater();
 
     /* =================================================================
        23. 显示控件 / 模式
@@ -2347,6 +2795,10 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
         if (m === 'restored') { GROUPS[RIG].visible = layerOn[RIG]; }
         applyVisibility();
         applyOpacity();
+        if (m === 'restored' && !selectedId && camera.position.distanceTo(controls.target) < 36) {
+          flyTo(new THREE.Vector3(27, 19, 31), new THREE.Vector3(4.8, 5.2, 0), 1000);
+          document.getElementById('viewTag').textContent = '复原全景';
+        }
       });
     });
     document.getElementById('d-explode').addEventListener('input', e => {
@@ -2358,14 +2810,12 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
       document.getElementById('d-explode').value = 65;
       document.getElementById('v-explode').textContent = '65%';
       document.getElementById('viewTag').textContent = '拆解视角';
-      flyTo(new THREE.Vector3(34, 25, 39), new THREE.Vector3(4.8, 4.6, 0), 1000);
+      flyTo(new THREE.Vector3(31, 22, 34), new THREE.Vector3(4.8, 4.0, 0), 1000);
     });
     document.getElementById('d-wire').addEventListener('change', e => { wireOn = e.target.checked; refreshAllMaterials(); });
     document.getElementById('d-src').addEventListener('change', e => { sourceColor = e.target.checked; refreshAllMaterials(); });
     document.getElementById('d-xray').addEventListener('change', e => {
-      env.alpha = e.target.checked ? 0.42 : 1.0;
-      document.getElementById('e-alpha').value = Math.round(env.alpha*100);
-      document.getElementById('v-alpha').textContent = Math.round(env.alpha*100) + '%';
+      xrayOn = e.target.checked;
       applyEnv();
     });
     document.getElementById('d-cut').addEventListener('change', e => { cutGroup.visible = e.target.checked; });
@@ -2401,11 +2851,13 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
       let dx = 0, dy = 0, dz = 0;
       const wlScale = env.wl, dShift = env.dir*Math.PI/180;
       for (const w of WAVES) {
+        const gain = envWave[w.g] !== undefined ? envWave[w.g] : 1;
         const k = (Math.PI*2)/(w.wl*wlScale), c = Math.sqrt(Math.max(0.5, env.g)/k);
         const ang = w.dir + dShift;
         const Dx = Math.cos(ang), Dz = Math.sin(ang);
-        const f = k*(Dx*x + Dz*z) - c*k*t, a = w.steep*env.amp/k;
-        dx += Dx*a*Math.cos(f); dz += Dz*a*Math.cos(f); dy += a*Math.sin(f)*env.chop;
+        const f = k*(Dx*x + Dz*z) - c*k*t + w.phase;
+        const a = w.steep*gain*env.amp/k;
+        dx += Dx*a*Math.cos(f); dz += Dz*a*Math.cos(f); dy += a*Math.sin(f)*env.chop*3.0;
       }
       return { x:x+dx, y:dy, z:z+dz };
     }
@@ -2422,7 +2874,7 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
       for (const s of SECS){
         for (let k = -1; k <= 1; k += 2){
           const z = k * s.b * 0.55;
-          const wh = waterHeight(s.x, z, t);
+          const wh = waterHeight(s.x, z, t) * 0.85;
           const ySurf = wh + surfBase + s.x*shipState.pitch + z*shipState.roll;
           const d = Math.max(0, Math.min(s.y1 - s.y0, ySurf - s.y0));
           if (d <= 0.0005) continue;
@@ -2430,12 +2882,14 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
           const A = 0.62 * beam * d * 0.5;
           const F = RHO * g * A * SEC_DX * env.bk;
           Ftot += F;
-          Tp += F * (s.x - X_CG);
-          Tr += F * z;
+          // 浮力对重心的力矩：+z / +x 侧浮力增大时应抬升该侧
+          // （rotation.x = roll，rotation.z = -pitch，故力矩取负号）
+          Tp -= F * (s.x - X_CG);
+          Tr -= F * z;
         }
       }
       const W = MASS * g;
-      const aY = (Ftot - W) / (MASS * 1.35) - 2.6*env.bc * shipState.vy;
+      const aY = (Ftot - W) / (MASS * 1.5) - 3.0*env.bc * shipState.vy;
       const aP = Tp / I_PITCH - 2.2*env.bc * shipState.vp;
       const aR = Tr / I_ROLL - 2.0*env.bc * shipState.vr;
 
@@ -2455,6 +2909,153 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
       shipRoot.rotation.z = -shipState.pitch;
       shipRoot.rotation.x = shipState.roll;
     }
+
+    /* =================================================================
+       24b. 船–浪碰撞浪花粒子（预分配 CPU 池 + 点精灵）
+       ================================================================= */
+    const SPLASH_MAX = IS_TOUCH ? 350 : 900;
+    const splashPos = new Float32Array(SPLASH_MAX * 3);
+    const splashVel = new Float32Array(SPLASH_MAX * 3);
+    const splashSizeArr = new Float32Array(SPLASH_MAX);
+    const splashLifeArr = new Float32Array(SPLASH_MAX);   // 剩余寿命
+    const splashLiftArr = new Float32Array(SPLASH_MAX);   // 归一化寿命 0..1
+    const splashMaxArr = new Float32Array(SPLASH_MAX);
+    const splashFloor = new Float32Array(SPLASH_MAX);
+    const splashSeed = new Float32Array(SPLASH_MAX);
+    for (let i = 0; i < SPLASH_MAX; i++){
+      splashSeed[i] = Math.random();
+      splashPos[i*3+1] = -50;
+    }
+    let splashCursor = 0;
+    const splashGeo = new THREE.BufferGeometry();
+    splashGeo.setAttribute('position', new THREE.BufferAttribute(splashPos, 3));
+    splashGeo.setAttribute('aSize', new THREE.BufferAttribute(splashSizeArr, 1));
+    splashGeo.setAttribute('aLife', new THREE.BufferAttribute(splashLiftArr, 1));
+    const splashMat = new THREE.ShaderMaterial({
+      uniforms: {
+        uScale: { value: 1 }
+      },
+      vertexShader: `
+        attribute float aSize;
+        attribute float aLife;
+        uniform float uScale;
+        varying float vLife;
+        void main(){
+          vLife = aLife;
+          vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+          gl_PointSize = clamp(aSize * (1.0 + 0.5*(1.0-aLife)) * uScale / max(1.0, -mvPosition.z), 1.0, 96.0);
+          gl_Position = projectionMatrix * mvPosition;
+        }`,
+      fragmentShader: `
+        varying float vLife;
+        void main(){
+          vec2 d = gl_PointCoord - vec2(0.5);
+          float r = length(d);
+          if (r > 0.5) discard;
+          float soft = smoothstep(0.5, 0.16, r);
+          float a = soft * vLife * 0.85;
+          if (a < 0.004) discard;
+          gl_FragColor = vec4(vec3(0.88, 0.94, 0.97), a);
+        }`,
+      transparent: true, depthWrite: false, blending: THREE.NormalBlending
+    });
+    const splashPoints = new THREE.Points(splashGeo, splashMat);
+    splashPoints.frustumCulled = false;
+    scene.add(splashPoints);
+    function updateSplashScale(){
+      const h = renderer.domElement.height || innerHeight;
+      splashMat.uniforms.uScale.value = h * 0.5 / Math.tan(camera.fov * Math.PI / 360);
+    }
+    updateSplashScale();
+
+    const SPLASH_XS = [-3.2, 0.4, 4.8, 9.2, 13.2];
+    const splashPrevH = new Float32Array(SPLASH_XS.length * 2);
+    let splashPrevReady = false;
+    let lastSplashSfx = 0;
+
+    function updateSplash(dt, t){
+      const sdt = Math.max(1/240, Math.min(dt, 0.05));
+
+      // 1) 推进已存活粒子
+      for (let i = 0; i < SPLASH_MAX; i++){
+        if (splashLifeArr[i] <= 0) continue;
+        splashLifeArr[i] -= sdt;
+        if (splashLifeArr[i] <= 0){
+          splashLifeArr[i] = 0; splashSizeArr[i] = 0; splashLiftArr[i] = 0;
+          continue;
+        }
+        const i3 = i * 3;
+        splashVel[i3+1] -= 9.81 * 0.55 * sdt;
+        const damp = Math.exp(-2.2 * sdt);
+        splashVel[i3] *= damp; splashVel[i3+2] *= damp;
+        splashPos[i3]   += splashVel[i3]   * sdt;
+        splashPos[i3+1] += splashVel[i3+1] * sdt;
+        splashPos[i3+2] += splashVel[i3+2] * sdt;
+        splashLiftArr[i] = splashLifeArr[i] / splashMaxArr[i];
+        if (splashPos[i3+1] < splashFloor[i]){   // 落回水面立即回收
+          splashLifeArr[i] = 0; splashSizeArr[i] = 0; splashLiftArr[i] = 0;
+        }
+      }
+
+      // 2) 采样站位水面垂向速度，按相对冲击发射
+      for (let si = 0; si < SPLASH_XS.length; si++){
+        const x = SPLASH_XS[si];
+        const hb = halfBeam(x) * 0.86;
+        for (let k = -1; k <= 1; k += 2){
+          const z = k * hb;
+          const idx = si * 2 + (k > 0 ? 1 : 0);
+          const h = waterHeight(x, z, t);
+          const prev = splashPrevH[idx];
+          splashPrevH[idx] = h;
+          if (!splashPrevReady) continue;
+
+          const surfaceVy = (h - prev) / sdt;
+          if (!env.splashOn || env.paused) continue;
+          const hullVy = shipState.vy + shipState.vp * (x - X_CG) + shipState.vr * z;
+          const rel = hullVy - surfaceVy;
+          if (!(rel > 0.30 || rel < -0.55)) continue;
+          const imp = Math.min(1, Math.abs(rel) / 2.2) * env.splash;
+          if (imp < 0.02) continue;
+          const n = Math.min(6, Math.round(imp * 4));
+          if (n <= 0) continue;
+
+          if (window.ShipAudio && window.ShipAudio.impact && t - lastSplashSfx > 0.12){
+            window.ShipAudio.impact(imp, z > 0 ? 0.55 : -0.55);
+            lastSplashSfx = t;
+          }
+
+          for (let j = 0; j < n; j++){
+            let slot = -1;
+            for (let c = 0; c < SPLASH_MAX; c++){
+              const ii = (splashCursor + c) % SPLASH_MAX;
+              if (splashLifeArr[ii] <= 0){ slot = ii; break; }
+            }
+            if (slot < 0) break;
+            splashCursor = (slot + 1) % SPLASH_MAX;
+            const i3 = slot * 3;
+            const r1 = Math.random(), r2 = Math.random(), r3 = Math.random();
+            splashPos[i3]   = x + r1 * 0.5;
+            splashPos[i3+1] = h + 0.03;
+            splashPos[i3+2] = z * (0.92 + r2 * 0.12);
+            splashVel[i3]   = (r3 < 0.5 ? -1 : 1) * (0.2 + 0.8 * imp) + 0.35 + (splashSeed[slot] - 0.5) * 0.3;
+            splashVel[i3+1] = 1.1 + 2.4 * imp + r1 * 0.7;
+            splashVel[i3+2] = (z > 0 ? 1 : -1) * (0.5 + 1.6 * imp) * (0.6 + r2 * 0.8);
+            splashSizeArr[slot] = 0.05 + 0.10 * imp + r3 * 0.05;
+            splashMaxArr[slot] = 0.6 + r2 * 1.0;
+            splashLifeArr[slot] = splashMaxArr[slot];
+            splashLiftArr[slot] = 1;
+            splashFloor[slot] = h - 0.02;
+          }
+        }
+      }
+      splashPrevReady = true;
+
+      splashGeo.attributes.position.needsUpdate = true;
+      splashGeo.attributes.aSize.needsUpdate = true;
+      splashGeo.attributes.aLife.needsUpdate = true;
+      splashPoints.visible = !!env.splashOn;
+    }
+
     document.getElementById('btnPause').addEventListener('click', e => {
       env.paused = !env.paused; paused = env.paused;
       e.target.classList.toggle('active', env.paused);
@@ -2466,6 +3067,365 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
       shipRoot.position.y = -DRAFT;
       shipRoot.rotation.set(0,0,0);
     });
+
+    /* =================================================================
+       24c. 沉浸式声音系统（Web Audio 程序化合成，无外部音频资源）
+       ================================================================= */
+    let audioOK = !!(window.AudioContext || window.webkitAudioContext);
+    const audioParams = { on:true, master:0.8, amb:0.7, sfx:0.85, wet:0.35, decay:2.4, muted:false, weather:'clear' };
+    try {
+      const rawAudio = localStorage.getItem('qs-audio');
+      if (rawAudio) Object.assign(audioParams, JSON.parse(rawAudio) || {});
+    } catch(_) {}
+    function saveAudio(){
+      try { localStorage.setItem('qs-audio', JSON.stringify(audioParams)); } catch(_) {}
+    }
+
+    let actx = null;
+    let audioMaster = null, audioComp = null, ambBus = null, sfxBus = null;
+    let audioConv = null, wetGain = null, ambSend = null, sfxSend = null;
+    let waterGain = null, windGain = null, rainGain = null;
+    let waterLP = null, windBP = null;
+    let brownBuf = null, whiteBuf = null;
+    let crashTimer = 3.0, thunderTimer = 14, lastImpactAt = -1, audioModAcc = 0;
+
+    const WEATHER_AUDIO = {
+      clear:  { water:0.55, wind:0.18, rain:0 },
+      cloudy: { water:0.60, wind:0.30, rain:0.16 },
+      mist:   { water:0.32, wind:0.10, rain:0.05 },
+      dusk:   { water:0.45, wind:0.15, rain:0.03 },
+      storm:  { water:0.95, wind:0.62, rain:0.55 }
+    };
+
+    /* 循环噪声缓冲（褐噪声 / 白噪声），首尾交叉淡化避免循环爆音 */
+    function makeNoise(seconds, brown){
+      if (!actx) return null;
+      const len = Math.max(1, Math.floor(actx.sampleRate * seconds));
+      const buf = actx.createBuffer(1, len, actx.sampleRate);
+      const d = buf.getChannelData(0);
+      let last = 0;
+      for (let i = 0; i < len; i++){
+        const w = Math.random() * 2 - 1;
+        if (brown){ last = (last + 0.02 * w) / 1.02; d[i] = last * 3.5; }
+        else d[i] = w;
+      }
+      const fade = Math.min(len, Math.floor(actx.sampleRate * 0.08));
+      for (let i = 0; i < fade; i++){
+        const t = i / fade;
+        d[len - fade + i] = d[len - fade + i] * (1 - t) + d[i] * t;
+      }
+      return buf;
+    }
+
+    /* 程序化混响脉冲响应：0.018 s 预延迟 + 指数衰减噪声，左右声道独立 */
+    function buildIR(decay){
+      if (!actx) return null;
+      const sr = actx.sampleRate;
+      const len = Math.max(1, Math.floor(sr * Math.max(0.2, Math.min(8, parseFloat(decay) || 2.4))));
+      const buf = actx.createBuffer(2, len, sr);
+      const pre = Math.floor(sr * 0.018);
+      for (let ch = 0; ch < 2; ch++){
+        const d = buf.getChannelData(ch);
+        for (let i = pre; i < len; i++){
+          const t = (i - pre) / Math.max(1, len - pre);
+          d[i] = (Math.random() * 2 - 1) * Math.pow(1 - t, 2.6);
+        }
+      }
+      return buf;
+    }
+
+    function makePanner(pan){
+      if (!actx || !actx.createStereoPanner) return null;
+      const p = actx.createStereoPanner();
+      p.pan.value = Math.max(-1, Math.min(1, pan || 0));
+      return p;
+    }
+
+    function applyWeatherMix(tc){
+      if (!actx || !waterGain) return;
+      const m = WEATHER_AUDIO[audioParams.weather] || WEATHER_AUDIO.clear;
+      const now = actx.currentTime, k = tc || 0.5;
+      waterGain.gain.setTargetAtTime(m.water, now, k);
+      windGain.gain.setTargetAtTime(m.wind, now, k);
+      rainGain.gain.setTargetAtTime(m.rain, now, k);
+    }
+
+    function setWeather(key){
+      audioParams.weather = key || 'clear';
+      saveAudio();
+      applyWeatherMix(0.5);
+    }
+
+    /* 雷声：低频噪声 + 低通扫频 + 随机声像 */
+    function thunder(){
+      if (!actx || !sfxBus) return;
+      const now = actx.currentTime;
+      const dur = 1.8 + Math.random() * 1.2;
+      const src = actx.createBufferSource(); src.buffer = brownBuf; src.loop = true;
+      const lp = actx.createBiquadFilter(); lp.type = 'lowpass';
+      lp.frequency.setValueAtTime(300, now);
+      lp.frequency.exponentialRampToValueAtTime(60, now + dur);
+      const g = actx.createGain();
+      g.gain.setValueAtTime(0.0001, now);
+      g.gain.linearRampToValueAtTime(0.40, now + 0.09);
+      g.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+      const panner = makePanner(Math.random() * 2 - 1);
+      const out = panner || sfxBus;
+      if (panner) panner.connect(sfxBus);
+      src.connect(lp); lp.connect(g); g.connect(out);
+      src.start(now); src.stop(now + dur + 0.02);
+      src.onended = () => { try { src.disconnect(); lp.disconnect(); g.disconnect(); if (panner) panner.disconnect(); } catch(_){} };
+    }
+
+    /* 海浪拍击：带通噪声扫频 1600 → 320 Hz */
+    function crash(intensity){
+      if (!actx || !sfxBus) return;
+      const now = actx.currentTime;
+      const s = Math.max(0.05, Math.min(1, intensity || 0));
+      const dur = 0.9 + Math.random() * 0.7;
+      const src = actx.createBufferSource(); src.buffer = whiteBuf; src.loop = true;
+      const bp = actx.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = 0.8;
+      bp.frequency.setValueAtTime(1600, now);
+      bp.frequency.exponentialRampToValueAtTime(320, now + dur);
+      const g = actx.createGain();
+      g.gain.setValueAtTime(0.0001, now);
+      g.gain.linearRampToValueAtTime(0.34 * s, now + 0.05);
+      g.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+      const panner = makePanner(Math.random() * 2 - 1);
+      const out = panner || sfxBus;
+      if (panner) panner.connect(sfxBus);
+      src.connect(bp); bp.connect(g); g.connect(out);
+      src.start(now); src.stop(now + dur + 0.02);
+      src.onended = () => { try { src.disconnect(); bp.disconnect(); g.disconnect(); if (panner) panner.disconnect(); } catch(_){} };
+    }
+
+    /* 碰撞：低频撞击 + 水花层，经声像进入音效总线与混响送出 */
+    function impact(strength, pan){
+      if (!actx || !sfxBus) return;
+      const now = actx.currentTime;
+      if (now - lastImpactAt < 0.09) return;
+      lastImpactAt = now;
+      const s = Math.max(0.05, Math.min(1, strength || 0));
+      const panner = makePanner(pan);
+      const out = panner || sfxBus;
+      if (panner) panner.connect(sfxBus);
+
+      const osc = actx.createOscillator(); osc.type = 'sine';
+      const oGain = actx.createGain();
+      osc.frequency.setValueAtTime(68 + 42 * s, now);
+      osc.frequency.exponentialRampToValueAtTime(36, now + 0.22);
+      oGain.gain.setValueAtTime(0.0001, now);
+      oGain.gain.linearRampToValueAtTime(0.55 * s, now + 0.012);
+      oGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.45);
+      osc.connect(oGain); oGain.connect(out);
+      osc.start(now); osc.stop(now + 0.5);
+      osc.onended = () => { try { osc.disconnect(); oGain.disconnect(); } catch(_){} };
+
+      const ns = actx.createBufferSource(); ns.buffer = whiteBuf;
+      const hp = actx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 850;
+      const nGain = actx.createGain();
+      nGain.gain.setValueAtTime(0.0001, now);
+      nGain.gain.linearRampToValueAtTime(0.30 * s, now + 0.02);
+      nGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.32);
+      ns.connect(hp); hp.connect(nGain); nGain.connect(out);
+      ns.start(now); ns.stop(now + 0.34);
+      ns.onended = () => { try { ns.disconnect(); hp.disconnect(); nGain.disconnect(); if (panner) panner.disconnect(); } catch(_){} };
+    }
+
+    async function initAudio(){
+      if (actx){
+        if (actx.state === 'suspended'){ try { await actx.resume(); } catch(_){} }
+        syncAudioUI();
+        return actx;
+      }
+      if (!audioOK) return null;
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC){ audioOK = false; return null; }
+      try {
+        actx = new AC();
+        audioComp = actx.createDynamicsCompressor();
+        audioComp.threshold.value = -12;
+        audioComp.knee.value = 24;
+        audioComp.ratio.value = 4;
+        audioComp.attack.value = 0.004;
+        audioComp.release.value = 0.25;
+        audioMaster = actx.createGain();
+        audioMaster.connect(audioComp);
+        audioComp.connect(actx.destination);
+        audioMaster.gain.value = (audioParams.on && !audioParams.muted) ? +audioParams.master : 0;
+
+        ambBus = actx.createGain(); ambBus.gain.value = +audioParams.amb;
+        sfxBus = actx.createGain(); sfxBus.gain.value = +audioParams.sfx;
+        ambBus.connect(audioMaster);
+        sfxBus.connect(audioMaster);
+
+        audioConv = actx.createConvolver();
+        audioConv.buffer = buildIR(audioParams.decay);
+        wetGain = actx.createGain(); wetGain.gain.value = +audioParams.wet;
+        audioConv.connect(wetGain); wetGain.connect(audioMaster);
+        ambSend = actx.createGain(); ambSend.gain.value = 1;
+        sfxSend = actx.createGain(); sfxSend.gain.value = 1;
+        ambBus.connect(ambSend); ambSend.connect(audioConv);
+        sfxBus.connect(sfxSend); sfxSend.connect(audioConv);
+
+        brownBuf = makeNoise(4, true);
+        whiteBuf = makeNoise(2, false);
+
+        // 水体层：褐噪声 → lowpass（随浪高 380–620 Hz）→ waterGain
+        const waterSrc = actx.createBufferSource(); waterSrc.buffer = brownBuf; waterSrc.loop = true;
+        waterLP = actx.createBiquadFilter(); waterLP.type = 'lowpass';
+        waterLP.frequency.value = 480; waterLP.Q.value = 0.7;
+        waterGain = actx.createGain(); waterGain.gain.value = 0;
+        waterSrc.connect(waterLP); waterLP.connect(waterGain); waterGain.connect(ambBus);
+        const lfo = actx.createOscillator(); lfo.type = 'sine'; lfo.frequency.value = 0.10;
+        const lfoGain = actx.createGain(); lfoGain.gain.value = 0.18;
+        lfo.connect(lfoGain); lfoGain.connect(waterLP.frequency);
+        waterSrc.start(); lfo.start();
+
+        // 风层：褐噪声 → bandpass(500–1100 Hz, Q=0.6) → windGain
+        const windSrc = actx.createBufferSource(); windSrc.buffer = brownBuf; windSrc.loop = true;
+        windBP = actx.createBiquadFilter(); windBP.type = 'bandpass';
+        windBP.frequency.value = 800; windBP.Q.value = 0.6;
+        windGain = actx.createGain(); windGain.gain.value = 0;
+        windSrc.connect(windBP); windBP.connect(windGain); windGain.connect(ambBus);
+        windSrc.start();
+
+        // 雨层：白噪声 → highpass(1400 Hz) → rainGain
+        const rainSrc = actx.createBufferSource(); rainSrc.buffer = whiteBuf; rainSrc.loop = true;
+        const rainHP = actx.createBiquadFilter(); rainHP.type = 'highpass'; rainHP.frequency.value = 1400;
+        rainGain = actx.createGain(); rainGain.gain.value = 0;
+        rainSrc.connect(rainHP); rainHP.connect(rainGain); rainGain.connect(ambBus);
+        rainSrc.start();
+
+        applyWeatherMix(0.5);
+      } catch(e){
+        audioOK = false;
+        actx = null;
+        return null;
+      }
+      try { await actx.resume(); } catch(_) {}
+      syncAudioUI();
+      return actx;
+    }
+
+    function setAudioParams(obj){
+      if (obj && typeof obj === 'object') Object.assign(audioParams, obj);
+      saveAudio();
+      if (!actx) return;
+      const now = actx.currentTime;
+      const on = audioParams.on && !audioParams.muted;
+      audioMaster.gain.setTargetAtTime(on ? +audioParams.master : 0, now, 0.25);
+      ambBus.gain.setTargetAtTime(+audioParams.amb, now, 0.25);
+      sfxBus.gain.setTargetAtTime(+audioParams.sfx, now, 0.25);
+      wetGain.gain.setTargetAtTime(+audioParams.wet, now, 0.25);
+      if (obj && obj.decay !== undefined && audioConv) audioConv.buffer = buildIR(obj.decay);
+      syncAudioUI();
+    }
+
+    function updateAudio(dt, info){
+      if (!actx) return;
+      const wave = info ? Math.max(0, Math.min(1, info.wave || 0)) : 0;
+      const wind = info ? Math.max(0, Math.min(1, info.wind || 0)) : 0;
+      audioModAcc += dt;
+      if (audioModAcc >= 0.2){
+        audioModAcc = 0;
+        const now = actx.currentTime;
+        if (waterLP) waterLP.frequency.setTargetAtTime(380 + 240 * wave, now, 0.5);
+        if (windBP) windBP.frequency.setTargetAtTime(500 + 600 * wind, now, 0.8);
+      }
+      if (!audioParams.on || audioParams.muted) return;
+
+      crashTimer -= dt;
+      if (crashTimer <= 0){
+        const intensity = Math.max(0.08, Math.min(1, 0.30 + 0.70 * wave));
+        crash(intensity);
+        crashTimer = Math.max(1.4, 2.6 + Math.random() * 2.8 - intensity * 1.2);
+      }
+      if (audioParams.weather === 'storm'){
+        thunderTimer -= dt;
+        if (thunderTimer <= 0){
+          thunder();
+          thunderTimer = 9 + Math.random() * 13;
+        }
+      }
+    }
+
+    function syncAudioUI(){
+      const st = document.getElementById('a-state');
+      if (st) st.textContent = actx ? (audioParams.muted ? '静音' : '已启用') : (audioOK ? '待启动' : '不可用');
+      const btn = document.getElementById('soundBtn');
+      if (btn) btn.textContent = !actx ? '开启声音' : (audioParams.muted ? '声音 关' : '声音 开');
+      const cbOn = document.getElementById('a-on');
+      if (cbOn) cbOn.checked = !!audioParams.on;
+      const cbMute = document.getElementById('a-mute');
+      if (cbMute) cbMute.checked = !!audioParams.muted;
+    }
+
+    function bindAudioUI(){
+      const pct = v => `${Math.round(v * 100)}%`;
+      const binds = [
+        ['a-master','master','v-amaster', pct],
+        ['a-amb','amb','v-aamb', pct],
+        ['a-sfx','sfx','v-asfx', pct],
+        ['a-wet','wet','v-awet', pct],
+        ['a-decay','decay','v-adecay', v => `${v.toFixed(1)}s`]
+      ];
+      for (const [id, key, vid, fmt] of binds){
+        const el = document.getElementById(id);
+        if (!el) continue;
+        el.value = audioParams[key];
+        const vEl = document.getElementById(vid);
+        if (vEl) vEl.textContent = fmt(+audioParams[key]);
+        el.addEventListener('input', () => {
+          const val = parseFloat(el.value);
+          if (vEl) vEl.textContent = fmt(val);
+          setAudioParams({ [key]: val });
+        });
+      }
+      const onEl = document.getElementById('a-on');
+      if (onEl){
+        onEl.checked = !!audioParams.on;
+        onEl.addEventListener('change', () => setAudioParams({ on: onEl.checked }));
+      }
+      const muteEl = document.getElementById('a-mute');
+      if (muteEl){
+        muteEl.checked = !!audioParams.muted;
+        muteEl.addEventListener('change', () => setAudioParams({ muted: muteEl.checked }));
+      }
+      const btn = document.getElementById('soundBtn');
+      if (btn){
+        btn.addEventListener('click', () => {
+          if (!actx){ initAudio(); return; }
+          setAudioParams({ muted: !audioParams.muted });
+        });
+      }
+      syncAudioUI();
+    }
+
+    window.ShipAudio = {
+      init: () => initAudio(),
+      get ready(){ return !!actx && actx.state === 'running'; },
+      setWeather,
+      impact,
+      update: (dt, info) => updateAudio(dt, info),
+      setParams: setAudioParams,
+      getParams: () => Object.assign({}, audioParams),
+      context: () => actx
+    };
+
+    if (env.weather && window.ShipAudio) ShipAudio.setWeather(env.weather);
+
+    bindAudioUI();
+    /* 自动播放策略：仅在首次手势后创建 AudioContext（声音按钮自身由 click 处理，避免首次点击被当作静音切换） */
+    addEventListener('pointerdown', e => {
+      if (e.target && e.target.closest && e.target.closest('#soundBtn')) return;
+      initAudio();
+    }, { once: true, passive: true });
+    addEventListener('touchstart', e => {
+      if (e.target && e.target.closest && e.target.closest('#soundBtn')) return;
+      initAudio();
+    }, { once: true, passive: true });
+    addEventListener('keydown', () => initAudio(), { once: true });
 
     /* =================================================================
        25. 视角 / 拾取 / 悬停
@@ -2512,6 +3472,7 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
       return hit ? hit.object.userData.partId : null;
     }
     renderer.domElement.addEventListener('pointermove', e => {
+      if (e.pointerType && e.pointerType !== 'mouse') return;
       if (controls._drag) return;
       const now = performance.now();
       if (now - hoverTimer < 70) return;
@@ -2524,7 +3485,8 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
       }
     });
     renderer.domElement.addEventListener('pointerup', e => {
-      if (controls.moved > 6 || e.button !== 0) return;
+      const th = e.pointerType === 'touch' ? 16 : 6;
+      if (controls.moved > th || e.button !== 0) return;
       const id = pick(e);
       if (id) selectPart(id, true);
       else hideCard(true);
@@ -2549,6 +3511,17 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
     applyExplode();
     renderSources();
     document.getElementById('d-cut').checked = false;
+    if (IS_TOUCH) {
+      document.getElementById('infoBar').innerHTML = '单指旋转 · 双指缩放 / 平移 · <strong>点击构件</strong>查看出处';
+    }
+    document.querySelectorAll('.row').forEach((r, i) => {
+      const l = r.querySelector('label');
+      const inp = r.querySelector('input, select');
+      if (!l || !inp) return;
+      if (!inp.id) inp.id = 'ctrl-' + i;
+      l.htmlFor = inp.id;
+      if (!inp.getAttribute('aria-label')) inp.setAttribute('aria-label', l.textContent.trim());
+    });
 
     shipRoot.position.y = -DRAFT;
 
@@ -2557,7 +3530,7 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
     try { renderer.compile(scene, camera); } catch(e) { window.Progress.log('着色器警告: ' + e.message); }
     window.Progress.setPct(12, 0.55, '着色器就绪 · 渲染首帧…');
     await window.sleep(24);
-    for (let i = 0; i < 40; i++) updateBuoyancy(1/60, 0);
+    for (let i = 0; i < 360; i++) updateBuoyancy(1/120, 0);
     shipState.vy = shipState.vp = shipState.vr = 0;
     renderer.render(scene, camera);
     window.Progress.setPct(12, 1, '首帧完成');
@@ -2566,6 +3539,7 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
        28. 主循环
        ================================================================= */
     let elapsed = 0, clock = new THREE.Clock();
+    let foamAcc = 0;
     let fpsFrames = 0, fpsLast = performance.now();
 
     addEventListener('keydown', e => {
@@ -2589,11 +3563,37 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
       else controls.update(dt);
 
       updateBuoyancy(dt, elapsed);
+      updateSplash(dt, elapsed);
+
+      if (window.ShipAudio && window.ShipAudio.update) {
+        ShipAudio.update(dt, {
+          wave: Math.min(1, env.amp * 2.2 * (0.5 + env.gChop*0.5)),
+          wind: Math.min(1, env.gWind * 0.7),
+          rain: env.weather === 'storm' ? 1 : (env.weather === 'cloudy' ? 0.3 : 0.05)
+        });
+      }
+
+      // 泡沫场：固定步长推进，移动端 30 Hz
+      foamAcc += dt;
+      const foamStep = IS_TOUCH ? 1/30 : 1/60;
+      if (foamAcc >= foamStep) {
+        if (env.foamGen > 0.02 || env.hullFoam > 0.02) renderFoam(foamAcc, elapsed);
+        foamAcc = 0;
+      }
 
       // 阻尼爆炸
       if (Math.abs(explodeCur - explodeTarget) > 0.0005) {
         explodeCur += (explodeTarget - explodeCur) * Math.min(1, dt*7);
         applyExplode();
+      }
+      // 拆解时画面居中，避免构件飞出取景
+      {
+        const base = innerWidth > 900 ? Math.min(176, innerWidth*0.2) : 0;
+        const want = base * Math.max(0, 1 - explodeCur*1.8);
+        if (Math.abs(want - viewOffsetPx) > 2){
+          viewOffsetPx = want;
+          applyViewOffset();
+        }
       }
       // 淡化
       let opacityDirty = false;
@@ -2618,11 +3618,34 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
         fpsFrames = 0; fpsLast = now;
       }
     }
+    let wasNarrow = innerWidth <= 900;
     addEventListener('resize', () => {
       camera.aspect = innerWidth/innerHeight;
-      camera.updateProjectionMatrix();
+      updateViewOffset();
       renderer.setSize(innerWidth, innerHeight);
+      updateSplashScale();
+      const narrow = innerWidth <= 900;
+      if (narrow !== wasNarrow) {
+        wasNarrow = narrow;
+        setPanelCollapsed(narrow);
+      }
     });
+
+    /* =================================================================
+       29. 对外参数接口
+       ================================================================= */
+    window.ShipApp = {
+      env,
+      getWaterParams: () => ({ amp:env.amp, chop:env.chop, wl:env.wl, dir:env.dir, foam:env.foam,
+        whitecap:env.whitecap, foamDecay:env.foamDecay, foamGen:env.foamGen, bedOn:env.bedOn,
+        splash:env.splash, splashOn:env.splashOn, gSwell:env.gSwell, gWind:env.gWind, gChop:env.gChop,
+        g:env.g, deep:env.deep, shallow:env.shallow, alpha:env.alpha, weather:env.weather }),
+      setWaterParams: (o) => { const keys=['amp','chop','wl','dir','foam','whitecap','foamDecay','foamGen','bedOn','splash','splashOn','gSwell','gWind','gChop','g','deep','shallow','alpha']; for (const k of keys) if (o[k] !== undefined) env[k] = o[k]; applyEnv(); syncEnvUI(); if (splashPoints) splashPoints.visible = env.splashOn; },
+      setSeaState: (key) => { const b = document.querySelector(`[data-weather="${key}"]`); if (b) b.click(); },
+      getAudioParams: () => window.ShipAudio ? ShipAudio.getParams() : null,
+      setAudioParams: (o) => window.ShipAudio && ShipAudio.setParams(o),
+      getWeather: () => env.weather
+    };
 
     animate();
     window.Progress.complete();
