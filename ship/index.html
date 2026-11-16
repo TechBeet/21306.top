@@ -2824,87 +2824,150 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
     /* =================================================================
        24. 物理
        ================================================================= */
-    /* 按 9 个横剖面求浸深与浮力 */
-    const SEC_N = 9, SEC_X0 = -4.4, SEC_X1 = 13.6;
+    /* 15 个横剖面 × 5 条纵向条带积分浸水面积，输出浮力 / 纵摇 / 横摇力矩 */
+    const SEC_N = 15, SEC_X0 = -4.0, SEC_X1 = 14.0;
     const SEC_DX = (SEC_X1 - SEC_X0) / (SEC_N - 1);
+    const SUB_N = 5;
     const X_CG = 4.8, RHO = 1025;
     const SECS = [];
     for (let i = 0; i < SEC_N; i++){
       const x = SEC_X0 + SEC_DX*i;
-      SECS.push({ x, b: halfBeam(x), y0: keelTopAt(x), y1: sheerY(x) });
+      SECS.push({ x, w: (i === 0 || i === SEC_N-1) ? 0.5 : 1.0,
+                  b: halfBeam(x), y0: keelTopAt(x), y1: sheerY(x) });
     }
     const shipState = { y:0, pitch:0, roll:0, vy:0, vp:0, vr:0 };
+
+    /* ---- 波形缓存：每帧预计算，浮力积分与浪花采样共用同一套参数 ---- */
+    const WN = WAVES.length;
+    const wcK = new Float64Array(WN), wcDx = new Float64Array(WN), wcDz = new Float64Array(WN);
+    const wcCk = new Float64Array(WN), wcPh = new Float64Array(WN), wcA = new Float64Array(WN);
+    function updateWaveCache(){
+      const wlScale = env.wl, dShift = env.dir*Math.PI/180;
+      const chopK = 0.6 + 0.8*env.chop;
+      for (let i = 0; i < WN; i++){
+        const w = WAVES[i];
+        const k = (Math.PI*2)/Math.max(0.6, w.wl*wlScale);
+        const ang = w.dir + dShift;
+        const gain = envWave[w.g] !== undefined ? envWave[w.g] : 1;
+        wcK[i] = k;
+        wcDx[i] = Math.cos(ang); wcDz[i] = Math.sin(ang);
+        wcCk[i] = Math.sqrt(Math.max(0.5, env.g)/k) * k;   // 深水色散 c·k = √(g·k)
+        wcPh[i] = w.phase;
+        wcA[i] = w.steep * chopK * gain * env.amp / k;
+      }
+    }
+    const _gd = { x:0, y:0, z:0 };
+    function gerstnerD(x, z, t){
+      let dx = 0, dy = 0, dz = 0;
+      for (let i = 0; i < WN; i++){
+        const f = wcK[i]*(wcDx[i]*x + wcDz[i]*z) - wcCk[i]*t + wcPh[i];
+        const a = wcA[i], cf = Math.cos(f);
+        dx += wcDx[i]*a*cf; dz += wcDz[i]*a*cf; dy += a*Math.sin(f);
+      }
+      _gd.x = x + dx; _gd.y = dy; _gd.z = z + dz;
+      return _gd;
+    }
+    /* Gerstner 的水平位移需反解：两次迭代已足够（波陡 ≤0.15） */
+    function waterHeight(wx, wz, t){
+      let sx = wx, sz = wz;
+      for (let i = 0; i < 2; i++){
+        const d = gerstnerD(sx, sz, t);
+        sx += wx - d.x; sz += wz - d.z;
+      }
+      return gerstnerD(sx, sz, t).y;
+    }
+    /* 横剖位置 x、横向坐标 z 处的船壳内底高度（hullPoint 的反解） */
+    function hullBottomY(x, z){
+      const kt = keelTopAt(x), sy = sheerY(x), hb = halfBeam(x);
+      const az = Math.abs(z);
+      if (az <= KEEL_HALF) return kt;
+      if (az >= hb) return sy;
+      const s = Math.pow((az - KEEL_HALF) / Math.max(1e-4, hb - KEEL_HALF), 1/0.72);
+      return kt + (sy - kt) * Math.pow(s, 1.25);
+    }
+    /* 单剖面浸水面积与面积形心横向坐标；waves=false 用静水面（标定排水量） */
+    function sectionMetrics(x, surfBase, pitch, roll, t, waves){
+      const hb = halfBeam(x), sy = sheerY(x), span = hb * 0.98;
+      const dzStep = (2*span) / (SUB_N - 1);
+      let area = 0, zsum = 0;
+      for (let j = 0; j < SUB_N; j++){
+        const z = (j/(SUB_N-1))*2*span - span;
+        const yb = hullBottomY(x, z);
+        const wh = waves ? waterHeight(x, z, t) : 0;
+        let d = (wh + surfBase + x*pitch + z*roll) - yb;
+        const cap = sy - yb;
+        if (d <= 0) d = 0; else if (d > cap) d = cap;
+        const wgt = (j === 0 || j === SUB_N-1) ? 0.5 : 1.0;
+        const a = d * dzStep * wgt;
+        area += a; zsum += a * z;
+      }
+      return { area, zc: area > 1e-6 ? zsum/area : 0 };
+    }
     let MASS = 0, I_PITCH = 1, I_ROLL = 1;
     {
-      let F = 0;
-      for (const s of SECS){
-        const d = Math.max(0, Math.min(s.y1 - s.y0, DRAFT - s.y0));
-        if (d <= 0) continue;
-        const w = zAtY(s.x, s.y0 + d*0.55) * 2;
-        F += RHO * 9.81 * 0.62 * w * d * SEC_DX;
+      let V = 0;
+      for (const s of SECS) V += sectionMetrics(s.x, DRAFT, 0, 0, 0, false).area * SEC_DX * s.w;
+      MASS = Math.max(1, RHO * V);
+      I_PITCH = MASS * 20.1*20.1 / 12 * 1.35;
+      I_ROLL  = MASS * 7.6*7.6 / 12 * 1.6;
+    }
+    /* 附加质量与阻尼：按临界阻尼比标定，兼顾跟随性与稳定性 */
+    const AM_HEAVE = 1.25, AM_PITCH = 1.15, AM_ROLL = 1.15;
+    const DAMP_H = 2.4, DAMP_P = 1.9, DAMP_R = 1.5;
+    const MAX_HEAVE = 1.6, MAX_PITCH = 0.34, MAX_ROLL = 0.42;
+    /* 软限幅：越过膝点后指数压缩，位置连续、速度平滑衰减，避免硬夹断的跳变 */
+    function applySoftLimits(){
+      let a = Math.abs(shipState.y), knee = MAX_HEAVE*0.75;
+      if (a > knee){
+        const k = Math.exp(-(a-knee)/(MAX_HEAVE-knee));
+        shipState.y = Math.sign(shipState.y)*(knee + (MAX_HEAVE-knee)*(1-k));
+        shipState.vy *= k;
       }
-      MASS = Math.max(1, F/9.81);
-      I_PITCH = MASS * 20.1*20.1 / 12 * 1.5;
-      I_ROLL  = MASS * 7.6*7.6 / 12 * 1.8;
-    }
-    function gerstner(x, z, t) {
-      let dx = 0, dy = 0, dz = 0;
-      const wlScale = env.wl, dShift = env.dir*Math.PI/180;
-      for (const w of WAVES) {
-        const gain = envWave[w.g] !== undefined ? envWave[w.g] : 1;
-        const k = (Math.PI*2)/(w.wl*wlScale), c = Math.sqrt(Math.max(0.5, env.g)/k);
-        const ang = w.dir + dShift;
-        const Dx = Math.cos(ang), Dz = Math.sin(ang);
-        const f = k*(Dx*x + Dz*z) - c*k*t + w.phase;
-        const a = w.steep*gain*env.amp/k;
-        dx += Dx*a*Math.cos(f); dz += Dz*a*Math.cos(f); dy += a*Math.sin(f)*env.chop*3.0;
+      a = Math.abs(shipState.pitch); knee = MAX_PITCH*0.75;
+      if (a > knee){
+        const k = Math.exp(-(a-knee)/(MAX_PITCH-knee));
+        shipState.pitch = Math.sign(shipState.pitch)*(knee + (MAX_PITCH-knee)*(1-k));
+        shipState.vp *= k;
       }
-      return { x:x+dx, y:dy, z:z+dz };
+      a = Math.abs(shipState.roll); knee = MAX_ROLL*0.75;
+      if (a > knee){
+        const k = Math.exp(-(a-knee)/(MAX_ROLL-knee));
+        shipState.roll = Math.sign(shipState.roll)*(knee + (MAX_ROLL-knee)*(1-k));
+        shipState.vr *= k;
+      }
     }
-    function waterHeight(wx, wz, t) {
-      let sx = wx, sz = wz;
-      for (let i = 0; i < 3; i++) { const d = gerstner(sx, sz, t); sx += wx - d.x; sz += wz - d.z; }
-      return gerstner(sx, sz, t).y;
-    }
-    function updateBuoyancy(dt, t) {
-      if (env.paused) return;
+    function physicsStep(dt, t){
       const g = env.g;
       const surfBase = DRAFT - shipState.y;
       let Ftot = 0, Tp = 0, Tr = 0;
-      for (const s of SECS){
-        for (let k = -1; k <= 1; k += 2){
-          const z = k * s.b * 0.55;
-          const wh = waterHeight(s.x, z, t) * 0.85;
-          const ySurf = wh + surfBase + s.x*shipState.pitch + z*shipState.roll;
-          const d = Math.max(0, Math.min(s.y1 - s.y0, ySurf - s.y0));
-          if (d <= 0.0005) continue;
-          const beam = zAtY(s.x, s.y0 + d*0.55) * 2;
-          const A = 0.62 * beam * d * 0.5;
-          const F = RHO * g * A * SEC_DX * env.bk;
-          Ftot += F;
-          // 浮力对重心的力矩：+z / +x 侧浮力增大时应抬升该侧
-          // （rotation.x = roll，rotation.z = -pitch，故力矩取负号）
-          Tp -= F * (s.x - X_CG);
-          Tr -= F * z;
-        }
+      for (let i = 0; i < SECS.length; i++){
+        const s = SECS[i];
+        const m = sectionMetrics(s.x, surfBase, shipState.pitch, shipState.roll, t, true);
+        if (m.area <= 0) continue;
+        const F = RHO * g * m.area * SEC_DX * s.w * env.bk;
+        Ftot += F;
+        // 浮力对重心的力矩：rotation.z = -pitch，rotation.x = roll，故取负号
+        Tp -= F * (s.x - X_CG);
+        Tr -= F * m.zc;
       }
       const W = MASS * g;
-      const aY = (Ftot - W) / (MASS * 1.5) - 3.0*env.bc * shipState.vy;
-      const aP = Tp / I_PITCH - 2.2*env.bc * shipState.vp;
-      const aR = Tr / I_ROLL - 2.0*env.bc * shipState.vr;
+      const aY = (Ftot - W) / (MASS * AM_HEAVE) - DAMP_H * env.bc * shipState.vy;
+      const aP = Tp / (I_PITCH * AM_PITCH) - DAMP_P * env.bc * shipState.vp;
+      const aR = Tr / (I_ROLL * AM_ROLL) - DAMP_R * env.bc * shipState.vr;
 
       shipState.vy += aY * dt; shipState.y += shipState.vy * dt;
       shipState.vp += aP * dt; shipState.pitch += shipState.vp * dt;
       shipState.vr += aR * dt; shipState.roll += shipState.vr * dt;
-
-      if (shipState.y > 1.1){ shipState.y = 1.1; shipState.vy = Math.min(0, shipState.vy); }
-      if (shipState.y < -1.3){ shipState.y = -1.3; shipState.vy = Math.max(0, shipState.vy); }
-      const P = 0.16, R = 0.26;
-      if (shipState.pitch > P){ shipState.pitch = P; shipState.vp = Math.min(0, shipState.vp); }
-      if (shipState.pitch < -P){ shipState.pitch = -P; shipState.vp = Math.max(0, shipState.vp); }
-      if (shipState.roll > R){ shipState.roll = R; shipState.vr = Math.min(0, shipState.vr); }
-      if (shipState.roll < -R){ shipState.roll = -R; shipState.vr = Math.max(0, shipState.vr); }
-
+      applySoftLimits();
+    }
+    let physAcc = 0;
+    const PHYS_DT = 1/120;
+    function updateBuoyancy(dt, t){
+      if (env.paused) return;
+      physAcc = Math.min(physAcc + dt, 0.12);
+      let n = 0;
+      while (physAcc >= PHYS_DT && n < 8){ physicsStep(PHYS_DT, t); physAcc -= PHYS_DT; n++; }
+      if (n === 0) return;
       shipRoot.position.y = shipState.y - DRAFT;
       shipRoot.rotation.z = -shipState.pitch;
       shipRoot.rotation.x = shipState.roll;
@@ -3013,8 +3076,8 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
           if (!env.splashOn || env.paused) continue;
           const hullVy = shipState.vy + shipState.vp * (x - X_CG) + shipState.vr * z;
           const rel = hullVy - surfaceVy;
-          if (!(rel > 0.30 || rel < -0.55)) continue;
-          const imp = Math.min(1, Math.abs(rel) / 2.2) * env.splash;
+          if (!(rel > 0.16 || rel < -0.30)) continue;
+          const imp = Math.min(1, Math.abs(rel) / 1.2) * env.splash;
           if (imp < 0.02) continue;
           const n = Math.min(6, Math.round(imp * 4));
           if (n <= 0) continue;
@@ -3530,6 +3593,7 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
     try { renderer.compile(scene, camera); } catch(e) { window.Progress.log('着色器警告: ' + e.message); }
     window.Progress.setPct(12, 0.55, '着色器就绪 · 渲染首帧…');
     await window.sleep(24);
+    updateWaveCache();
     for (let i = 0; i < 360; i++) updateBuoyancy(1/120, 0);
     shipState.vy = shipState.vp = shipState.vr = 0;
     renderer.render(scene, camera);
@@ -3562,6 +3626,7 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
       if (flyTween) updateFly(dt);
       else controls.update(dt);
 
+      updateWaveCache();
       updateBuoyancy(dt, elapsed);
       updateSplash(dt, elapsed);
 
@@ -3642,6 +3707,9 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
         g:env.g, deep:env.deep, shallow:env.shallow, alpha:env.alpha, weather:env.weather }),
       setWaterParams: (o) => { const keys=['amp','chop','wl','dir','foam','whitecap','foamDecay','foamGen','bedOn','splash','splashOn','gSwell','gWind','gChop','g','deep','shallow','alpha']; for (const k of keys) if (o[k] !== undefined) env[k] = o[k]; applyEnv(); syncEnvUI(); if (splashPoints) splashPoints.visible = env.splashOn; },
       setSeaState: (key) => { const b = document.querySelector(`[data-weather="${key}"]`); if (b) b.click(); },
+      /* 船体实时姿态（米 / 弧度），便于外部调试与二次开发 */
+      getPose: () => ({ heave: shipState.y, pitch: shipState.pitch, roll: shipState.roll,
+                        vy: shipState.vy, vp: shipState.vp, vr: shipState.vr, draft: DRAFT }),
       getAudioParams: () => window.ShipAudio ? ShipAudio.getParams() : null,
       setAudioParams: (o) => window.ShipAudio && ShipAudio.setParams(o),
       getWeather: () => env.weather
