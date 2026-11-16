@@ -378,9 +378,9 @@
     <div class="group">
       <div class="g-title">来源图例</div>
       <div class="hint" style="font-size:10.5px;line-height:1.9">
-        <span class="dot" style="background:#4ac8e8"></span>实测 / 实测线长 / 实测规则　
-        <span class="dot" style="background:#c9a227"></span>受控推演　
-        <span class="dot" style="background:#d97a3d"></span>推演 / 等比参考
+        <span class="dot" style="background:var(--measured)"></span>实测 / 实测线长 / 实测规则　
+        <span class="dot" style="background:var(--ctrl)"></span>受控推演　
+        <span class="dot" style="background:var(--infer)"></span>推演 / 等比参考
       </div>
     </div>
     <div class="group">
@@ -668,6 +668,7 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
       scaled_from_22m_fuchuan_replica: { label:'等比参考', cls:'i' }
     };
     const srcCls = s => (SRC_META[s] || SRC_META.inferred).cls;
+    const srcVar = s => { const c = srcCls(s); return c === 'm' ? 'var(--measured)' : c === 'r' ? 'var(--ctrl)' : 'var(--infer)'; };
 
     /* =================================================================
        4. 几何常量与型线
@@ -795,6 +796,38 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
       PARTS.set(meta.id, meta);
       return meta;
     }
+    const HULL_C = new THREE.Vector3(4.8, 1.1, 0);
+    const EXPLODE_DELAY = {
+      '03_Planking': 0.00, '02_Frames': 0.10, '01_Bulkheads': 0.14,
+      '00_Keel': 0.18, '04_Rudder': 0.18, '05_Mast_Step': 0.20,
+      '06_Cultural_Marks': 0.22, '07_Rigging_Inferred': 0.24
+    };
+    function explosionFor(meta, mesh){
+      const g = mesh.geometry;
+      if (!g.boundingBox) g.computeBoundingBox();
+      const c = g.boundingBox.getCenter(new THREE.Vector3()).add(mesh.position);
+      const dx = c.x - HULL_C.x, dz = c.z - HULL_C.z;
+      const L = Math.hypot(dx, dz) || 1;
+      const sign = c.z >= 0 ? 1 : -1;
+      switch (meta.coll) {
+        case '00_Keel': return new THREE.Vector3(dx*0.12, -2.4, dz*0.12);
+        case '01_Bulkheads': return new THREE.Vector3(dx*0.22, 1.25, 0);
+        case '02_Frames': return new THREE.Vector3(0, 0.9, sign*5.5);
+        case '03_Planking': {
+          if (meta.id.indexOf('Transom') >= 0 || meta.id.indexOf('Caulking') >= 0)
+            return new THREE.Vector3(0, 1.6, 0);
+          const lk = meta.layer;
+          const m = lk === 'outer' ? 6.8 : lk === 'mid' ? 5.0 : 3.2;
+          const up = lk === 'outer' ? 1.6 : lk === 'mid' ? 1.0 : 0.35;
+          return new THREE.Vector3((dx/L)*1.2, up, sign*m);
+        }
+        case '04_Rudder': return new THREE.Vector3(-4.0, 0.8, 0);
+        case '05_Mast_Step': return new THREE.Vector3(0, 3.0, 0);
+        case '06_Cultural_Marks': return new THREE.Vector3(0, 4.2, 0);
+        case '07_Rigging_Inferred': return new THREE.Vector3(0, 6.0, 0);
+      }
+      return new THREE.Vector3(0, 1.0, 0);
+    }
     function attach(mesh, id, explodeDir) {
       const meta = PARTS.get(id);
       mesh.userData.partId = id;
@@ -802,11 +835,13 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
       mesh.material = mesh.material.clone();
       mesh.userData.ownMat = mesh.material;
       mesh.userData.basePos = mesh.position.clone();
-      const dir = explodeDir || (meta && COLL_DEFS.find(c => c.id === meta.coll).explode) || [0,0,0];
-      mesh.userData.explodeDir = new THREE.Vector3(dir[0], dir[1], dir[2]);
+      mesh.userData.explodeDir = meta ? explosionFor(meta, mesh) : new THREE.Vector3(0, 1, 0);
+      mesh.userData.explodeDelay = meta ? (EXPLODE_DELAY[meta.coll] || 0) : 0;
       mesh.userData.coll = meta ? meta.coll : '';
       mesh.castShadow = !(meta && meta.noShadow);
       mesh.receiveShadow = true;
+      const tint = mesh.material.map ? (0.94 + Math.random()*0.12) : 1.0;
+      mesh.userData.tint = tint;
       if (meta) GROUPS[meta.coll].add(mesh);
       PART_MESHES.push(mesh);
       return mesh;
@@ -831,7 +866,7 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
       return merged;
     }
     function sweptRect(pts, nrms, wdir, w, t) {
-      const pos = [], idx = [], hw = w/2, ht = t/2;
+      const pos = [], idx = [], uv = [], hw = w/2, ht = t/2;
       for (let i = 0; i < pts.length; i++) {
         const p = pts[i], n = nrms[i];
         const ax = p.x-wdir.x*hw, ay = p.y-wdir.y*hw, az = p.z-wdir.z*hw;
@@ -840,6 +875,8 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
         pos.push(bx-n.x*ht, by-n.y*ht, bz-n.z*ht);
         pos.push(bx+n.x*ht, by+n.y*ht, bz+n.z*ht);
         pos.push(ax+n.x*ht, ay+n.y*ht, az+n.z*ht);
+        const u = i * 0.62;
+        uv.push(u, 0, u, 1, u, 1, u, 0);
       }
       for (let i = 0; i < pts.length-1; i++) {
         const a = i*4, b = (i+1)*4;
@@ -850,6 +887,7 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
       idx.push(L, L+2, L+1, L, L+3, L+2);
       const g = new THREE.BufferGeometry();
       g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+      g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
       g.setIndex(idx); g.computeVertexNormals();
       return g;
     }
@@ -931,8 +969,10 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
       uniforms: {
         uWaveA:{ value:new THREE.Vector4(34,19,10.5,6.2) },
         uWaveB:{ value:new THREE.Vector4(0.60,1.15,0.25,1.80) },
+        uWaveC:{ value:new THREE.Vector2(3.4, 2.1) },
+        uWaveD:{ value:new THREE.Vector2(2.6, 0.9) },
         uTime:{ value:0 }, uAmp:{ value:0.30 }, uChop:{ value:0.50 },
-        uAlpha:{ value:0.42 }, uFoam:{ value:1.0 }, uG:{ value:9.81 },
+        uAlpha:{ value:0.42 }, uFoam:{ value:1.0 }, uG:{ value:9.81 }, uRough:{ value:0.4 },
         uDeep:{ value:new THREE.Color(0x06121c) }, uShallow:{ value:new THREE.Color(0x0e3040) },
         uSunDir:{ value:new THREE.Vector3(0.55,0.72,0.42).normalize() },
         uSunCol:{ value:new THREE.Color(0xfff0d8) },
@@ -940,17 +980,18 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
         uFogColor:{ value:new THREE.Color(0x0d1a26) }, uFogNear:{ value:24 }, uFogFar:{ value:340 }
       },
       vertexShader: `
-        uniform float uTime, uAmp, uChop, uG; uniform vec4 uWaveA, uWaveB;
-        varying vec3 vWorld; varying vec3 vNormal; varying float vCrest;
+        uniform float uTime, uAmp, uChop, uG; uniform vec4 uWaveA, uWaveB; uniform vec2 uWaveC, uWaveD;
+        varying vec3 vWorld; varying vec3 vNormal; varying float vCrest; varying vec2 vXZ;
         const float TAU = 6.28318530718;
         void main(){
           vec3 pos = position; vec3 disp = vec3(0.0);
           vec3 tangent = vec3(1.0,0.0,0.0); vec3 binormal = vec3(0.0,0.0,1.0);
-          for (int i = 0; i < 4; i++){
-            float wl = uWaveA[i]; float ang = uWaveB[i];
-            float steep = (i==0)?0.22:(i==1)?0.16:(i==2)?0.12:0.08;
+          for (int i = 0; i < 6; i++){
+            float wl = (i < 4) ? uWaveA[i] : uWaveC[i-4];
+            float ang = (i < 4) ? uWaveB[i] : uWaveD[i-4];
+            float steep = (i==0)?0.22:(i==1)?0.16:(i==2)?0.12:(i==3)?0.08:(i==4)?0.05:0.035;
             vec2 D = vec2(cos(ang), sin(ang));
-            float k = TAU / max(wl, 1.0); float c = sqrt(max(uG,0.5) / k);
+            float k = TAU / max(wl, 0.7); float c = sqrt(max(uG, 0.5) / k);
             float f = k * dot(D, pos.xz) - c * k * uTime;
             float a = steep * uAmp / k;
             disp.x += D.x * a * cos(f); disp.z += D.y * a * cos(f);
@@ -961,28 +1002,47 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
           pos += disp;
           vNormal = normalize(cross(binormal, tangent));
           vWorld = (modelMatrix * vec4(pos,1.0)).xyz;
+          vXZ = pos.xz;
           vCrest = disp.y;
           gl_Position = projectionMatrix * modelViewMatrix * vec4(pos,1.0);
         }`,
       fragmentShader: `
         uniform vec3 uDeep, uShallow, uSunDir, uSunCol, uSkyTop, uSkyHor, uFogColor;
-        uniform float uFogNear, uFogFar, uTime, uAlpha, uFoam;
-        varying vec3 vWorld; varying vec3 vNormal; varying float vCrest;
+        uniform float uFogNear, uFogFar, uTime, uAlpha, uFoam, uRough;
+        varying vec3 vWorld; varying vec3 vNormal; varying float vCrest; varying vec2 vXZ;
         float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1,311.7))) * 43758.5453); }
         void main(){
-          vec3 N = normalize(vNormal); vec3 V = normalize(cameraPosition - vWorld);
-          float crestMix = smoothstep(-0.15, 1.05, vCrest);
-          vec3 base = mix(uDeep, uShallow, crestMix);
-          float fres = pow(1.0 - max(dot(N, V), 0.0), 5.0); fres = 0.02 + 0.98 * fres;
+          vec3 N = normalize(vNormal);
+          float t = uTime;
+          vec3 dn = vec3(
+            sin(vXZ.x*2.3 + t*1.7)*0.5 + sin(vXZ.y*3.1 - t*1.3)*0.5,
+            0.0,
+            cos(vXZ.y*2.7 + t*1.5)*0.5 + cos(vXZ.x*3.7 - t*1.1)*0.5
+          );
+          N = normalize(N + dn * 0.075);
+
+          vec3 V = normalize(cameraPosition - vWorld);
+          float fres = pow(1.0 - max(dot(N, V), 0.0), 5.0);
+          fres = 0.02 + 0.98 * fres;
           vec3 skyCol = mix(uSkyHor, uSkyTop, smoothstep(0.0, 1.0, N.y*0.5+0.5));
+          vec3 base = mix(uDeep, uShallow, smoothstep(-0.2, 1.0, vCrest));
           vec3 col = mix(base, skyCol, fres);
+
           vec3 H = normalize(uSunDir + V);
-          float spec = pow(max(dot(N, H), 0.0), 220.0);
-          col += uSunCol * spec * 2.2;
+          float shin = mix(460.0, 70.0, clamp(uRough, 0.0, 1.0));
+          float spec = pow(max(dot(N, H), 0.0), shin);
+          col += uSunCol * spec * (1.4 + 1.8*(1.0 - clamp(uRough,0.0,1.0)));
+
+          vec3 sFlat = normalize(vec3(uSunDir.x, 0.0001, uSunDir.z));
+          vec3 nFlat = normalize(vec3(N.x, 0.0001, N.z));
+          float glare = pow(max(dot(nFlat, sFlat), 0.0), 10.0);
+          col += uSunCol * glare * 0.05 * (1.0 - clamp(uSunDir.y, 0.0, 1.0));
+
           float foamMask = smoothstep(0.55, 1.35, vCrest) * smoothstep(0.3, 0.7, abs(N.x)+abs(N.z)) * uFoam;
-          float n = hash(floor(vWorld.xz * 2.6 + uTime * 0.35));
+          float n = hash(floor(vXZ * 2.6 + t * 0.35));
           foamMask *= 0.55 + 0.45 * n;
           col = mix(col, vec3(0.84,0.88,0.9), clamp(foamMask, 0.0, 0.75));
+
           float d = length(cameraPosition - vWorld);
           col = mix(col, uFogColor, smoothstep(uFogNear, uFogFar, d));
           gl_FragColor = vec4(col, uAlpha);
@@ -1210,7 +1270,7 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
       });
       attach(m, 'QS_Keel_Main');
 
-      const N = 26, posArr = [], idxArr = [];
+      const N = 26, posArr = [], idxArr = [], uvArr = [];
       for (let i = 0; i <= N; i++) {
         const t = i/N, x = -STERN_KEEL_LEN*t;
         const yb = STERN_RISE * Math.pow(t, 1.25);
@@ -1218,6 +1278,7 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
         const bot = (x > -SCARF) ? yb + KEEL_H*0.5 : yb;
         const w = KEEL_HALF;
         posArr.push(x, bot, -w, x, bot, w, x, top, w, x, top, -w);
+        uvArr.push(i*0.35, 0, i*0.35, 1, i*0.35, 1, i*0.35, 0);
       }
       for (let i = 0; i < N; i++) {
         const a = i*4, b = (i+1)*4;
@@ -1228,6 +1289,7 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
       idxArr.push(L, L+2, L+1, L, L+3, L+2);
       const gs = new THREE.BufferGeometry();
       gs.setAttribute('position', new THREE.Float32BufferAttribute(posArr, 3));
+      gs.setAttribute('uv', new THREE.Float32BufferAttribute(uvArr, 2));
       gs.setIndex(idxArr); gs.computeVertexNormals();
       const ms = new THREE.Mesh(gs, MAT.pine);
       defPart({
@@ -1310,7 +1372,7 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
       const sA = col/N_STRIPES, sB = (col+1)/N_STRIPES;
       const gap = 0.0016;
       const offOut = def.offOut + (layerKey === 'outer' ? bandOffset(col) : 0);
-      const N = 17, pos = [], idx = [];
+      const N = 17, pos = [], idx = [], uv = [];
       for (let i = 0; i <= N; i++) {
         const x = x0 + (x1-x0)*i/N;
         const sLo = Math.min(sB, sA + gap), sHi = Math.max(sLo + 0.002, sB - gap);
@@ -1320,6 +1382,8 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
         pos.push(x, pHi.y + nHi.ny*def.offIn, side*(pHi.z + nHi.nz*def.offIn));
         pos.push(x, pHi.y + nHi.ny*offOut, side*(pHi.z + nHi.nz*offOut));
         pos.push(x, pLo.y + nLo.ny*offOut, side*(pLo.z + nLo.nz*offOut));
+        const u = x * 0.30;
+        uv.push(u, sLo*3.0, u, sHi*3.0, u, sHi*3.0, u, sLo*3.0);
       }
       for (let i = 0; i < N; i++) {
         const a = i*4, b = (i+1)*4;
@@ -1330,6 +1394,7 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
       idx.push(L, L+2, L+1, L, L+3, L+2);
       const g = new THREE.BufferGeometry();
       g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+      g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
       g.setIndex(idx); g.computeVertexNormals();
       const m = new THREE.Mesh(g, col < 2 ? MAT.camphor : MAT.fir);
       const seg = x0 < SEAM_X ? 1 : 2;
@@ -1614,12 +1679,13 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
     {
       const xs = [], NX = 34;
       for (let i = 0; i <= NX; i++) xs.push(-4.7 + (13.7+4.7)*i/NX);
-      const pos = [], idx = [];
+      const pos = [], idx = [], uvs = [];
       for (let i = 0; i < xs.length; i++) {
         const x = xs[i], y = deckY(x), hw = Math.max(0.15, halfBeam(x) - 0.16);
         for (let j = 0; j <= 8; j++) {
           const t = -1 + 2*j/8;
           pos.push(x, y + 0.06*(1-t*t), t*hw);
+          uvs.push(x*0.30, (j/8)*1.2);
         }
       }
       for (let i = 0; i < xs.length-1; i++) {
@@ -1630,6 +1696,7 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
       }
       const g = new THREE.BufferGeometry();
       g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+      g.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
       g.setIndex(idx); g.computeVertexNormals();
       const m = new THREE.Mesh(g, MAT.deck);
       defPart({
@@ -1855,6 +1922,9 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
       const baseDir = [0.60,1.15,0.25,1.80];
       const dShift = env.dir*Math.PI/180;
       oceanMat.uniforms.uWaveB.value.set(baseDir[0]+dShift, baseDir[1]+dShift, baseDir[2]+dShift, baseDir[3]+dShift);
+      oceanMat.uniforms.uWaveC.value.set(3.4*env.wl, 2.1*env.wl);
+      oceanMat.uniforms.uWaveD.value.set(2.6+dShift, 0.9+dShift);
+      oceanMat.uniforms.uRough.value = 0.22 + env.chop*0.45;
       oceanMat.uniforms.uAmp.value = env.amp;
       oceanMat.uniforms.uChop.value = env.chop;
       oceanMat.uniforms.uFoam.value = env.foam;
@@ -1872,6 +1942,7 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
       oceanMat.uniforms.uShallow.value.set(env.shallow);
       oceanMat.transparent = env.alpha < 0.995;
       oceanMat.depthWrite = env.alpha >= 0.9;
+      scheduleEnvRebuild();
     }
     function sunFromTime(t) {
       const ph = (t - 6)/13;
@@ -1926,7 +1997,11 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
     function applyExplode() {
       for (const m of PART_MESHES) {
         const d = m.userData.explodeDir;
-        m.position.copy(m.userData.basePos).addScaledVector(d, explodeCur);
+        const delay = m.userData.explodeDelay || 0;
+        let t = (explodeCur - delay) / Math.max(0.01, 1 - delay);
+        t = Math.max(0, Math.min(1, t));
+        const e = t*t*(3-2*t);
+        m.position.copy(m.userData.basePos).addScaledVector(d, e);
       }
     }
     function refreshMaterial(m) {
@@ -1936,7 +2011,7 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
         mat.map = null; mat.color.setHex(SRC_COLOR[srcCls(meta.source)]);
       } else {
         mat.map = base.map;
-        if (base.color) mat.color.copy(base.color);
+        mat.color.setScalar(m.userData.tint || 1);
       }
       mat.wireframe = wireOn;
       mat.needsUpdate = true;
@@ -1990,7 +2065,7 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
       const badge = document.getElementById('icSrc');
       const sm = SRC_META[meta.source] || SRC_META.inferred;
       badge.textContent = sm.label;
-      badge.style.color = sm.cls === 'm' ? '#4ac8e8' : sm.cls === 'r' ? '#c9a227' : '#d97a3d';
+      badge.style.color = sm.cls === 'm' ? 'var(--measured)' : sm.cls === 'r' ? 'var(--ctrl)' : 'var(--infer)';
       badge.style.borderColor = badge.style.color;
       document.getElementById('icPath').textContent = `${meta.cnPath} · ${meta.species}`;
       document.getElementById('icDim').innerHTML = meta.dimTable.map(d =>
@@ -2068,14 +2143,14 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
           if (list.length === 1) {
             const p = list[0];
             html += `<div class="node lv3" data-id="${p.id}" data-key="${(p.cn+p.species+p.id).toLowerCase()}">
-              <span class="dot" style="background:${(SRC_META[p.source]||SRC_META.inferred).cls==='m'?'#4ac8e8':(SRC_META[p.source]||SRC_META.inferred).cls==='r'?'#c9a227':'#d97a3d'}"></span>
+              <span class="dot" style="background:${srcVar(p.source)}"></span>
               <span class="nm">${p.cn}</span></div>`;
           } else {
             html += `<div class="node lv2" data-sub="${sub}"><span class="caret">▶</span><span class="nm">${sub}</span><span class="n">${list.length}</span></div>
               <div class="children" data-subchildren="${sub}">`;
             for (const p of list) {
               html += `<div class="node lv3" data-id="${p.id}" data-key="${(p.cn+p.species+p.id).toLowerCase()}">
-                <span class="dot" style="background:${(SRC_META[p.source]||SRC_META.inferred).cls==='m'?'#4ac8e8':(SRC_META[p.source]||SRC_META.inferred).cls==='r'?'#c9a227':'#d97a3d'}"></span>
+                <span class="dot" style="background:${srcVar(p.source)}"></span>
                 <span class="nm">${p.cn}</span></div>`;
             }
             html += `</div>`;
@@ -2147,6 +2222,16 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
       panelEl.classList.remove('collapsed');
       openBtn.classList.remove('show');
     };
+    const themeBtn = document.getElementById('themeBtn');
+    function setTheme(t){
+      document.documentElement.dataset.theme = t;
+      window.__theme = t;
+      try { localStorage.setItem('qs-theme', t); } catch(_) {}
+      themeBtn.textContent = t === 'dark' ? '☀' : '☾';
+      themeBtn.title = t === 'dark' ? '切换到亮色主题' : '切换到暗色主题';
+    }
+    setTheme(document.documentElement.dataset.theme || 'dark');
+    themeBtn.onclick = () => setTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');
     document.querySelectorAll('.tab').forEach(t => {
       t.addEventListener('click', () => {
         document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
@@ -2268,6 +2353,13 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
       explodeTarget = parseFloat(e.target.value)/100;
       document.getElementById('v-explode').textContent = e.target.value + '%';
     });
+    document.getElementById('btnExplodeView').addEventListener('click', () => {
+      explodeTarget = 0.65;
+      document.getElementById('d-explode').value = 65;
+      document.getElementById('v-explode').textContent = '65%';
+      document.getElementById('viewTag').textContent = '拆解视角';
+      flyTo(new THREE.Vector3(34, 25, 39), new THREE.Vector3(4.8, 4.6, 0), 1000);
+    });
     document.getElementById('d-wire').addEventListener('change', e => { wireOn = e.target.checked; refreshAllMaterials(); });
     document.getElementById('d-src').addEventListener('change', e => { sourceColor = e.target.checked; refreshAllMaterials(); });
     document.getElementById('d-xray').addEventListener('change', e => {
@@ -2282,12 +2374,29 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
     /* =================================================================
        24. 物理
        ================================================================= */
-    const SAMPLE_LOCAL = [
-      { x:-4.2, z:0, w:0.10 }, { x:-2.0, z:0, w:0.13 }, { x:1.0, z:0, w:0.15 },
-      { x:4.0, z:0, w:0.16 }, { x:7.0, z:0, w:0.16 }, { x:10.0, z:0, w:0.15 }, { x:12.6, z:0, w:0.15 }
-    ];
-    const TOTAL_W = SAMPLE_LOCAL.reduce((s,p)=>s+p.w, 0);
+    /* 按 9 个横剖面求浸深与浮力 */
+    const SEC_N = 9, SEC_X0 = -4.4, SEC_X1 = 13.6;
+    const SEC_DX = (SEC_X1 - SEC_X0) / (SEC_N - 1);
+    const X_CG = 4.8, RHO = 1025;
+    const SECS = [];
+    for (let i = 0; i < SEC_N; i++){
+      const x = SEC_X0 + SEC_DX*i;
+      SECS.push({ x, b: halfBeam(x), y0: keelTopAt(x), y1: sheerY(x) });
+    }
     const shipState = { y:0, pitch:0, roll:0, vy:0, vp:0, vr:0 };
+    let MASS = 0, I_PITCH = 1, I_ROLL = 1;
+    {
+      let F = 0;
+      for (const s of SECS){
+        const d = Math.max(0, Math.min(s.y1 - s.y0, DRAFT - s.y0));
+        if (d <= 0) continue;
+        const w = zAtY(s.x, s.y0 + d*0.55) * 2;
+        F += RHO * 9.81 * 0.62 * w * d * SEC_DX;
+      }
+      MASS = Math.max(1, F/9.81);
+      I_PITCH = MASS * 20.1*20.1 / 12 * 1.5;
+      I_ROLL  = MASS * 7.6*7.6 / 12 * 1.8;
+    }
     function gerstner(x, z, t) {
       let dx = 0, dy = 0, dz = 0;
       const wlScale = env.wl, dShift = env.dir*Math.PI/180;
@@ -2307,24 +2416,41 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
     }
     function updateBuoyancy(dt, t) {
       if (env.paused) return;
-      const samples = SAMPLE_LOCAL.map(p => ({ ...p, h: waterHeight(p.x, p.z, t) }));
-      let targetY = 0;
-      for (const s of samples) targetY += s.h*s.w;
-      targetY /= TOTAL_W;
-      let numP = 0, denP = 0, numR = 0, denR = 0;
-      for (const s of samples) {
-        numP += s.w*(s.h-targetY)*s.x; denP += s.w*s.x*s.x;
-        numR += s.w*(s.h-targetY)*s.z; denR += s.w*s.z*s.z;
+      const g = env.g;
+      const surfBase = DRAFT - shipState.y;
+      let Ftot = 0, Tp = 0, Tr = 0;
+      for (const s of SECS){
+        for (let k = -1; k <= 1; k += 2){
+          const z = k * s.b * 0.55;
+          const wh = waterHeight(s.x, z, t);
+          const ySurf = wh + surfBase + s.x*shipState.pitch + z*shipState.roll;
+          const d = Math.max(0, Math.min(s.y1 - s.y0, ySurf - s.y0));
+          if (d <= 0.0005) continue;
+          const beam = zAtY(s.x, s.y0 + d*0.55) * 2;
+          const A = 0.62 * beam * d * 0.5;
+          const F = RHO * g * A * SEC_DX * env.bk;
+          Ftot += F;
+          Tp += F * (s.x - X_CG);
+          Tr += F * z;
+        }
       }
-      const targetPitch = denP > 1e-6 ? Math.atan2(numP, denP) : 0;
-      const targetRoll  = denR > 1e-6 ? Math.atan2(numR, denR) : 0;
-      const KY = 1.9*env.bk, CY = 2.4*env.bc, KP = 1.2*env.bk, CP = 1.8*env.bc, KR = 1.5*env.bk, CR = 1.9*env.bc;
-      shipState.vy += (KY*(targetY-shipState.y) - CY*shipState.vy)*dt;
-      shipState.y += shipState.vy*dt;
-      shipState.vp += (KP*(targetPitch-shipState.pitch) - CP*shipState.vp)*dt;
-      shipState.pitch += shipState.vp*dt;
-      shipState.vr += (KR*(targetRoll-shipState.roll) - CR*shipState.vr)*dt;
-      shipState.roll += shipState.vr*dt;
+      const W = MASS * g;
+      const aY = (Ftot - W) / (MASS * 1.35) - 2.6*env.bc * shipState.vy;
+      const aP = Tp / I_PITCH - 2.2*env.bc * shipState.vp;
+      const aR = Tr / I_ROLL - 2.0*env.bc * shipState.vr;
+
+      shipState.vy += aY * dt; shipState.y += shipState.vy * dt;
+      shipState.vp += aP * dt; shipState.pitch += shipState.vp * dt;
+      shipState.vr += aR * dt; shipState.roll += shipState.vr * dt;
+
+      if (shipState.y > 1.1){ shipState.y = 1.1; shipState.vy = Math.min(0, shipState.vy); }
+      if (shipState.y < -1.3){ shipState.y = -1.3; shipState.vy = Math.max(0, shipState.vy); }
+      const P = 0.16, R = 0.26;
+      if (shipState.pitch > P){ shipState.pitch = P; shipState.vp = Math.min(0, shipState.vp); }
+      if (shipState.pitch < -P){ shipState.pitch = -P; shipState.vp = Math.max(0, shipState.vp); }
+      if (shipState.roll > R){ shipState.roll = R; shipState.vr = Math.min(0, shipState.vr); }
+      if (shipState.roll < -R){ shipState.roll = -R; shipState.vr = Math.max(0, shipState.vr); }
+
       shipRoot.position.y = shipState.y - DRAFT;
       shipRoot.rotation.z = -shipState.pitch;
       shipRoot.rotation.x = shipState.roll;
@@ -2426,17 +2552,15 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
     shipRoot.position.y = -DRAFT;
 
-    window.Progress.setStage(4, '预编译 Shader');
-    await window.sleep(30);
-    try { renderer.compile(scene, camera); } catch(e) { window.Progress.log('Shader 警告: ' + e.message); }
-    window.Progress.setPct(4, 1);
-
-    window.Progress.setStage(5, '首帧渲染');
-    await window.sleep(30);
+    window.Progress.setStage(12, '预编译着色器');
+    await window.sleep(24);
+    try { renderer.compile(scene, camera); } catch(e) { window.Progress.log('着色器警告: ' + e.message); }
+    window.Progress.setPct(12, 0.55, '着色器就绪 · 渲染首帧…');
+    await window.sleep(24);
     for (let i = 0; i < 40; i++) updateBuoyancy(1/60, 0);
     shipState.vy = shipState.vp = shipState.vr = 0;
     renderer.render(scene, camera);
-    window.Progress.setPct(5, 1);
+    window.Progress.setPct(12, 1, '首帧完成');
 
     /* =================================================================
        28. 主循环
