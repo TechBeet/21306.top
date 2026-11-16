@@ -80,7 +80,7 @@
   .row input[type=range]{flex:0 0 118px;min-width:0;accent-color:var(--accent);height:3px}
   .row input[type=checkbox]{accent-color:var(--accent);width:13px;height:13px;cursor:pointer;flex:0 0 auto}
   .row .val{color:var(--txt);font-size:10px;font-variant-numeric:tabular-nums;min-width:44px;text-align:right}
-  .row select{background:rgba(20,28,38,.9);border:1px solid var(--line);color:var(--txt);
+  .row select{background:var(--input);border:1px solid var(--line);color:var(--txt);
     font:inherit;font-size:10.5px;border-radius:5px;padding:3px 5px;outline:none}
   .row input[type=color]{width:26px;height:18px;border:1px solid var(--line);background:none;
     border-radius:4px;padding:0;cursor:pointer}
@@ -97,7 +97,7 @@
   .hint{color:var(--dim);font-size:10px;line-height:1.55;margin-top:4px}
 
   /* ---------- 图层树 ---------- */
-  #treeSearch{width:100%;background:rgba(20,28,38,.9);border:1px solid var(--line);color:var(--txt);
+  #treeSearch{width:100%;background:var(--input);border:1px solid var(--line);color:var(--txt);
     font:inherit;font-size:11px;border-radius:6px;padding:6px 9px;outline:none;margin-bottom:7px}
   #treeSearch:focus{border-color:rgba(201,162,39,.45)}
   .tree{max-height:340px;overflow-y:auto;padding-right:3px}
@@ -106,70 +106,58 @@
   .node{display:flex;align-items:center;gap:6px;padding:3px 0;font-size:10.8px;color:var(--txt);
     cursor:pointer;border-radius:4px}
   .node:hover{color:var(--accent)}
-  .node .caret{width:10px;color:#4f6070;font-size:9px;flex:none;transition:transform .18s}
+  .node .caret{width:10px;color:var(--dim);font-size:9px;flex:none;transition:transform .18s}
   .node.open .caret{transform:rotate(90deg)}
   .node .nm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .node .n{color:var(--dim);font-size:9.5px;flex:none}
   .node .cb{width:12px;height:12px;accent-color:var(--accent);flex:none;cursor:pointer}
-  .lv2{padding-left:14px;color:#9fb0c0}
-  .lv3{padding-left:28px;font-size:10px;color:#7d8fa0}
+  .lv2{padding-left:14px;color:var(--dim)}
+  .lv3{padding-left:28px;font-size:10px;color:var(--leaf)}
   .lv3:hover{color:var(--accent)}
   .lv3.sel{color:var(--accent);background:rgba(201,162,39,.08)}
   .children{display:none}
   .children.open{display:block}
   .dot{display:inline-block;width:5px;height:5px;border-radius:50%;margin-right:5px;vertical-align:middle;flex:none}
 
-  /* ---------- 审计 ---------- */
-  .audit{font-size:10px;line-height:1.75}
-  .arow{display:flex;gap:6px;align-items:baseline;font-variant-numeric:tabular-nums}
-  .arow .k{flex:1;color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .arow .v{color:var(--txt);flex:none}
-  .arow .s{width:11px;flex:none;text-align:center}
-  .arow.ok .s{color:var(--ok)}
-  .arow.bad .s{color:#e05555}
-  .arow.bad .v{color:#e05555}
-  .ok-txt{color:var(--ok)}
-  .bad-txt{color:#e05555}
-
   /* ---------- 出处 ---------- */
   .src-item{padding:8px 10px;border:1px solid var(--line);border-radius:8px;margin-bottom:6px;
-    background:rgba(255,255,255,.015)}
+    background:var(--soft)}
   .src-item a{color:var(--accent);text-decoration:none;font-size:11px;font-weight:600;
     display:block;line-height:1.45}
   .src-item a:hover{text-decoration:underline}
   .src-item .org{color:var(--dim);font-size:9.5px;margin-top:2px}
   .ledger{width:100%;border-collapse:collapse;font-size:9.5px;margin-top:4px}
-  .ledger th,.ledger td{border-bottom:1px solid rgba(30,45,60,.7);padding:4px 3px;text-align:left;
+  .ledger th,.ledger td{border-bottom:1px solid var(--line);padding:4px 3px;text-align:left;
     vertical-align:top;line-height:1.45}
-  .ledger th{color:#6d7f90;font-weight:500}
+  .ledger th{color:var(--dim);font-weight:500}
   .ledger td{color:var(--txt)}
   .ledger td.dim{color:var(--dim)}
 
   /* ---------- 详情卡 ---------- */
   #infoCard{position:fixed;left:18px;bottom:54px;width:318px;max-width:calc(100vw - 36px);
-    max-height:calc(100vh - 200px);overflow-y:auto;background:rgba(9,15,23,.94);
-    border:1px solid rgba(90,140,210,.25);border-left:3px solid var(--accent);
+    max-height:calc(100vh - 200px);overflow-y:auto;background:var(--panel2);
+    border:1px solid var(--line);border-left:3px solid var(--accent);
     border-radius:12px;padding:13px 14px;backdrop-filter:blur(18px);z-index:9;
-    box-shadow:0 20px 60px rgba(0,0,0,.7),inset 0 1px 0 rgba(255,255,255,.06);
+    box-shadow:0 20px 60px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.06);
     opacity:0;transform:translateY(18px);pointer-events:none;
-    transition:opacity .32s var(--ease),transform .32s var(--ease)}
+    transition:opacity .32s var(--ease),transform .32s var(--ease),background-color .2s,color .2s}
   #infoCard.show{opacity:1;transform:translateY(0);pointer-events:auto}
   #infoCard::-webkit-scrollbar{width:4px}
   #infoCard::-webkit-scrollbar-thumb{background:var(--line);border-radius:2px}
   .ic-head{display:flex;align-items:center;gap:7px;margin-bottom:3px;padding-right:20px}
-  .ic-name{font-size:14px;font-weight:700;color:#fff;flex:1;letter-spacing:.02em}
+  .ic-name{font-size:14px;font-weight:700;color:var(--txt);flex:1;letter-spacing:.02em}
   .ic-src{font-size:9px;padding:1px 6px;border-radius:3px;border:1px solid;flex:none}
   .ic-path{font-size:9.5px;color:var(--dim);margin-bottom:7px;line-height:1.5}
-  .ic-dim{border-top:1px solid rgba(30,45,60,.7);padding-top:6px;margin-bottom:7px}
+  .ic-dim{border-top:1px solid var(--line);padding-top:6px;margin-bottom:7px}
   .dimrow{display:flex;align-items:baseline;gap:6px;font-size:10px;padding:1.5px 0}
-  .dimrow .k{color:#7d8fa0;width:74px;flex:none}
+  .dimrow .k{color:var(--dim);width:74px;flex:none}
   .dimrow .v{color:var(--txt);flex:1;font-variant-numeric:tabular-nums}
   .tag{font-size:8.5px;padding:0 4px;border-radius:3px;flex:none;line-height:1.5}
-  .tag.m{color:var(--measured);border:1px solid rgba(74,200,232,.4)}
-  .tag.i{color:var(--infer);border:1px solid rgba(217,122,61,.4)}
-  .tag.r{color:var(--ctrl);border:1px solid rgba(201,162,39,.4)}
+  .tag.m{color:var(--measured);border:1px solid var(--measured)}
+  .tag.i{color:var(--infer);border:1px solid var(--infer)}
+  .tag.r{color:var(--ctrl);border:1px solid var(--ctrl)}
   .ic-note{font-size:10px;color:var(--dim);line-height:1.6;margin:0 0 8px;
-    background:rgba(255,255,255,.03);border-left:2px solid rgba(201,162,39,.4);padding:6px 8px;border-radius:0 4px 4px 0}
+    background:var(--soft);border-left:2px solid rgba(201,162,39,.4);padding:6px 8px;border-radius:0 4px 4px 0}
   .ic-src-list{display:flex;flex-direction:column;gap:4px;margin-bottom:9px}
   .ic-src-list a{font-size:10px;color:var(--accent);text-decoration:none;line-height:1.45}
   .ic-src-list a:hover{text-decoration:underline}
@@ -177,7 +165,12 @@
   .ic-btns .btn{flex:1;padding:5px 0;font-size:10px}
   #icClose{position:absolute;top:8px;right:9px;color:var(--dim);cursor:pointer;font-size:15px;line-height:1;
     width:20px;height:20px;display:grid;place-items:center;border-radius:5px}
-  #icClose:hover{background:rgba(255,255,255,.1);color:#fff}
+  #icClose:hover{background:rgba(127,140,160,.18);color:var(--txt)}
+
+  /* ---------- 暗角 ---------- */
+  .vignette{position:fixed;inset:0;pointer-events:none;z-index:4;
+    background:radial-gradient(ellipse at 50% 46%, transparent 50%, var(--vignette) 100%);
+    transition:background .3s}
 
   #infoBar{position:fixed;bottom:14px;left:50%;transform:translateX(-50%);
     background:var(--panel);border:1px solid var(--line);border-radius:8px;
@@ -195,35 +188,48 @@
 
   /* ---------- 加载 ---------- */
   #loading{position:fixed;inset:0;display:flex;flex-direction:column;
-    align-items:center;justify-content:center;background:radial-gradient(ellipse at center,#0a1520 0%,#050a10 70%);
+    align-items:center;justify-content:center;
+    background:radial-gradient(ellipse at center,rgba(18,32,46,.96) 0%,var(--bg) 72%);
     color:var(--txt);z-index:20;transition:opacity .6s;padding:0 24px}
-  #loading .wrap{width:min(560px,92vw);display:flex;flex-direction:column;gap:14px}
+  #loading .wrap{width:min(580px,92vw);display:flex;flex-direction:column;gap:13px}
   #loading .title{text-align:center;font-size:13px;letter-spacing:.2em;color:var(--accent);font-weight:600}
   #loading .subtitle{text-align:center;font-size:10.5px;color:var(--dim);letter-spacing:.12em;margin-top:-8px}
-  #loading .mainBar{position:relative;height:4px;background:#0c1822;border-radius:2px;overflow:hidden}
+  #loading .mainBar{position:relative;height:4px;background:var(--soft);border-radius:2px;overflow:hidden}
   #loading .mainBarFill{position:absolute;inset:0;width:0%;
-    background:linear-gradient(90deg,#4ac8e8,#c9a227);transition:width .12s linear;box-shadow:0 0 12px rgba(201,162,39,.5)}
+    background:linear-gradient(90deg,#4ac8e8,#c9a227);transition:width .08s linear;box-shadow:0 0 12px rgba(201,162,39,.5)}
   #loading .stages{display:flex;gap:3px;margin-top:6px}
-  #loading .seg{flex:1;height:2px;background:#0c1822;border-radius:1px;transition:.2s}
+  #loading .seg{flex:1;height:2px;background:var(--soft);border-radius:1px;transition:.2s}
   #loading .seg.done{background:var(--ok)}
   #loading .seg.active{background:var(--accent);animation:segPulse 1s ease-in-out infinite}
   @keyframes segPulse{0%,100%{opacity:.7}50%{opacity:1}}
-  #loading .status{display:grid;grid-template-columns:1fr auto;gap:8px 16px;padding:12px 14px;
-    background:rgba(10,16,24,.72);border:1px solid var(--line);border-radius:6px;font-size:11px}
+  #loading .stageList{display:grid;grid-template-columns:1fr 1fr;gap:2px 14px;margin-top:2px}
+  #loading .stItem{display:flex;align-items:center;gap:6px;font-size:10px;color:var(--dim);
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:.2s}
+  #loading .stItem .sd{width:6px;height:6px;border-radius:50%;background:var(--line);flex:none;transition:.2s}
+  #loading .stItem.done{color:var(--txt)}
+  #loading .stItem.done .sd{background:var(--ok)}
+  #loading .stItem.active{color:var(--accent)}
+  #loading .stItem.active .sd{background:var(--accent);box-shadow:0 0 7px var(--accent)}
+  #loading .status{display:grid;grid-template-columns:1fr auto;gap:8px 16px;padding:11px 14px;
+    background:var(--soft);border:1px solid var(--line);border-radius:6px;font-size:11px}
   #loading .pct{font-size:22px;font-weight:600;color:var(--accent);font-variant-numeric:tabular-nums}
   #loading .stageName{color:var(--dim);font-size:10.5px;letter-spacing:.06em}
   #loading .subTask{font-size:11.5px;margin-top:2px}
   #loading .timeRow{grid-column:1/-1;display:flex;justify-content:space-between;color:var(--dim);
-    font-size:10px;padding-top:6px;border-top:1px solid rgba(30,45,60,.6);font-variant-numeric:tabular-nums}
+    font-size:10px;padding-top:6px;border-top:1px solid var(--line);font-variant-numeric:tabular-nums}
   #loading .timeRow .val{color:var(--txt)}
-  #loading .logWrap{background:rgba(4,8,12,.7);border:1px solid var(--line);border-radius:6px;
-    padding:10px 12px;height:104px;overflow:hidden;font:10.5px/1.65 "SF Mono",Consolas,monospace;color:var(--dim)}
+  #loading .logWrap{background:var(--soft);border:1px solid var(--line);border-radius:6px;
+    padding:9px 12px;height:92px;overflow:hidden;font:10.5px/1.6 "SF Mono",Consolas,monospace;color:var(--dim)}
   #loading .logTitle{color:var(--accent);font-size:9.5px;letter-spacing:.12em;margin-bottom:4px;
     font-family:"Segoe UI",sans-serif;font-weight:600}
   #loading .logLine{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   #loading .logLine:last-child{color:var(--txt)}
-  #loading .tip{text-align:center;font-size:10px;color:#4a5a68;font-style:italic}
+  #loading .tip{text-align:center;font-size:10px;color:var(--dim);font-style:italic;opacity:.8}
   #loading.complete .mainBarFill{background:var(--ok)}
+
+  /* 主题过渡 */
+  #panel,#infoCard,#infoBar,#viewTag,#panelOpen,#hud .mode-pill,.mini-btn,.btn,.row select,
+  #treeSearch,#loading .status,#loading .logWrap{transition:background-color .2s,color .2s,border-color .2s}
 
   @media(max-width:900px){
     #panel{width:calc(100% - 24px);max-height:52vh;top:auto;bottom:10px;right:12px}
@@ -240,6 +246,7 @@
 </head>
 <body>
 <div id="app"></div>
+<div class="vignette"></div>
 
 <div id="loading">
   <div class="wrap">
@@ -247,6 +254,7 @@
     <div class="subtitle">结构考古三维重建 · 后渚港 1974</div>
     <div class="mainBar"><div class="mainBarFill" id="mainFill"></div></div>
     <div class="stages" id="stageSegs"></div>
+    <div class="stageList" id="stageList"></div>
     <div class="status">
       <div><div class="stageName" id="stageName">初始化中…</div><div class="subTask" id="subTask">正在检测网络环境…</div></div>
       <div class="pct" id="pctText">0.0%</div>
@@ -275,6 +283,7 @@
 <div id="panel">
   <div class="p-head">
     <span class="p-title">环境与结构设置</span>
+    <button class="icon-btn" id="themeBtn" title="切换亮 / 暗主题">☀</button>
     <button class="icon-btn" id="panelClose" title="收起面板">×</button>
   </div>
   <div class="tabs">
@@ -353,20 +362,15 @@
     <div class="group">
       <div class="g-title">拆解</div>
       <div class="row"><label>爆炸视图</label><input id="d-explode" type="range" min="0" max="100" step="1" value="0"><span class="val" id="v-explode">0%</span></div>
+      <div class="btns" style="margin:2px 0 6px">
+        <button class="btn" id="btnExplodeView">拆解视角</button>
+      </div>
       <div class="row"><label for="d-wire">线框</label><input id="d-wire" type="checkbox"><span class="val"></span></div>
       <div class="row"><label for="d-src">按来源着色</label><input id="d-src" type="checkbox"><span class="val"></span></div>
       <div class="row"><label for="d-xray">水面半透</label><input id="d-xray" type="checkbox" checked><span class="val"></span></div>
       <div class="row"><label for="d-cut">残深参考线 1.98 m</label><input id="d-cut" type="checkbox"><span class="val"></span></div>
       <div class="row"><label for="d-auto">相机自动环绕</label><input id="d-auto" type="checkbox"><span class="val"></span></div>
       <div class="row"><label>实时帧率</label><span class="val" id="fpsText">—</span></div>
-    </div>
-    <div class="group">
-      <div class="g-title">尺寸审计 <span class="ok-txt" id="auditSum">—</span></div>
-      <div class="audit" id="audit"></div>
-    </div>
-    <div class="group">
-      <div class="g-title">模型自检 <span class="ok-txt" id="checkSum">—</span></div>
-      <div class="audit" id="selfCheck"></div>
     </div>
   </div>
 
@@ -417,25 +421,52 @@
 <div id="infoBar">拖拽环绕 · 滚轮缩放 · 右键平移 · <strong>点击构件</strong>查看出处</div>
 
 <script>
+(function(){
+  var saved = null;
+  try { saved = localStorage.getItem('qs-theme'); } catch(_) {}
+  var t = saved || (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+  document.documentElement.dataset.theme = t;
+  window.__theme = t;
+})();
+
 window.Progress = {
   startTime: performance.now(),
   stages: [
-    { name: '下载引擎', weight: 38, pct: 0, sub: '准备连接…' },
-    { name: '初始化',   weight: 5,  pct: 0, sub: '' },
-    { name: '解析史料', weight: 10, pct: 0, sub: '' },
-    { name: '构建船体', weight: 37, pct: 0, sub: '' },
-    { name: '编译着色器', weight: 5, pct: 0, sub: '' },
-    { name: '首帧渲染', weight: 5,  pct: 0, sub: '' }
+    { name:'连接镜像', weight:3,  pct:0, sub:'正在检测网络环境…' },
+    { name:'下载引擎', weight:30, pct:0, sub:'' },
+    { name:'初始化渲染器', weight:5, pct:0, sub:'' },
+    { name:'生成木纹', weight:8,  pct:0, sub:'' },
+    { name:'环境贴图', weight:6,  pct:0, sub:'' },
+    { name:'搭建场景', weight:3,  pct:0, sub:'' },
+    { name:'龙骨 · 首尾柱', weight:6, pct:0, sub:'' },
+    { name:'三重壳板', weight:12, pct:0, sub:'' },
+    { name:'水密舱壁', weight:8,  pct:0, sub:'' },
+    { name:'抱梁肋骨', weight:6,  pct:0, sub:'' },
+    { name:'舵系 · 桅座 · 保寿孔', weight:5, pct:0, sub:'' },
+    { name:'复原推演层', weight:5, pct:0, sub:'' },
+    { name:'首帧渲染', weight:3,  pct:0, sub:'' }
   ],
-  current: 0, logs: [], totalWeight: 0, timer: null,
+  current: 0, logs: [], totalWeight: 0, timer: null, smooth: 0,
   init() {
     this.totalWeight = this.stages.reduce((s, x) => s + x.weight, 0);
     document.getElementById('stageSegs').innerHTML = this.stages.map(s => `<div class="seg" title="${s.name}"></div>`).join('');
+    document.getElementById('stageList').innerHTML = this.stages.map((s,i) =>
+      `<div class="stItem" data-st="${i}"><i class="sd"></i><span>${s.name}</span></div>`).join('');
     this.render();
-    this.timer = setInterval(() => this.render(), 100);
+    this.timer = setInterval(() => this.render(), 90);
   },
-  setStage(i, sub = '') { this.current = i; if (sub) this.stages[i].sub = sub; this.render(); },
-  setPct(i, pct, sub) { this.stages[i].pct = Math.max(0, Math.min(1, pct)); if (sub !== undefined) this.stages[i].sub = sub; },
+  setStage(i, sub = '') {
+    this.current = i;
+    if (sub) this.stages[i].sub = sub;
+    this.render();
+  },
+  setPct(i, pct, sub) {
+    this.stages[i].pct = Math.max(0, Math.min(1, pct));
+    if (sub !== undefined) this.stages[i].sub = sub;
+  },
+  count(i, done, total, label) {
+    this.stages[i].sub = `${label || this.stages[i].name} ${done} / ${total}`;
+  },
   log(msg) {
     const t = ((performance.now() - this.startTime) / 1000).toFixed(2);
     this.logs.push(`[${t}s] ${msg}`);
@@ -445,13 +476,22 @@ window.Progress = {
   render() {
     let total = 0;
     for (const s of this.stages) total += s.weight * s.pct;
-    total /= this.totalWeight;
-    document.getElementById('mainFill').style.width = (total * 100) + '%';
-    document.getElementById('pctText').textContent = (total * 100).toFixed(1) + '%';
+    total = total / this.totalWeight;
+    this.smooth += (total - this.smooth) * 0.22;
+    if (total - this.smooth < 0.002) this.smooth = total;
+
+    document.getElementById('mainFill').style.width = (this.smooth * 100) + '%';
+    document.getElementById('pctText').textContent = (this.smooth * 100).toFixed(1) + '%';
+
     const cur = this.stages[this.current];
     document.getElementById('stageName').textContent = `阶段 ${this.current + 1}/${this.stages.length} · ${cur.name}`;
     document.getElementById('subTask').textContent = cur.sub || '…';
+
     document.querySelectorAll('#loading .seg').forEach((el, i) => {
+      el.classList.toggle('done', i < this.current);
+      el.classList.toggle('active', i === this.current);
+    });
+    document.querySelectorAll('#loading .stItem').forEach((el, i) => {
       el.classList.toggle('done', i < this.current);
       el.classList.toggle('active', i === this.current);
     });
@@ -459,6 +499,11 @@ window.Progress = {
   },
   complete() {
     clearInterval(this.timer);
+    this.smooth = 1;
+    document.getElementById('mainFill').style.width = '100%';
+    document.getElementById('pctText').textContent = '100.0%';
+    document.querySelectorAll('#loading .seg').forEach(el => { el.classList.remove('active'); el.classList.add('done'); });
+    document.querySelectorAll('#loading .stItem').forEach(el => { el.classList.remove('active'); el.classList.add('done'); });
     document.getElementById('loading').classList.add('complete');
     setTimeout(() => {
       document.getElementById('loading').style.opacity = '0';
@@ -492,7 +537,7 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
       for (let i = 0; i < CDN_LIST.length; i++) {
         const url = CDN_LIST[i];
         const host = new URL(url).hostname;
-        window.Progress.setStage(0, `连接源 ${i+1}/${CDN_LIST.length} (${host})…`);
+        window.Progress.setStage(1, `连接源 ${i+1}/${CDN_LIST.length} (${host})…`);
         try {
           const controller = new AbortController();
           const timeoutId = setTimeout(() => controller.abort(), 4500);
@@ -509,11 +554,11 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
             chunks.push(value); loaded += value.length;
             const speed = (loaded / 1024 / ((performance.now() - window.Progress.startTime)/1000)).toFixed(0);
             document.getElementById('netSpeed').textContent = `${speed} KB/s`;
-            window.Progress.setPct(0, Math.min(loaded/total, .99), `下载中 ${(loaded/1024).toFixed(0)} KB / ${(total/1024).toFixed(0)} KB`);
+            window.Progress.setPct(1, Math.min(loaded/total, .99), `下载中 ${(loaded/1024).toFixed(0)} KB / ${(total/1024).toFixed(0)} KB`);
           }
           const all = new Uint8Array(loaded); let pos = 0;
           for (const c of chunks) { all.set(c, pos); pos += c.length; }
-          window.Progress.setPct(0, 1, '解析模块代码…');
+          window.Progress.setPct(1, 1, '解析模块代码…');
           const text = new TextDecoder().decode(all);
           if (!text.includes('export')) throw new Error('返回内容不是合法的 JS');
           const blobUrl = URL.createObjectURL(new Blob([text], { type: 'application/javascript' }));
@@ -528,7 +573,8 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
       throw new Error('所有备用 CDN 均无法连接');
     }
     const THREE = await loadThreeJS();
-    window.Progress.setStage(1, '引擎就绪');
+    window.Progress.setStage(2, '渲染器就绪');
+    await window.sleep(20);
 
     /* =================================================================
        2. 轨道控制
@@ -986,43 +1032,138 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
     /* =================================================================
        8. 材质
        ================================================================= */
-    window.Progress.setStage(2, '生成材质');
-    await window.sleep(20);
-    function woodTex(base, dark, rx, ry) {
-      const c = document.createElement('canvas'); c.width = c.height = 256;
-      const ctx = c.getContext('2d');
-      ctx.fillStyle = base; ctx.fillRect(0,0,256,256);
-      for (let i = 0; i < 150; i++) {
-        ctx.strokeStyle = dark; ctx.globalAlpha = 0.03 + Math.random()*0.10;
-        ctx.lineWidth = 0.4 + Math.random()*2.0;
-        const y = Math.random()*256;
-        ctx.beginPath(); ctx.moveTo(0, y);
-        ctx.bezierCurveTo(85, y+(Math.random()-0.5)*14, 170, y+(Math.random()-0.5)*14, 256, y);
+    window.Progress.setStage(3, '生成木纹');
+    await window.sleep(16);
+
+    function rng(seed){
+      let a = seed >>> 0;
+      return () => { a = (a * 1664525 + 1013904223) >>> 0; return a / 4294967296; };
+    }
+    function makeWoodMaps(base, dark, seed){
+      const S = 512, S2 = 256;
+      const albedo = document.createElement('canvas'); albedo.width = albedo.height = S;
+      const bumpC  = document.createElement('canvas'); bumpC.width = bumpC.height = S2;
+      const roughC = document.createElement('canvas'); roughC.width = roughC.height = S2;
+      const ca = albedo.getContext('2d'), cb = bumpC.getContext('2d'), cr = roughC.getContext('2d');
+      const R = rng(seed);
+      ca.fillStyle = base; ca.fillRect(0, 0, S, S);
+      cb.fillStyle = '#808080'; cb.fillRect(0, 0, S2, S2);
+      cr.fillStyle = '#d2d2d2'; cr.fillRect(0, 0, S2, S2);
+
+      function grain(ctx, x, amp, w, alpha, color){
+        ctx.strokeStyle = color; ctx.globalAlpha = alpha; ctx.lineWidth = w;
+        ctx.beginPath();
+        ctx.moveTo(x, -16);
+        ctx.bezierCurveTo(x + amp, S*0.3, x - amp, S*0.7, x + (R()-0.5)*6, S+16);
         ctx.stroke();
       }
-      const t = new THREE.CanvasTexture(c);
-      t.colorSpace = THREE.SRGBColorSpace;
-      t.wrapS = t.wrapT = THREE.RepeatWrapping;
-      t.repeat.set(rx, ry);
-      return t;
+      // 长纹
+      for (let i = 0; i < 190; i++){
+        const x = R()*S, amp = 4 + R()*22, w = 0.5 + R()*2.6;
+        grain(ca, x, amp, w, 0.03 + R()*0.10, dark);
+        grain(cb, x*0.5, amp*0.5, 1.2, 0.16 + R()*0.22, R() > 0.5 ? '#6a6a6a' : '#9c9c9c');
+        grain(cr, x*0.5, amp*0.5, 1.0, 0.10 + R()*0.16, '#b8b8b8');
+      }
+      // 年轮弧
+      for (let i = 0; i < 9; i++){
+        const cx = R()*S, cy = R()*S, r0 = 12 + R()*40;
+        for (let k = 0; k < 4; k++){
+          ca.strokeStyle = dark; ca.globalAlpha = 0.05 + R()*0.06; ca.lineWidth = 1.2;
+          ca.beginPath(); ca.ellipse(cx, cy, r0 + k*7, (r0 + k*7)*0.45, R()*3, 0, Math.PI*2); ca.stroke();
+        }
+      }
+      // 节疤
+      for (let i = 0; i < 5; i++){
+        const cx = R()*S, cy = R()*S, r0 = 5 + R()*13;
+        const g = ca.createRadialGradient(cx, cy, 1, cx, cy, r0*2.4);
+        g.addColorStop(0, 'rgba(28,16,6,0.55)');
+        g.addColorStop(0.45, 'rgba(40,24,10,0.22)');
+        g.addColorStop(1, 'rgba(40,24,10,0)');
+        ca.fillStyle = g; ca.globalAlpha = 1;
+        ca.beginPath(); ca.ellipse(cx, cy, r0*2.4, r0*1.5, R()*3, 0, Math.PI*2); ca.fill();
+        cb.fillStyle = '#5c5c5c'; cb.globalAlpha = 0.5;
+        cb.beginPath(); cb.ellipse(cx*0.5, cy*0.5, r0*0.9, r0*0.55, 0, 0, Math.PI*2); cb.fill();
+        cr.fillStyle = '#9a9a9a'; cr.globalAlpha = 0.5;
+        cr.beginPath(); cr.ellipse(cx*0.5, cy*0.5, r0*1.1, r0*0.7, 0, 0, Math.PI*2); cr.fill();
+      }
+      // 风化斑
+      for (let i = 0; i < 14; i++){
+        const cx = R()*S, cy = R()*S, rad = 40 + R()*120;
+        const g = ca.createRadialGradient(cx, cy, rad*0.1, cx, cy, rad);
+        g.addColorStop(0, 'rgba(255,255,255,0.045)');
+        g.addColorStop(1, 'rgba(255,255,255,0)');
+        ca.fillStyle = g; ca.fillRect(cx-rad, cy-rad, rad*2, rad*2);
+      }
+      // 细颗粒
+      const img = ca.getImageData(0, 0, S, S), d = img.data;
+      for (let i = 0; i < d.length; i += 4){
+        const n = (R() - 0.5) * 12;
+        d[i] += n; d[i+1] += n; d[i+2] += n;
+      }
+      ca.putImageData(img, 0, 0);
+
+      const mk = (c, srgb) => {
+        const t = new THREE.CanvasTexture(c);
+        t.wrapS = t.wrapT = THREE.RepeatWrapping;
+        t.colorSpace = srgb ? THREE.SRGBColorSpace : THREE.NoColorSpace;
+        t.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+        return t;
+      };
+      return { map: mk(albedo, true), bumpMap: mk(bumpC, false), roughnessMap: mk(roughC, false) };
     }
-    const woodMat = (base, dark, rough, rx, ry) => new THREE.MeshStandardMaterial({
-      map: woodTex(base, dark, rx, ry), roughness: rough, metalness: 0, side: THREE.DoubleSide
-    });
+    function woodMat(base, dark, rx, ry, seed){
+      const m = makeWoodMaps(base, dark, seed);
+      m.map.repeat.set(rx, ry);
+      m.bumpMap.repeat.set(rx, ry);
+      m.roughnessMap.repeat.set(rx, ry);
+      return new THREE.MeshStandardMaterial({
+        map: m.map, bumpMap: m.bumpMap, bumpScale: 0.016,
+        roughnessMap: m.roughnessMap, roughness: 1.0, metalness: 0.0,
+        side: THREE.DoubleSide, envMapIntensity: 0.75
+      });
+    }
     const MAT = {
-      pine: woodMat('#8a6b3f','#3f2a10',0.85,2,6),
-      camphor: woodMat('#7a4a28','#3a1c0a',0.80,2,2),
-      fir: woodMat('#9a8452','#5a4a28',0.88,2,2),
-      oak: woodMat('#5e4a32','#2a1a10',0.90,2,2),
-      deck: woodMat('#b08a54','#685030',0.86,3,3),
-      teak: woodMat('#a07040','#5a3a18',0.85,2,2),
+      pine: woodMat('#8a6b3f','#3f2a10',2,6, 11),
+      camphor: woodMat('#7a4a28','#3a1c0a',2,2, 23),
+      fir: woodMat('#9a8452','#5a4a28',2,2, 37),
+      oak: woodMat('#5e4a32','#2a1a10',2,2, 53),
+      deck: woodMat('#b08a54','#685030',3,3, 71),
+      teak: woodMat('#a07040','#5a3a18',2,2, 89),
       caulking: new THREE.MeshStandardMaterial({ color:0x221a12, roughness:0.95, side:THREE.DoubleSide }),
-      copper: new THREE.MeshStandardMaterial({ color:0xb87333, metalness:0.85, roughness:0.34 }),
+      copper: new THREE.MeshStandardMaterial({ color:0xb87333, metalness:0.9, roughness:0.28, envMapIntensity:1.1 }),
       dark: new THREE.MeshStandardMaterial({ color:0x0b1016, roughness:0.82, side:THREE.DoubleSide }),
       sail: new THREE.MeshStandardMaterial({ color:0xe0d2ae, roughness:0.94, side:THREE.DoubleSide, transparent:true, opacity:0.97 }),
-      rope: new THREE.MeshStandardMaterial({ color:0x4a3a24, roughness:0.92 })
+      rope: new THREE.MeshStandardMaterial({ color:0x4a3a24, roughness:0.92, envMapIntensity:0.4 }),
+      iron: new THREE.MeshStandardMaterial({ color:0x2b2f33, metalness:0.8, roughness:0.45, envMapIntensity:0.9 })
     };
     const SRC_COLOR = { m:0x2f8aa8, r:0x8a6f1c, i:0x8a4a24 };
+
+    /* ---- 环境反射（PMREM） ---- */
+    window.Progress.setStage(4, '烘焙环境贴图');
+    await window.sleep(16);
+    let pmrem = null, envRT = null;
+    try {
+      pmrem = new THREE.PMREMGenerator(renderer);
+      pmrem.compileEquirectangularShader();
+    } catch(e) { pmrem = null; }
+    const envScene = new THREE.Scene();
+    const envSky = new THREE.Mesh(new THREE.SphereGeometry(10, 32, 20), skyMat);
+    envScene.add(envSky);
+    function rebuildEnv(){
+      if (!pmrem) return;
+      try {
+        const rt = pmrem.fromScene(envScene, 0.04, 0.1, 100);
+        if (envRT) envRT.dispose();
+        envRT = rt;
+        scene.environment = rt.texture;
+      } catch(e) { scene.environment = null; }
+    }
+    rebuildEnv();
+    let envTimer = 0;
+    function scheduleEnvRebuild(){
+      clearTimeout(envTimer);
+      envTimer = setTimeout(rebuildEnv, 380);
+    }
 
     /* =================================================================
        9. 集合
@@ -1036,9 +1177,11 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
     const D = (k, v, s) => ({ k, v, s });
 
-    window.Progress.setStage(3, '构建船体');
-    window.Progress.setPct(2, 1);
+    window.Progress.setStage(5, '注册史料与构件');
     await window.sleep(10);
+    window.Progress.setPct(5, 1);
+    window.Progress.setStage(6, '主龙骨 · 尾龙骨 · 首柱');
+    await window.sleep(16);
 
     /* =================================================================
        10. 龙骨系统
@@ -1123,8 +1266,10 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
         });
       });
     }
-    window.Progress.setPct(3, 0.08, '龙骨 · 首柱');
-    await window.sleep(0);
+    window.Progress.count(6, 3, 3, '龙骨构件');
+    window.Progress.setPct(6, 1);
+    window.Progress.setStage(7, '三重壳板 生成中…');
+    await window.sleep(16);
 
     /* =================================================================
        11. 尾封板 + 壳板
@@ -1234,8 +1379,10 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
       });
       attach(mm, cid, [0,0,side*1.8]);
     }
-    window.Progress.setPct(3, 0.34, '尾封板 · 三重壳板');
-    await window.sleep(0);
+    window.Progress.count(7, 156, 156, '壳板');
+    window.Progress.setPct(7, 1);
+    window.Progress.setStage(8, '水密舱壁 生成中…');
+    await window.sleep(16);
 
     /* =================================================================
        12. 舱壁
@@ -1309,8 +1456,10 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
         extra:{ spacing_profile: BAYS.map(v => +v.toFixed(3)) }
       });
     }
-    window.Progress.setPct(3, 0.52, '水密舱壁 ×12');
-    await window.sleep(0);
+    window.Progress.count(8, 12, 12, '舱壁');
+    window.Progress.setPct(8, 1);
+    window.Progress.setStage(9, '抱梁肋骨 生成中…');
+    await window.sleep(16);
 
     /* =================================================================
        13. 肋骨
@@ -1349,8 +1498,10 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
         attach(m, id, [0, 0, side*2.6]);
       }
     }
-    window.Progress.setPct(3, 0.68, '抱梁肋骨 ×24');
-    await window.sleep(0);
+    window.Progress.count(9, 24, 24, '肋骨');
+    window.Progress.setPct(9, 1);
+    window.Progress.setStage(10, '舵系 · 桅座 · 保寿孔');
+    await window.sleep(16);
 
     /* =================================================================
        14. 舵系 / 桅座 / 保寿孔
@@ -1452,8 +1603,10 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
       baoshou(0.0, 'Aft', '主龙骨与尾龙骨榫合处');
       baoshou(MAIN_KEEL_LEN, 'Fore', '主龙骨与首柱榫合处');
     }
-    window.Progress.setPct(3, 0.84, '舵系 · 桅座 · 七星伴月');
-    await window.sleep(0);
+    window.Progress.count(10, 19, 19, '构件');
+    window.Progress.setPct(10, 1);
+    window.Progress.setStage(11, '复原推演层');
+    await window.sleep(16);
 
     /* =================================================================
        15. 复原推演层
@@ -1605,8 +1758,9 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
         await window.sleep(0);
       }
     }
-    window.Progress.setPct(3, 0.96, '复原推演层');
-    await window.sleep(0);
+    window.Progress.count(11, 12, 12, '推演构件');
+    window.Progress.setPct(11, 1);
+    await window.sleep(16);
 
     /* =================================================================
        16. 残深参考线
@@ -1629,66 +1783,13 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
     }
 
     /* =================================================================
-       17. 审计与自检
+       17. 构件包围盒
        ================================================================= */
     function bboxOf(id) {
       const box = new THREE.Box3(); let found = false;
       for (const m of PART_MESHES) if (m.userData.partId === id) { box.expandByObject(m); found = true; }
       return found ? box : null;
     }
-    const AUDIT = [];
-    function addAudit(label, target, actual, tol, unit, fmt) {
-      AUDIT.push({ label, target, actual, tol, unit, ok: Math.abs(actual-target) <= tol, fmt: fmt || (v => v.toFixed(3)) });
-    }
-    {
-      const km = bboxOf('QS_Keel_Main');
-      addAudit('主龙骨 X 长度', 12.400, km ? km.max.x-km.min.x : 0, 0.005, 'm');
-      addAudit('主龙骨横向宽', 0.420, km ? km.max.z-km.min.z : 0, 0.002, 'm');
-      addAudit('主龙骨竖向厚', 0.270, km ? km.max.y-km.min.y : 0, 0.002, 'm');
-      const ks = bboxOf('QS_Keel_Stern');
-      addAudit('尾龙骨 X 长度', 5.250, ks ? ks.max.x-ks.min.x : 0, 0.005, 'm');
-      addAudit('首柱曲线弧长', 4.500, stemLen, 0.005, 'm');
-      const nBulk = [...PARTS.keys()].filter(k => /^QS_Bulkhead_B\d\d$/.test(k)).length;
-      addAudit('舱壁对象数', 12, nBulk, 0, '个', v => String(v));
-      addAudit('舱壁流水孔截面', 0.120, FLOW_HOLE, 0.002, 'm');
-      addAudit('壳板内层厚度', 0.083, PLATE_LAYERS.inner.th, 0.002, 'm');
-      addAudit('壳板中层厚度', 0.050, PLATE_LAYERS.mid.th, 0.002, 'm');
-      addAudit('壳板外层厚度', 0.048, PLATE_LAYERS.outer.th, 0.002, 'm');
-      addAudit('直角同口长度', 0.340, SCARF, 0.005, 'm');
-    }
-
-    const selfCheck = [];
-    function runSelfCheck() {
-      selfCheck.length = 0;
-      const degen = [], out = [];
-      for (const m of PART_MESHES) {
-        const g = m.geometry;
-        if (!g.boundingBox) g.computeBoundingBox();
-        const b = g.boundingBox;
-        const sx = b.max.x-b.min.x, sy = b.max.y-b.min.y, sz = b.max.z-b.min.z;
-        if (sx < 0.002 && sy < 0.002 && sz < 0.002) degen.push(m.userData.partId);
-        const t = new THREE.Box3().copy(b).translate(m.position);
-        if (t.min.x < -6.6 || t.max.x > 16.2 || t.min.y < -1.6 || t.max.y > 19.0 || t.min.z < -6.0 || t.max.z > 6.0) out.push(m.userData.partId);
-      }
-      selfCheck.push({ label:'退化构件', ok: degen.length === 0, detail: degen.slice(0,3).join('、') });
-      selfCheck.push({ label:'越界构件', ok: out.length === 0, detail: out.slice(0,3).join('、') });
-
-      let unreg = '';
-      for (const m of PART_MESHES) {
-        const id = m.userData.partId;
-        if (!id || !PARTS.has(id)) { unreg = id || '未登记网格'; break; }
-      }
-      selfCheck.push({ label:'构件登记完整性', ok: !unreg, detail: unreg });
-
-      const cols = new Set();
-      for (const k of PARTS.keys()) {
-        const mm = k.match(/^QS_Planking_(Inner|Mid|Outer)_P(\d\d)_S\d\d_[PS]$/);
-        if (mm) cols.add(mm[1] + mm[2]);
-      }
-      const hasTransom = PARTS.has('QS_Transom');
-      selfCheck.push({ label:'壳板覆盖与端面封闭', ok: cols.size >= 39 && hasTransom, detail: `壳板 ${cols.size}/39 · 尾封板 ${hasTransom ? '有' : '缺'}` });
-    }
-    runSelfCheck();
 
     /* =================================================================
        18. 环境参数
@@ -2304,33 +2405,8 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
     });
 
     /* =================================================================
-       26. 审计 / 出处渲染
+       26. 出处渲染
        ================================================================= */
-    function renderAudit() {
-      let pass = 0;
-      document.getElementById('audit').innerHTML = AUDIT.map(a => {
-        if (a.ok) pass++;
-        const dev = a.actual-a.target;
-        const devTxt = a.unit === '个' ? '' : (Math.abs(dev) < 0.0005 ? ' ±0' : (dev > 0 ? ' +' : ' ') + dev.toFixed(3));
-        return `<div class="arow ${a.ok?'ok':'bad'}"><span class="s">${a.ok?'✓':'✗'}</span>
-          <span class="k">${a.label}</span><span class="v">${a.fmt(a.actual)}${a.unit==='个'?' 个':''}${devTxt}</span></div>`;
-      }).join('');
-      const sum = document.getElementById('auditSum');
-      sum.textContent = `${pass}/${AUDIT.length} 通过`;
-      sum.classList.toggle('bad-txt', pass !== AUDIT.length);
-      sum.classList.toggle('ok-txt', pass === AUDIT.length);
-    }
-    function renderSelfCheck() {
-      const pass = selfCheck.filter(c => c.ok).length;
-      document.getElementById('selfCheck').innerHTML = selfCheck.map(c =>
-        `<div class="arow ${c.ok?'ok':'bad'}"><span class="s">${c.ok?'✓':'✗'}</span>
-          <span class="k">${c.label}</span><span class="v">${c.ok?'通过':(c.detail||'异常')}</span></div>`
-      ).join('');
-      const sum = document.getElementById('checkSum');
-      sum.textContent = `${pass}/${selfCheck.length} 通过`;
-      sum.classList.toggle('bad-txt', pass !== selfCheck.length);
-      sum.classList.toggle('ok-txt', pass === selfCheck.length);
-    }
     function renderSources() {
       document.getElementById('srcList').innerHTML = Object.entries(SOURCES).map(([k,s]) =>
         `<div class="src-item"><a href="${s.url}" target="_blank" rel="noopener noreferrer">${s.title} ↗</a>
@@ -2345,8 +2421,6 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
     applyVisibility();
     applyOpacity();
     applyExplode();
-    renderAudit();
-    renderSelfCheck();
     renderSources();
     document.getElementById('d-cut').checked = false;
 
