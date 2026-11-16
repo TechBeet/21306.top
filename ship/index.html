@@ -399,12 +399,12 @@
 
     <div class="group">
       <div class="g-title">海况</div>
-      <div class="row"><label>浪高</label><input id="e-amp" type="range" min="0" max="200" step="1" value="34"><span class="val" id="v-amp">0.34</span></div>
+      <div class="row"><label>浪高</label><input id="e-amp" type="range" min="0" max="150" step="1" value="34"><span class="val" id="v-amp">0.34</span></div>
       <div class="row"><label>波陡</label><input id="e-chop" type="range" min="0" max="100" step="1" value="50"><span class="val" id="v-chop">0.50</span></div>
       <div class="row"><label>波长</label><input id="e-wl" type="range" min="50" max="200" step="1" value="100"><span class="val" id="v-wl">100%</span></div>
       <div class="row"><label>浪向</label><input id="e-dir" type="range" min="0" max="360" step="1" value="0"><span class="val" id="v-dir">0°</span></div>
       <div class="row"><label>泡沫</label><input id="e-foam" type="range" min="0" max="150" step="1" value="100"><span class="val" id="v-foam">100%</span></div>
-      <div class="row"><label>水面透明</label><input id="e-alpha" type="range" min="20" max="100" step="1" value="42"><span class="val" id="v-alpha">42%</span></div>
+      <div class="row"><label>水面透明</label><input id="e-alpha" type="range" min="20" max="100" step="1" value="55"><span class="val" id="v-alpha">55%</span></div>
       <div class="row"><label>深水色</label><input id="e-deep" type="color" value="#06121c"><span class="val"></span></div>
       <div class="row"><label>浅水色</label><input id="e-shallow" type="color" value="#0e3040"><span class="val"></span></div>
       <div class="row"><label>涌浪增益</label><input id="e-gswell" type="range" min="0" max="2" step="0.01" value="1"><span class="val" id="v-gswell">100%</span></div>
@@ -2225,7 +2225,7 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
     const env = {
       time: 10, elev: 55, azim: 150, sun: 2.1, warm: 55, amb: 0.85, exposure: 1.05,
       fog: 0.0022, shadow: IS_TOUCH ? 1 : 2,
-      amp: 0.34, chop: 0.50, wl: 1.0, dir: 0, foam: 1.0, alpha: 0.42,
+      amp: 0.34, chop: 0.50, wl: 1.0, dir: 0, foam: 1.0, alpha: 0.55,
       whitecap: 1.0, foamDecay: 3.2, foamGen: 1.0, bedOn: true,
       hullFoam: 0.8, splash: 1.0, splashOn: true,
       gSwell: 1.0, gWind: 1.0, gChop: 1.0,
@@ -2236,11 +2236,11 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
     /* 滑杆显示值 → env 实际值的换算（滑杆用百分数，env 用小数） */
     const UI_SCALE = { amp:0.01, chop:0.01, wl:0.01, foam:0.01, alpha:0.01, whitecap:0.01 };
     const WEATHER = {
-      clear:  { time:10.0, sun:2.3, warm:60, amb:0.90, exposure:1.06, fog:0.0018, amp:0.34, chop:0.45, wl:1.0,   foam:0.9,  alpha:0.42, gSwell:0.90, gWind:0.85, gChop:0.80, whitecap:0.80, foamGen:0.85, foamDecay:2.8 },
-      cloudy: { time:14.0, sun:1.2, warm:45, amb:1.15, exposure:1.02, fog:0.0042, amp:0.55, chop:0.60, wl:1.05,  foam:1.1,  alpha:0.5,  gSwell:1.05, gWind:1.15, gChop:1.10, whitecap:1.05, foamGen:1.00, foamDecay:2.6 },
-      mist:   { time:7.0,  sun:0.8, warm:35, amb:1.05, exposure:1.0,  fog:0.0135, amp:0.22, chop:0.28, wl:0.9,   foam:0.5,  alpha:0.55, gSwell:0.55, gWind:0.50, gChop:0.45, whitecap:0.45, foamGen:0.60, foamDecay:3.4 },
-      dusk:   { time:18.4, sun:1.6, warm:12, amb:0.55, exposure:1.12, fog:0.0032, amp:0.40, chop:0.5,  wl:1.0,   foam:0.8,  alpha:0.42, gSwell:0.90, gWind:0.90, gChop:0.85, whitecap:0.85, foamGen:0.85, foamDecay:3.0 },
-      storm:  { time:15.0, sun:0.9, warm:30, amb:0.6,  exposure:0.94, fog:0.016,  amp:0.75, chop:0.82, wl:1.25,  foam:1.05, alpha:0.62, gSwell:1.20, gWind:1.40, gChop:1.50, whitecap:1.35, foamGen:1.05, foamDecay:2.0 }
+      clear:  { time:10.0, sun:2.3, warm:60, amb:0.90, exposure:1.06, fog:0.0018, amp:0.34, chop:0.45, wl:1.0,   foam:0.9,  alpha:0.55, gSwell:0.90, gWind:0.85, gChop:0.80, whitecap:0.80, foamGen:0.85, foamDecay:2.8 },
+      cloudy: { time:14.0, sun:1.2, warm:45, amb:1.15, exposure:1.02, fog:0.0042, amp:0.55, chop:0.60, wl:1.05,  foam:1.1,  alpha:0.60, gSwell:1.05, gWind:1.15, gChop:1.10, whitecap:1.05, foamGen:1.00, foamDecay:2.6 },
+      mist:   { time:7.0,  sun:0.8, warm:35, amb:1.05, exposure:1.0,  fog:0.0135, amp:0.22, chop:0.28, wl:0.9,   foam:0.5,  alpha:0.62, gSwell:0.55, gWind:0.50, gChop:0.45, whitecap:0.45, foamGen:0.60, foamDecay:3.4 },
+      dusk:   { time:18.4, sun:1.6, warm:12, amb:0.55, exposure:1.12, fog:0.0032, amp:0.40, chop:0.5,  wl:1.0,   foam:0.8,  alpha:0.55, gSwell:0.90, gWind:0.90, gChop:0.85, whitecap:0.85, foamGen:0.85, foamDecay:3.0 },
+      storm:  { time:15.0, sun:0.9, warm:30, amb:0.6,  exposure:0.94, fog:0.016,  amp:0.75, chop:0.82, wl:1.25,  foam:1.05, alpha:0.72, gSwell:1.20, gWind:1.40, gChop:1.50, whitecap:1.35, foamGen:1.05, foamDecay:2.0 }
     };
     const C = (h) => new THREE.Color(h);
     function skyPalette(elev) {
@@ -2913,7 +2913,7 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
     }
     /* 附加质量与阻尼：按临界阻尼比标定，兼顾跟随性与稳定性 */
     const AM_HEAVE = 1.25, AM_PITCH = 1.15, AM_ROLL = 1.15;
-    const DAMP_H = 2.4, DAMP_P = 1.9, DAMP_R = 1.5;
+    const DAMP_H = 4.6, DAMP_P = 3.4, DAMP_R = 2.4;
     const MAX_HEAVE = 1.6, MAX_PITCH = 0.34, MAX_ROLL = 0.42;
     /* 软限幅：越过膝点后指数压缩，位置连续、速度平滑衰减，避免硬夹断的跳变 */
     function applySoftLimits(){
@@ -3707,9 +3707,12 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
         g:env.g, deep:env.deep, shallow:env.shallow, alpha:env.alpha, weather:env.weather }),
       setWaterParams: (o) => { const keys=['amp','chop','wl','dir','foam','whitecap','foamDecay','foamGen','bedOn','splash','splashOn','gSwell','gWind','gChop','g','deep','shallow','alpha']; for (const k of keys) if (o[k] !== undefined) env[k] = o[k]; applyEnv(); syncEnvUI(); if (splashPoints) splashPoints.visible = env.splashOn; },
       setSeaState: (key) => { const b = document.querySelector(`[data-weather="${key}"]`); if (b) b.click(); },
-      /* 船体实时姿态（米 / 弧度），便于外部调试与二次开发 */
+      /* 船体实时姿态（米 / 弧度）与对应波面高度，便于外部调试与二次开发 */
       getPose: () => ({ heave: shipState.y, pitch: shipState.pitch, roll: shipState.roll,
-                        vy: shipState.vy, vp: shipState.vp, vr: shipState.vr, draft: DRAFT }),
+                        vy: shipState.vy, vp: shipState.vp, vr: shipState.vr, draft: DRAFT,
+                        waveMid: waterHeight(X_CG, 0, elapsed),
+                        waveBow: waterHeight(13.2, 0, elapsed),
+                        waveStern: waterHeight(-3.2, 0, elapsed) }),
       getAudioParams: () => window.ShipAudio ? ShipAudio.getParams() : null,
       setAudioParams: (o) => window.ShipAudio && ShipAudio.setParams(o),
       getWeather: () => env.weather
