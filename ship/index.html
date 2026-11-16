@@ -1,0 +1,2426 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>泉州湾宋代海船 · 结构考古三维重建</title>
+<style>
+  :root{
+    --bg:#050a10;--panel:rgba(10,16,24,.93);--line:#1e2d3c;
+    --txt:#d6e2ee;--dim:#7f90a2;--accent:#c9a227;--warn:#d97a3d;--ok:#5fb85f;
+    --measured:#4ac8e8;--ctrl:#c9a227;--infer:#d97a3d;
+    --ease:cubic-bezier(.2,.8,.2,1);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);
+    color:var(--txt);font:13px/1.55 "Segoe UI","PingFang SC","Microsoft YaHei",sans-serif}
+  #app{position:fixed;inset:0}
+  canvas{display:block}
+
+  /* ---------- HUD ---------- */
+  #hud{position:fixed;top:14px;left:18px;z-index:6;max-width:360px}
+  #hud h1{margin:0;font-size:16px;letter-spacing:.1em;font-weight:600}
+  #hud .sub{margin:4px 0 0;color:var(--dim);font-size:11px}
+  #hud .row2{display:flex;align-items:center;gap:6px;margin-top:8px;flex-wrap:wrap}
+  .mode-pill{display:inline-flex;background:rgba(10,16,24,.8);border:1px solid var(--line);
+    border-radius:7px;padding:2px;backdrop-filter:blur(8px)}
+  .mode-pill button{border:0;background:transparent;color:var(--dim);font:inherit;font-size:10.5px;
+    padding:3px 10px;border-radius:5px;cursor:pointer;transition:.2s}
+  .mode-pill button.active{background:rgba(201,162,39,.18);color:var(--accent)}
+  .mini-btn{border:1px solid var(--line);background:rgba(10,16,24,.8);color:var(--dim);
+    font:inherit;font-size:10.5px;padding:4px 10px;border-radius:6px;cursor:pointer;
+    transition:.2s;backdrop-filter:blur(8px)}
+  .mini-btn:hover{color:var(--txt);border-color:#3a4d5e}
+  #modeBadge{display:inline-block;padding:2px 8px;border:1px solid var(--line);
+    border-radius:4px;font-size:10px;color:var(--accent);letter-spacing:.08em}
+  #modeBadge.warn{color:var(--warn);border-color:rgba(217,122,61,.45)}
+
+  /* ---------- 设置面板 ---------- */
+  #panel{position:fixed;top:14px;right:14px;width:336px;max-height:calc(100vh - 28px);
+    background:var(--panel);border:1px solid var(--line);border-radius:14px;z-index:8;
+    backdrop-filter:blur(16px);box-shadow:0 18px 60px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.04);
+    display:flex;flex-direction:column;overflow:hidden;
+    transition:opacity .3s var(--ease),transform .3s var(--ease)}
+  #panel.collapsed{opacity:0;pointer-events:none;transform:translateX(26px) scale(.97)}
+  .p-head{display:flex;align-items:center;gap:8px;padding:12px 14px 9px}
+  .p-title{flex:1;font-size:11px;letter-spacing:.16em;color:var(--accent);font-weight:600}
+  .icon-btn{width:24px;height:24px;border-radius:6px;border:1px solid rgba(255,255,255,.06);
+    background:rgba(255,255,255,.04);color:var(--dim);cursor:pointer;display:grid;place-items:center;
+    font-size:14px;line-height:1;padding:0;transition:.2s}
+  .icon-btn:hover{background:rgba(255,255,255,.12);color:#fff}
+  .tabs{display:flex;gap:4px;padding:0 12px 9px;border-bottom:1px solid var(--line)}
+  .tab{flex:1;border:1px solid transparent;background:transparent;color:var(--dim);font:inherit;
+    font-size:11px;padding:6px 0;border-radius:7px;cursor:pointer;transition:.2s;letter-spacing:.05em}
+  .tab:hover{color:var(--txt)}
+  .tab.active{background:rgba(201,162,39,.14);color:var(--accent);border-color:rgba(201,162,39,.35)}
+  .tab-body{display:none;overflow-y:auto;padding:10px 14px 16px;scrollbar-width:thin;
+    scrollbar-color:var(--line) transparent}
+  .tab-body.show{display:block}
+  .tab-body::-webkit-scrollbar{width:5px}
+  .tab-body::-webkit-scrollbar-thumb{background:var(--line);border-radius:3px}
+
+  .group{margin-bottom:12px}
+  .g-title{font-size:9.5px;letter-spacing:.14em;color:#6d7f90;text-transform:uppercase;
+    margin:0 0 6px;font-weight:600}
+  .row{display:flex;align-items:center;gap:8px;margin:7px 0}
+  .row label{color:var(--dim);font-size:10.5px;flex:1;cursor:pointer;user-select:none}
+  .row input[type=range]{flex:0 0 118px;min-width:0;accent-color:var(--accent);height:3px}
+  .row input[type=checkbox]{accent-color:var(--accent);width:13px;height:13px;cursor:pointer;flex:0 0 auto}
+  .row .val{color:var(--txt);font-size:10px;font-variant-numeric:tabular-nums;min-width:44px;text-align:right}
+  .row select{background:rgba(20,28,38,.9);border:1px solid var(--line);color:var(--txt);
+    font:inherit;font-size:10.5px;border-radius:5px;padding:3px 5px;outline:none}
+  .row input[type=color]{width:26px;height:18px;border:1px solid var(--line);background:none;
+    border-radius:4px;padding:0;cursor:pointer}
+
+  .btns{display:flex;gap:5px;flex-wrap:wrap}
+  .btn{flex:1;min-width:0;padding:6px 4px;background:rgba(20,28,38,.9);border:1px solid var(--line);
+    border-radius:6px;color:var(--dim);font-size:10.5px;cursor:pointer;transition:.18s;
+    text-align:center;font-family:inherit;white-space:nowrap}
+  .btn:hover{background:#1a2836;color:var(--txt);border-color:#3a4d5e}
+  .btn.active{background:rgba(201,162,39,.16);border-color:var(--accent);color:var(--accent)}
+  .btn.danger.active{background:rgba(217,122,61,.16);border-color:var(--warn);color:var(--warn)}
+  .btn.full{flex:0 0 100%}
+
+  .hint{color:var(--dim);font-size:10px;line-height:1.55;margin-top:4px}
+
+  /* ---------- 图层树 ---------- */
+  #treeSearch{width:100%;background:rgba(20,28,38,.9);border:1px solid var(--line);color:var(--txt);
+    font:inherit;font-size:11px;border-radius:6px;padding:6px 9px;outline:none;margin-bottom:7px}
+  #treeSearch:focus{border-color:rgba(201,162,39,.45)}
+  .tree{max-height:340px;overflow-y:auto;padding-right:3px}
+  .tree::-webkit-scrollbar{width:4px}
+  .tree::-webkit-scrollbar-thumb{background:var(--line);border-radius:2px}
+  .node{display:flex;align-items:center;gap:6px;padding:3px 0;font-size:10.8px;color:var(--txt);
+    cursor:pointer;border-radius:4px}
+  .node:hover{color:var(--accent)}
+  .node .caret{width:10px;color:#4f6070;font-size:9px;flex:none;transition:transform .18s}
+  .node.open .caret{transform:rotate(90deg)}
+  .node .nm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .node .n{color:var(--dim);font-size:9.5px;flex:none}
+  .node .cb{width:12px;height:12px;accent-color:var(--accent);flex:none;cursor:pointer}
+  .lv2{padding-left:14px;color:#9fb0c0}
+  .lv3{padding-left:28px;font-size:10px;color:#7d8fa0}
+  .lv3:hover{color:var(--accent)}
+  .lv3.sel{color:var(--accent);background:rgba(201,162,39,.08)}
+  .children{display:none}
+  .children.open{display:block}
+  .dot{display:inline-block;width:5px;height:5px;border-radius:50%;margin-right:5px;vertical-align:middle;flex:none}
+
+  /* ---------- 审计 ---------- */
+  .audit{font-size:10px;line-height:1.75}
+  .arow{display:flex;gap:6px;align-items:baseline;font-variant-numeric:tabular-nums}
+  .arow .k{flex:1;color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .arow .v{color:var(--txt);flex:none}
+  .arow .s{width:11px;flex:none;text-align:center}
+  .arow.ok .s{color:var(--ok)}
+  .arow.bad .s{color:#e05555}
+  .arow.bad .v{color:#e05555}
+  .ok-txt{color:var(--ok)}
+  .bad-txt{color:#e05555}
+
+  /* ---------- 出处 ---------- */
+  .src-item{padding:8px 10px;border:1px solid var(--line);border-radius:8px;margin-bottom:6px;
+    background:rgba(255,255,255,.015)}
+  .src-item a{color:var(--accent);text-decoration:none;font-size:11px;font-weight:600;
+    display:block;line-height:1.45}
+  .src-item a:hover{text-decoration:underline}
+  .src-item .org{color:var(--dim);font-size:9.5px;margin-top:2px}
+  .ledger{width:100%;border-collapse:collapse;font-size:9.5px;margin-top:4px}
+  .ledger th,.ledger td{border-bottom:1px solid rgba(30,45,60,.7);padding:4px 3px;text-align:left;
+    vertical-align:top;line-height:1.45}
+  .ledger th{color:#6d7f90;font-weight:500}
+  .ledger td{color:var(--txt)}
+  .ledger td.dim{color:var(--dim)}
+
+  /* ---------- 详情卡 ---------- */
+  #infoCard{position:fixed;left:18px;bottom:54px;width:318px;max-width:calc(100vw - 36px);
+    max-height:calc(100vh - 200px);overflow-y:auto;background:rgba(9,15,23,.94);
+    border:1px solid rgba(90,140,210,.25);border-left:3px solid var(--accent);
+    border-radius:12px;padding:13px 14px;backdrop-filter:blur(18px);z-index:9;
+    box-shadow:0 20px 60px rgba(0,0,0,.7),inset 0 1px 0 rgba(255,255,255,.06);
+    opacity:0;transform:translateY(18px);pointer-events:none;
+    transition:opacity .32s var(--ease),transform .32s var(--ease)}
+  #infoCard.show{opacity:1;transform:translateY(0);pointer-events:auto}
+  #infoCard::-webkit-scrollbar{width:4px}
+  #infoCard::-webkit-scrollbar-thumb{background:var(--line);border-radius:2px}
+  .ic-head{display:flex;align-items:center;gap:7px;margin-bottom:3px;padding-right:20px}
+  .ic-name{font-size:14px;font-weight:700;color:#fff;flex:1;letter-spacing:.02em}
+  .ic-src{font-size:9px;padding:1px 6px;border-radius:3px;border:1px solid;flex:none}
+  .ic-path{font-size:9.5px;color:var(--dim);margin-bottom:7px;line-height:1.5}
+  .ic-dim{border-top:1px solid rgba(30,45,60,.7);padding-top:6px;margin-bottom:7px}
+  .dimrow{display:flex;align-items:baseline;gap:6px;font-size:10px;padding:1.5px 0}
+  .dimrow .k{color:#7d8fa0;width:74px;flex:none}
+  .dimrow .v{color:var(--txt);flex:1;font-variant-numeric:tabular-nums}
+  .tag{font-size:8.5px;padding:0 4px;border-radius:3px;flex:none;line-height:1.5}
+  .tag.m{color:var(--measured);border:1px solid rgba(74,200,232,.4)}
+  .tag.i{color:var(--infer);border:1px solid rgba(217,122,61,.4)}
+  .tag.r{color:var(--ctrl);border:1px solid rgba(201,162,39,.4)}
+  .ic-note{font-size:10px;color:var(--dim);line-height:1.6;margin:0 0 8px;
+    background:rgba(255,255,255,.03);border-left:2px solid rgba(201,162,39,.4);padding:6px 8px;border-radius:0 4px 4px 0}
+  .ic-src-list{display:flex;flex-direction:column;gap:4px;margin-bottom:9px}
+  .ic-src-list a{font-size:10px;color:var(--accent);text-decoration:none;line-height:1.45}
+  .ic-src-list a:hover{text-decoration:underline}
+  .ic-btns{display:flex;gap:5px}
+  .ic-btns .btn{flex:1;padding:5px 0;font-size:10px}
+  #icClose{position:absolute;top:8px;right:9px;color:var(--dim);cursor:pointer;font-size:15px;line-height:1;
+    width:20px;height:20px;display:grid;place-items:center;border-radius:5px}
+  #icClose:hover{background:rgba(255,255,255,.1);color:#fff}
+
+  #infoBar{position:fixed;bottom:14px;left:50%;transform:translateX(-50%);
+    background:var(--panel);border:1px solid var(--line);border-radius:8px;
+    padding:5px 14px;font-size:11px;color:var(--dim);z-index:5;
+    white-space:nowrap;pointer-events:none;opacity:.85;max-width:calc(100vw - 40px);
+    overflow:hidden;text-overflow:ellipsis}
+  #infoBar strong{color:var(--txt);font-weight:500}
+  #viewTag{position:fixed;top:14px;left:50%;transform:translateX(-50%);
+    background:var(--panel);border:1px solid var(--line);border-radius:6px;
+    padding:3px 12px;font-size:10.5px;color:var(--accent);z-index:5;letter-spacing:.08em}
+  #panelOpen{position:fixed;top:14px;right:14px;z-index:7;display:none;align-items:center;gap:6px;
+    padding:8px 13px;background:var(--panel);border:1px solid var(--line);border-radius:9px;
+    color:var(--txt);font:inherit;font-size:11.5px;cursor:pointer;backdrop-filter:blur(12px)}
+  #panelOpen.show{display:flex}
+
+  /* ---------- 加载 ---------- */
+  #loading{position:fixed;inset:0;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;background:radial-gradient(ellipse at center,#0a1520 0%,#050a10 70%);
+    color:var(--txt);z-index:20;transition:opacity .6s;padding:0 24px}
+  #loading .wrap{width:min(560px,92vw);display:flex;flex-direction:column;gap:14px}
+  #loading .title{text-align:center;font-size:13px;letter-spacing:.2em;color:var(--accent);font-weight:600}
+  #loading .subtitle{text-align:center;font-size:10.5px;color:var(--dim);letter-spacing:.12em;margin-top:-8px}
+  #loading .mainBar{position:relative;height:4px;background:#0c1822;border-radius:2px;overflow:hidden}
+  #loading .mainBarFill{position:absolute;inset:0;width:0%;
+    background:linear-gradient(90deg,#4ac8e8,#c9a227);transition:width .12s linear;box-shadow:0 0 12px rgba(201,162,39,.5)}
+  #loading .stages{display:flex;gap:3px;margin-top:6px}
+  #loading .seg{flex:1;height:2px;background:#0c1822;border-radius:1px;transition:.2s}
+  #loading .seg.done{background:var(--ok)}
+  #loading .seg.active{background:var(--accent);animation:segPulse 1s ease-in-out infinite}
+  @keyframes segPulse{0%,100%{opacity:.7}50%{opacity:1}}
+  #loading .status{display:grid;grid-template-columns:1fr auto;gap:8px 16px;padding:12px 14px;
+    background:rgba(10,16,24,.72);border:1px solid var(--line);border-radius:6px;font-size:11px}
+  #loading .pct{font-size:22px;font-weight:600;color:var(--accent);font-variant-numeric:tabular-nums}
+  #loading .stageName{color:var(--dim);font-size:10.5px;letter-spacing:.06em}
+  #loading .subTask{font-size:11.5px;margin-top:2px}
+  #loading .timeRow{grid-column:1/-1;display:flex;justify-content:space-between;color:var(--dim);
+    font-size:10px;padding-top:6px;border-top:1px solid rgba(30,45,60,.6);font-variant-numeric:tabular-nums}
+  #loading .timeRow .val{color:var(--txt)}
+  #loading .logWrap{background:rgba(4,8,12,.7);border:1px solid var(--line);border-radius:6px;
+    padding:10px 12px;height:104px;overflow:hidden;font:10.5px/1.65 "SF Mono",Consolas,monospace;color:var(--dim)}
+  #loading .logTitle{color:var(--accent);font-size:9.5px;letter-spacing:.12em;margin-bottom:4px;
+    font-family:"Segoe UI",sans-serif;font-weight:600}
+  #loading .logLine{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #loading .logLine:last-child{color:var(--txt)}
+  #loading .tip{text-align:center;font-size:10px;color:#4a5a68;font-style:italic}
+  #loading.complete .mainBarFill{background:var(--ok)}
+
+  @media(max-width:900px){
+    #panel{width:calc(100% - 24px);max-height:52vh;top:auto;bottom:10px;right:12px}
+    #panelOpen{top:auto;bottom:10px;right:12px}
+    #hud{max-width:210px}
+    #hud h1{font-size:13px}
+    #hud .sub{display:none}
+    #viewTag{display:none}
+    #infoCard{left:12px;right:12px;width:auto;bottom:calc(52vh + 46px);max-height:32vh}
+    #infoBar{bottom:calc(52vh + 16px);font-size:10px}
+    #loading .logWrap{height:80px}
+  }
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<div id="loading">
+  <div class="wrap">
+    <div class="title">泉州湾宋代海船</div>
+    <div class="subtitle">结构考古三维重建 · 后渚港 1974</div>
+    <div class="mainBar"><div class="mainBarFill" id="mainFill"></div></div>
+    <div class="stages" id="stageSegs"></div>
+    <div class="status">
+      <div><div class="stageName" id="stageName">初始化中…</div><div class="subTask" id="subTask">正在检测网络环境…</div></div>
+      <div class="pct" id="pctText">0.0%</div>
+      <div class="timeRow"><span>已用 <span class="val" id="elapsedText">0.00s</span></span><span id="netSpeed">—</span></div>
+    </div>
+    <div class="logWrap"><div class="logTitle">详细日志 · 实时刷新</div><div id="logContent"></div></div>
+    <div class="tip" id="tipText">正在从极速镜像下载 3D 引擎，请稍候</div>
+  </div>
+</div>
+
+<div id="hud">
+  <h1>泉州湾宋代海船</h1>
+  <p class="sub">12 道舱壁 · 13 舱 · 三重壳板 · 七星伴月</p>
+  <div class="row2">
+    <div class="mode-pill">
+      <button data-mode="remains" class="active">残体</button>
+      <button data-mode="restored">复原</button>
+    </div>
+    <button class="mini-btn" id="btnResetView">复位视角</button>
+    <span id="modeBadge">残体 · 甲板以下结构</span>
+  </div>
+</div>
+<div id="viewTag">自由视角</div>
+
+<button id="panelOpen">设置</button>
+<div id="panel">
+  <div class="p-head">
+    <span class="p-title">环境与结构设置</span>
+    <button class="icon-btn" id="panelClose" title="收起面板">×</button>
+  </div>
+  <div class="tabs">
+    <button class="tab active" data-tab="env">环境</button>
+    <button class="tab" data-tab="struct">结构</button>
+    <button class="tab" data-tab="disp">显示</button>
+    <button class="tab" data-tab="src">出处</button>
+  </div>
+
+  <div class="tab-body show" id="tab-env">
+    <div class="group">
+      <div class="g-title">天气预设</div>
+      <div class="btns">
+        <button class="btn active" data-weather="clear">晴</button>
+        <button class="btn" data-weather="cloudy">多云</button>
+        <button class="btn" data-weather="mist">薄雾</button>
+        <button class="btn" data-weather="dusk">黄昏</button>
+        <button class="btn" data-weather="storm">风暴</button>
+      </div>
+    </div>
+
+    <div class="group">
+      <div class="g-title">光照与天空</div>
+      <div class="row"><label>时间</label><input id="e-time" type="range" min="0" max="24" step="0.1" value="10"><span class="val" id="v-time">10:00</span></div>
+      <div class="row"><label>太阳高度</label><input id="e-elev" type="range" min="-10" max="90" step="1" value="55"><span class="val" id="v-elev">55°</span></div>
+      <div class="row"><label>太阳方位</label><input id="e-azim" type="range" min="0" max="360" step="1" value="150"><span class="val" id="v-azim">150°</span></div>
+      <div class="row"><label>太阳强度</label><input id="e-sun" type="range" min="0" max="3" step="0.05" value="2.1"><span class="val" id="v-sun">2.10</span></div>
+      <div class="row"><label>色温情调</label><input id="e-warm" type="range" min="0" max="100" step="1" value="55"><span class="val" id="v-warm">55</span></div>
+      <div class="row"><label>环境光</label><input id="e-amb" type="range" min="0" max="2" step="0.05" value="0.85"><span class="val" id="v-amb">0.85</span></div>
+      <div class="row"><label>曝光</label><input id="e-exp" type="range" min="0.4" max="1.8" step="0.02" value="1.05"><span class="val" id="v-exp">1.05</span></div>
+      <div class="row"><label>阴影质量</label>
+        <select id="e-shadow"><option value="0">关</option><option value="1">低</option><option value="2" selected>高</option></select>
+        <span class="val"></span></div>
+    </div>
+
+    <div class="group">
+      <div class="g-title">海况</div>
+      <div class="row"><label>浪高</label><input id="e-amp" type="range" min="0" max="100" step="1" value="30"><span class="val" id="v-amp">0.30</span></div>
+      <div class="row"><label>波陡</label><input id="e-chop" type="range" min="0" max="100" step="1" value="50"><span class="val" id="v-chop">0.50</span></div>
+      <div class="row"><label>波长</label><input id="e-wl" type="range" min="50" max="200" step="1" value="100"><span class="val" id="v-wl">100%</span></div>
+      <div class="row"><label>浪向</label><input id="e-dir" type="range" min="0" max="360" step="1" value="0"><span class="val" id="v-dir">0°</span></div>
+      <div class="row"><label>泡沫</label><input id="e-foam" type="range" min="0" max="150" step="1" value="100"><span class="val" id="v-foam">100%</span></div>
+      <div class="row"><label>水面透明</label><input id="e-alpha" type="range" min="20" max="100" step="1" value="42"><span class="val" id="v-alpha">42%</span></div>
+      <div class="row"><label>深水色</label><input id="e-deep" type="color" value="#06121c"><span class="val"></span></div>
+      <div class="row"><label>浅水色</label><input id="e-shallow" type="color" value="#0e3040"><span class="val"></span></div>
+    </div>
+
+    <div class="group">
+      <div class="g-title">重力与浮力</div>
+      <div class="row"><label>重力 g</label><input id="e-g" type="range" min="1" max="20" step="0.01" value="9.81"><span class="val" id="v-g">9.81</span></div>
+      <div class="row"><label>浮力刚度</label><input id="e-bk" type="range" min="0.2" max="2" step="0.05" value="1"><span class="val" id="v-bk">1.00</span></div>
+      <div class="row"><label>阻尼</label><input id="e-bc" type="range" min="0.2" max="2" step="0.05" value="1"><span class="val" id="v-bc">1.00</span></div>
+      <div class="btns" style="margin-top:6px">
+        <button class="btn" id="btnPause">物理暂停</button>
+        <button class="btn" id="btnResetPose">复位姿态</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="tab-body" id="tab-struct">
+    <div class="hint" style="margin-bottom:8px">按「结构系统 → 部位 / 舷别 → 构件」三级分类；点击构件可飞行定位。</div>
+    <input id="treeSearch" placeholder="搜索构件 / 编号 / 树种…">
+    <div class="tree" id="tree"></div>
+  </div>
+
+  <div class="tab-body" id="tab-disp">
+    <div class="group">
+      <div class="g-title">视角</div>
+      <div class="btns">
+        <button class="btn active" data-view="orbit">自由环绕</button><button class="btn" data-view="chase">船尾跟随</button>
+        <button class="btn" data-view="waterline">水线</button><button class="btn" data-view="bird">俯视</button>
+        <button class="btn" data-view="bow">首部</button><button class="btn" data-view="stern">尾部</button>
+        <button class="btn" data-view="keel">龙骨仰视</button><button class="btn" data-view="joint">保寿孔</button>
+      </div>
+    </div>
+    <div class="group">
+      <div class="g-title">拆解</div>
+      <div class="row"><label>爆炸视图</label><input id="d-explode" type="range" min="0" max="100" step="1" value="0"><span class="val" id="v-explode">0%</span></div>
+      <div class="row"><label for="d-wire">线框</label><input id="d-wire" type="checkbox"><span class="val"></span></div>
+      <div class="row"><label for="d-src">按来源着色</label><input id="d-src" type="checkbox"><span class="val"></span></div>
+      <div class="row"><label for="d-xray">水面半透</label><input id="d-xray" type="checkbox" checked><span class="val"></span></div>
+      <div class="row"><label for="d-cut">残深参考线 1.98 m</label><input id="d-cut" type="checkbox"><span class="val"></span></div>
+      <div class="row"><label for="d-auto">相机自动环绕</label><input id="d-auto" type="checkbox"><span class="val"></span></div>
+      <div class="row"><label>实时帧率</label><span class="val" id="fpsText">—</span></div>
+    </div>
+    <div class="group">
+      <div class="g-title">尺寸审计 <span class="ok-txt" id="auditSum">—</span></div>
+      <div class="audit" id="audit"></div>
+    </div>
+    <div class="group">
+      <div class="g-title">模型自检 <span class="ok-txt" id="checkSum">—</span></div>
+      <div class="audit" id="selfCheck"></div>
+    </div>
+  </div>
+
+  <div class="tab-body" id="tab-src">
+    <div class="group">
+      <div class="g-title">来源图例</div>
+      <div class="hint" style="font-size:10.5px;line-height:1.9">
+        <span class="dot" style="background:#4ac8e8"></span>实测 / 实测线长 / 实测规则　
+        <span class="dot" style="background:#c9a227"></span>受控推演　
+        <span class="dot" style="background:#d97a3d"></span>推演 / 等比参考
+      </div>
+    </div>
+    <div class="group">
+      <div class="g-title">史料出处</div>
+      <div id="srcList"></div>
+    </div>
+    <div class="group">
+      <div class="g-title">史料口径对照</div>
+      <table class="ledger">
+        <thead><tr><th>项目</th><th>史料</th><th>模型</th></tr></thead>
+        <tbody>
+          <tr><td>残长 / 残宽 / 残深</td><td>24.20 / 9.15 / 1.98 m</td><td class="dim">20.13 / 7.60 / 型深 2.86 m</td></tr>
+          <tr><td>龙骨全长</td><td>17.65 m</td><td class="dim">12.40 + 5.25 = 17.65 m</td></tr>
+          <tr><td>舱壁 / 舱数</td><td>12 道 / 13 舱</td><td class="dim">12 道 / 13 舱</td></tr>
+          <tr><td>壳板</td><td>二至三层板叠合</td><td class="dim">三层 85 / 50 / 48 mm</td></tr>
+          <tr><td>舵承座</td><td>孔径约 38 cm、斜 22°</td><td class="dim">Ø0.38 m、22°</td></tr>
+          <tr><td>保寿孔</td><td>两端榫合处「七星伴月」</td><td class="dim">两处 ×（1 月 + 7 星）</td></tr>
+        </tbody>
+      </table>
+      <div class="hint">模型以实测构件链为锚点，残体总长 24.2 m 含残存上构，未强行拉伸构件；差异已在此明示。</div>
+    </div>
+  </div>
+</div>
+
+<div id="infoCard">
+  <span id="icClose">×</span>
+  <div class="ic-head"><span class="ic-name" id="icName">—</span><span class="ic-src" id="icSrc">—</span></div>
+  <div class="ic-path" id="icPath">—</div>
+  <div class="ic-dim" id="icDim"></div>
+  <p class="ic-note" id="icNote">—</p>
+  <div class="ic-src-list" id="icSources"></div>
+  <div class="ic-btns">
+    <button class="btn" id="icIsolate">隔离此件</button>
+    <button class="btn" id="icFocus">聚焦</button>
+  </div>
+</div>
+
+<div id="infoBar">拖拽环绕 · 滚轮缩放 · 右键平移 · <strong>点击构件</strong>查看出处</div>
+
+<script>
+window.Progress = {
+  startTime: performance.now(),
+  stages: [
+    { name: '下载引擎', weight: 38, pct: 0, sub: '准备连接…' },
+    { name: '初始化',   weight: 5,  pct: 0, sub: '' },
+    { name: '解析史料', weight: 10, pct: 0, sub: '' },
+    { name: '构建船体', weight: 37, pct: 0, sub: '' },
+    { name: '编译着色器', weight: 5, pct: 0, sub: '' },
+    { name: '首帧渲染', weight: 5,  pct: 0, sub: '' }
+  ],
+  current: 0, logs: [], totalWeight: 0, timer: null,
+  init() {
+    this.totalWeight = this.stages.reduce((s, x) => s + x.weight, 0);
+    document.getElementById('stageSegs').innerHTML = this.stages.map(s => `<div class="seg" title="${s.name}"></div>`).join('');
+    this.render();
+    this.timer = setInterval(() => this.render(), 100);
+  },
+  setStage(i, sub = '') { this.current = i; if (sub) this.stages[i].sub = sub; this.render(); },
+  setPct(i, pct, sub) { this.stages[i].pct = Math.max(0, Math.min(1, pct)); if (sub !== undefined) this.stages[i].sub = sub; },
+  log(msg) {
+    const t = ((performance.now() - this.startTime) / 1000).toFixed(2);
+    this.logs.push(`[${t}s] ${msg}`);
+    if (this.logs.length > 6) this.logs.shift();
+    document.getElementById('logContent').innerHTML = this.logs.map(l => `<div class="logLine">${l}</div>`).join('');
+  },
+  render() {
+    let total = 0;
+    for (const s of this.stages) total += s.weight * s.pct;
+    total /= this.totalWeight;
+    document.getElementById('mainFill').style.width = (total * 100) + '%';
+    document.getElementById('pctText').textContent = (total * 100).toFixed(1) + '%';
+    const cur = this.stages[this.current];
+    document.getElementById('stageName').textContent = `阶段 ${this.current + 1}/${this.stages.length} · ${cur.name}`;
+    document.getElementById('subTask').textContent = cur.sub || '…';
+    document.querySelectorAll('#loading .seg').forEach((el, i) => {
+      el.classList.toggle('done', i < this.current);
+      el.classList.toggle('active', i === this.current);
+    });
+    document.getElementById('elapsedText').textContent = ((performance.now() - this.startTime) / 1000).toFixed(2) + 's';
+  },
+  complete() {
+    clearInterval(this.timer);
+    document.getElementById('loading').classList.add('complete');
+    setTimeout(() => {
+      document.getElementById('loading').style.opacity = '0';
+      setTimeout(() => document.getElementById('loading').remove(), 700);
+    }, 350);
+  },
+  error(msg) {
+    clearInterval(this.timer);
+    document.getElementById('subTask').textContent = '错误：' + msg;
+    document.getElementById('stageName').textContent = '加载失败';
+    document.getElementById('tipText').textContent = '请刷新重试或检查控制台。';
+  }
+};
+window.Progress.init();
+window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
+</script>
+
+<script>
+(async function() {
+  'use strict';
+  try {
+    /* =================================================================
+       1. CDN
+       ================================================================= */
+    const CDN_LIST = [
+      'https://registry.npmmirror.com/three/0.160.0/files/build/three.module.js',
+      'https://unpkg.com/three@0.160.0/build/three.module.js',
+      'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js'
+    ];
+    async function loadThreeJS() {
+      for (let i = 0; i < CDN_LIST.length; i++) {
+        const url = CDN_LIST[i];
+        const host = new URL(url).hostname;
+        window.Progress.setStage(0, `连接源 ${i+1}/${CDN_LIST.length} (${host})…`);
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 4500);
+          const resp = await fetch(url, { signal: controller.signal });
+          clearTimeout(timeoutId);
+          if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+          if (!resp.body) throw new Error('无流数据');
+          const reader = resp.body.getReader();
+          const total = parseInt(resp.headers.get('content-length')) || 1200000;
+          let loaded = 0; const chunks = [];
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            chunks.push(value); loaded += value.length;
+            const speed = (loaded / 1024 / ((performance.now() - window.Progress.startTime)/1000)).toFixed(0);
+            document.getElementById('netSpeed').textContent = `${speed} KB/s`;
+            window.Progress.setPct(0, Math.min(loaded/total, .99), `下载中 ${(loaded/1024).toFixed(0)} KB / ${(total/1024).toFixed(0)} KB`);
+          }
+          const all = new Uint8Array(loaded); let pos = 0;
+          for (const c of chunks) { all.set(c, pos); pos += c.length; }
+          window.Progress.setPct(0, 1, '解析模块代码…');
+          const text = new TextDecoder().decode(all);
+          if (!text.includes('export')) throw new Error('返回内容不是合法的 JS');
+          const blobUrl = URL.createObjectURL(new Blob([text], { type: 'application/javascript' }));
+          const THREE = await import(blobUrl);
+          URL.revokeObjectURL(blobUrl);
+          window.Progress.log(`✓ 从 ${host} 加载成功`);
+          return THREE;
+        } catch (e) {
+          window.Progress.log(`✗ ${host} 失败: ${e.message}`);
+        }
+      }
+      throw new Error('所有备用 CDN 均无法连接');
+    }
+    const THREE = await loadThreeJS();
+    window.Progress.setStage(1, '引擎就绪');
+
+    /* =================================================================
+       2. 轨道控制
+       ================================================================= */
+    class Orbit {
+      constructor(camera, dom) {
+        this.camera = camera; this.dom = dom;
+        this.target = new THREE.Vector3(2.6, 0.9, 0);
+        this.theta = 0; this.phi = Math.PI/2; this.radius = 30;
+        this.minDistance = 1.6; this.maxDistance = 160;
+        this.enabled = true; this.auto = 0;
+        this._panOffset = new THREE.Vector3();
+        this._drag = false; this._btn = 0; this._lx = 0; this._ly = 0;
+        this.moved = 0;
+        this._bind();
+      }
+      syncFromCamera() {
+        const off = new THREE.Vector3().subVectors(this.camera.position, this.target);
+        const sph = new THREE.Spherical().setFromVector3(off);
+        this.theta = sph.theta; this.phi = sph.phi; this.radius = sph.radius;
+      }
+      _bind() {
+        const el = this.dom;
+        el.addEventListener('contextmenu', e => e.preventDefault());
+        el.addEventListener('pointerdown', e => {
+          if (!this.enabled) return;
+          this._drag = true; this._btn = e.button;
+          this._lx = e.clientX; this._ly = e.clientY; this.moved = 0;
+          try { el.setPointerCapture(e.pointerId); } catch(_) {}
+        });
+        el.addEventListener('pointermove', e => {
+          if (!this._drag || !this.enabled) return;
+          const dx = e.clientX - this._lx, dy = e.clientY - this._ly;
+          this._lx = e.clientX; this._ly = e.clientY;
+          this.moved += Math.abs(dx) + Math.abs(dy);
+          if (this._btn === 0) {
+            this.theta -= dx * 0.005; this.phi -= dy * 0.005;
+            this.phi = Math.max(0.04, Math.min(Math.PI - 0.06, this.phi));
+          } else if (this._btn === 2) {
+            const dist = this.radius;
+            const camMatrix = new THREE.Matrix4().extractRotation(this.camera.matrix);
+            const vX = new THREE.Vector3(1,0,0).applyMatrix4(camMatrix).multiplyScalar(-dx*0.0015*dist);
+            const vY = new THREE.Vector3(0,1,0).applyMatrix4(camMatrix).multiplyScalar(dy*0.0015*dist);
+            this._panOffset.add(vX).add(vY);
+          }
+        });
+        el.addEventListener('pointerup', e => {
+          this._drag = false;
+          try { el.releasePointerCapture(e.pointerId); } catch(_) {}
+        });
+        el.addEventListener('wheel', e => {
+          if (!this.enabled) return;
+          e.preventDefault();
+          this.radius = Math.max(this.minDistance, Math.min(this.maxDistance, this.radius * (e.deltaY > 0 ? 1.1 : 0.9)));
+        }, { passive: false });
+      }
+      update(dt) {
+        if (!this.enabled) return;
+        if (this.auto) this.theta += dt * 0.10;
+        if (this._panOffset.lengthSq() > 0) { this.target.add(this._panOffset); this._panOffset.set(0,0,0); }
+        this.phi = Math.max(0.04, Math.min(Math.PI - 0.06, this.phi));
+        const p = new THREE.Vector3().setFromSpherical(new THREE.Spherical(this.radius, this.phi, this.theta));
+        this.camera.position.copy(this.target).add(p);
+        this.camera.lookAt(this.target);
+      }
+    }
+
+    /* =================================================================
+       3. 史料
+       ================================================================= */
+    const SOURCES = {
+      guide:  { title:'泉州湾古船陈列馆 导览文字稿', org:'泉州海外交通史博物馆', url:'http://www.qzhjg.cn/u/cms/www/202002/06112713sle7.pdf',
+                cover:'水密隔舱技术、舱壁与肋骨连接、13 舱的成因' },
+      fujian: { title:'【泉州海外交通史博物馆】南宋海船残体', org:'福建省文物局', url:'http://wwj.wlt.fujian.gov.cn/wwzy/wwxc/202207/t20220715_5954000.htm',
+                cover:'12 道隔舱板 / 13 舱、艌料与铁钉、主龙骨保寿孔' },
+      fuchuan:{ title:'福船：驶向深蓝 连接世界', org:'福建省人民政府', url:'https://www.fujian.gov.cn/zwgk/ztzl/sxzygwzxsgzx/flsxkmh/202307/t20230728_6215775.htm',
+                cover:'保寿孔「七星伴月」构造、福船形制' },
+      model:  { title:'黄乌锥、黄东伟父子向海交馆捐赠宋代海船模型', org:'泉州海外交通史博物馆', url:'http://www.qzhjg.cn/html/zzhdt/20241027/1794.html',
+                cover:'残长 24.20 m / 残宽 9.15 m / 残深 1.98 m、龙骨全长 17.65 m、二三层船板、杉松樟用材' },
+      people: { title:'泉州海交馆见闻', org:'人民网', url:'http://culture.people.com.cn/n1/2020/0516/c1013-31711368.html',
+                cover:'古船出土背景与陈列' },
+      bjnews: { title:'国际化的宋代与海上丝绸之路', org:'新京报', url:'https://m.bjnews.com.cn/detail/1778802360019898.html',
+                cover:'残长 24.2 m、12 道隔舱板分 13 舱、三桅帆船判断' }
+    };
+    const SRC_META = {
+      measured: { label:'实测', cls:'m' },
+      measured_line_length: { label:'实测线长', cls:'m' },
+      measured_rule: { label:'实测规则', cls:'m' },
+      inferred_from_hull_curvature: { label:'受控推演', cls:'r' },
+      inferred: { label:'推演', cls:'i' },
+      scaled_from_22m_fuchuan_replica: { label:'等比参考', cls:'i' }
+    };
+    const srcCls = s => (SRC_META[s] || SRC_META.inferred).cls;
+
+    /* =================================================================
+       4. 几何常量与型线
+       ================================================================= */
+    const KEEL_W = 0.42, KEEL_H = 0.27, KEEL_HALF = KEEL_W/2, KEEL_TOP = KEEL_H;
+    const MAIN_KEEL_LEN = 12.4, STERN_KEEL_LEN = 5.25, STEM_ARC = 4.5, SCARF = 0.34;
+    const DRAFT = 0.85, STERN_RISE = 0.75;
+    const BULK_TH = 0.11, FLOW_HOLE = 0.12, N_STRIPES = 13;
+    const PLATE_LAYERS = {
+      inner: { key:'Inner', label:'内层', offIn:0, offOut:0.083, th:0.083 },
+      mid:   { key:'Mid',   label:'中层', offIn:0.083, offOut:0.133, th:0.050 },
+      outer: { key:'Outer', label:'外层', offIn:0.133, offOut:0.181, th:0.048 }
+    };
+
+    const STEM_TH = 1.80, STEM_R = STEM_ARC/STEM_TH;
+    const stemPts = [];
+    for (let i = 0; i <= 48; i++) {
+      const a = STEM_TH * i / 48;
+      stemPts.push(new THREE.Vector3(MAIN_KEEL_LEN + STEM_R*Math.sin(a), KEEL_TOP + STEM_R*(1-Math.cos(a)), 0));
+    }
+    let stemLen = 0;
+    for (let i = 1; i < stemPts.length; i++) stemLen += stemPts[i].distanceTo(stemPts[i-1]);
+    const X_BOW = stemPts[stemPts.length-1].x;
+    const X_STERN = -STERN_KEEL_LEN;
+
+    const W_TAB = [
+      [-5.25,2.300],[-4.95,2.450],[-4.55,2.650],[-4.10,2.850],[-3.50,3.050],[-2.90,3.220],
+      [-2.10,3.420],[-1.30,3.580],[-0.50,3.680],[0.30,3.730],[1.20,3.760],[2.20,3.780],
+      [3.40,3.795],[4.60,3.800],[6.00,3.800],[7.40,3.740],[8.80,3.620],[10.20,3.440],
+      [11.40,3.200],[12.40,2.860],[13.20,2.390],[13.90,1.770],[14.50,1.090],[14.834,0.217]
+    ];
+    const SHEER_TAB = [
+      [-5.25,2.36],[-4.50,2.44],[-3.50,2.52],[-2.50,2.60],[-1.50,2.67],[-0.50,2.72],
+      [0.50,2.77],[1.50,2.81],[2.50,2.84],[3.50,2.87],[4.50,2.89],[5.50,2.91],
+      [6.50,2.94],[7.50,2.98],[8.50,3.03],[9.50,3.10],[10.50,3.18],[11.50,3.26],
+      [12.40,3.33],[13.20,3.39],[13.90,3.44],[14.50,3.48],[14.834,3.50]
+    ];
+    function lerpTab(x, tab) {
+      if (x <= tab[0][0]) return tab[0][1];
+      if (x >= tab[tab.length-1][0]) return tab[tab.length-1][1];
+      for (let i = 0; i < tab.length-1; i++) {
+        if (x >= tab[i][0] && x <= tab[i+1][0]) {
+          const t = (x - tab[i][0]) / (tab[i+1][0] - tab[i][0]);
+          const u = t*t*(3-2*t);
+          return tab[i][1] + (tab[i+1][1]-tab[i][1]) * u;
+        }
+      }
+      return 0;
+    }
+    const halfBeam = x => lerpTab(x, W_TAB);
+    const sheerY = x => lerpTab(x, SHEER_TAB);
+    const deckY = x => sheerY(x) - 0.26;
+    function keelTopAt(x) {
+      if (x >= 0) return KEEL_TOP;
+      const t = Math.min(1, -x / STERN_KEEL_LEN);
+      return KEEL_TOP + STERN_RISE * Math.pow(t, 1.25);
+    }
+    function hullPoint(x, s) {
+      s = Math.max(0, Math.min(1, s));
+      const kt = keelTopAt(x), sy = sheerY(x), hb = halfBeam(x);
+      const y = kt + (sy - kt) * Math.pow(s, 1.25);
+      const z = KEEL_HALF + (hb - KEEL_HALF) * Math.pow(s, 0.72);
+      return { y, z };
+    }
+    function zAtY(x, y) {
+      const kt = keelTopAt(x), sy = sheerY(x), hb = halfBeam(x);
+      if (y <= kt) return KEEL_HALF;
+      if (y >= sy) return hb;
+      const s = Math.pow((y-kt)/(sy-kt), 1/1.25);
+      return KEEL_HALF + (hb-KEEL_HALF) * Math.pow(s, 0.72);
+    }
+    function hullNormal(x, s) {
+      const e = 0.004;
+      const a = hullPoint(x, Math.max(0, s-e)), b = hullPoint(x, Math.min(1, s+e));
+      const dz = b.z-a.z, dy = b.y-a.y, L = Math.hypot(dz, dy) || 1;
+      return { ny: -dz/L, nz: dy/L };
+    }
+    function sPlus(x, s, dist, sign) {
+      const e = 0.004;
+      const s0 = Math.max(0, s-e), s1 = Math.min(1, s+e);
+      const p0 = hullPoint(x, s0), p1 = hullPoint(x, s1);
+      const L = Math.hypot(p1.y-p0.y, p1.z-p0.z);
+      if (L < 1e-6) return s;
+      return Math.min(1, Math.max(0, s + sign*dist*((s1-s0)/L)));
+    }
+
+    const BAY_REL = [0.72,0.83,0.92,1.00,1.06,1.10,1.10,1.05,0.98,0.90,0.82,0.76,0.72];
+    const BX0 = -4.35, BX1 = 13.15;
+    const BAYS = (() => {
+      const sum = BAY_REL.reduce((a,b)=>a+b,0), k = (BX1-BX0)/sum;
+      return BAY_REL.map(v => v*k);
+    })();
+    const BULK_X = (() => {
+      const out = []; let x = BX0;
+      for (let i = 0; i < BAYS.length-1; i++) { x += BAYS[i]; out.push(x); }
+      return out;
+    })();
+    const X_MID = (X_STERN + X_BOW)/2;
+
+    /* =================================================================
+       5. 注册表
+       ================================================================= */
+    const COLL_DEFS = [
+      { id:'00_Keel', label:'龙骨系统', explode:[0,-1.05,0] },
+      { id:'01_Bulkheads', label:'水密舱壁', explode:[0,0.55,0] },
+      { id:'02_Frames', label:'抱梁肋骨', explode:[0,0,2.6] },
+      { id:'03_Planking', label:'三重壳板', explode:[0,0,5.2] },
+      { id:'04_Rudder', label:'舵系', explode:[-3.6,0.3,0] },
+      { id:'05_Mast_Step', label:'桅座', explode:[0,1.7,0] },
+      { id:'06_Cultural_Marks', label:'保寿孔', explode:[0,2.8,0] },
+      { id:'07_Rigging_Inferred', label:'复原推演层', explode:[0,3.8,0] }
+    ];
+    const COLL_LABEL = {};
+    COLL_DEFS.forEach(c => COLL_LABEL[c.id] = c.label);
+    const RIG = '07_Rigging_Inferred';
+
+    const PARTS = new Map();
+    const PART_MESHES = [];
+    const GROUPS = {};
+
+    function defPart(meta) {
+      meta.cnPath = meta.cnPath || [COLL_LABEL[meta.coll], meta.sub, meta.cn].filter(Boolean).join(' / ');
+      meta.dimTable = meta.dimTable || [];
+      meta.sources = meta.sources || [];
+      PARTS.set(meta.id, meta);
+      return meta;
+    }
+    function attach(mesh, id, explodeDir) {
+      const meta = PARTS.get(id);
+      mesh.userData.partId = id;
+      mesh.userData.baseMat = mesh.material;
+      mesh.material = mesh.material.clone();
+      mesh.userData.ownMat = mesh.material;
+      mesh.userData.basePos = mesh.position.clone();
+      const dir = explodeDir || (meta && COLL_DEFS.find(c => c.id === meta.coll).explode) || [0,0,0];
+      mesh.userData.explodeDir = new THREE.Vector3(dir[0], dir[1], dir[2]);
+      mesh.userData.coll = meta ? meta.coll : '';
+      mesh.castShadow = !(meta && meta.noShadow);
+      mesh.receiveShadow = true;
+      if (meta) GROUPS[meta.coll].add(mesh);
+      PART_MESHES.push(mesh);
+      return mesh;
+    }
+
+    /* =================================================================
+       6. 几何工具
+       ================================================================= */
+    function mergePositions(geos) {
+      let count = 0; const arrs = [];
+      for (const g of geos) {
+        const ng = g.index ? g.toNonIndexed() : g;
+        arrs.push(ng.attributes.position.array);
+        count += ng.attributes.position.count;
+      }
+      const out = new Float32Array(count*3);
+      let o = 0;
+      for (const a of arrs) { out.set(a, o); o += a.length; }
+      const merged = new THREE.BufferGeometry();
+      merged.setAttribute('position', new THREE.BufferAttribute(out, 3));
+      merged.computeVertexNormals();
+      return merged;
+    }
+    function sweptRect(pts, nrms, wdir, w, t) {
+      const pos = [], idx = [], hw = w/2, ht = t/2;
+      for (let i = 0; i < pts.length; i++) {
+        const p = pts[i], n = nrms[i];
+        const ax = p.x-wdir.x*hw, ay = p.y-wdir.y*hw, az = p.z-wdir.z*hw;
+        const bx = p.x+wdir.x*hw, by = p.y+wdir.y*hw, bz = p.z+wdir.z*hw;
+        pos.push(ax-n.x*ht, ay-n.y*ht, az-n.z*ht);
+        pos.push(bx-n.x*ht, by-n.y*ht, bz-n.z*ht);
+        pos.push(bx+n.x*ht, by+n.y*ht, bz+n.z*ht);
+        pos.push(ax+n.x*ht, ay+n.y*ht, az+n.z*ht);
+      }
+      for (let i = 0; i < pts.length-1; i++) {
+        const a = i*4, b = (i+1)*4;
+        for (let j = 0; j < 4; j++) { const k = (j+1)%4; idx.push(a+j, b+j, b+k, a+j, b+k, a+k); }
+      }
+      const L = (pts.length-1)*4;
+      idx.push(0,1,2, 0,2,3);
+      idx.push(L, L+2, L+1, L, L+3, L+2);
+      const g = new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+      g.setIndex(idx); g.computeVertexNormals();
+      return g;
+    }
+    function ribbonNormals(pts) {
+      const out = [];
+      for (let i = 0; i < pts.length; i++) {
+        const a = pts[Math.max(0,i-1)], b = pts[Math.min(pts.length-1,i+1)];
+        const tx = b.x-a.x, ty = b.y-a.y, L = Math.hypot(tx, ty) || 1;
+        out.push(new THREE.Vector3(-ty/L, tx/L, 0));
+      }
+      return out;
+    }
+
+    /* =================================================================
+       7. 渲染器 / 场景 / 天空 / 海洋 / 灯光
+       ================================================================= */
+    const renderer = new THREE.WebGLRenderer({ antialias:true, logarithmicDepthBuffer:true, powerPreference:'high-performance' });
+    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+    renderer.setSize(innerWidth, innerHeight);
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.05;
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    document.getElementById('app').appendChild(renderer.domElement);
+
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0x0d1a26, 0.0022);
+
+    const camera = new THREE.PerspectiveCamera(44, innerWidth/innerHeight, 0.08, 1400);
+    camera.position.set(22.3, 14.1, 21.9);
+    const controls = new Orbit(camera, renderer.domElement);
+    controls.target.set(5.2, 0.5, 0);
+    controls.syncFromCamera();
+
+    // 天空穹顶
+    const skyMat = new THREE.ShaderMaterial({
+      uniforms: {
+        uTop: { value: new THREE.Color(0x14304a) },
+        uHor: { value: new THREE.Color(0x86a0b8) },
+        uSunDir: { value: new THREE.Vector3(0.4, 0.7, 0.5).normalize() },
+        uSunCol: { value: new THREE.Color(0xfff0d8) },
+        uNight: { value: 0 },
+        uTime: { value: 0 }
+      },
+      vertexShader: `varying vec3 vDir;
+        void main(){ vDir = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
+      fragmentShader: `
+        uniform vec3 uTop, uHor, uSunCol, uSunDir; uniform float uNight, uTime;
+        varying vec3 vDir;
+        float hash(vec3 p){ return fract(sin(dot(p, vec3(127.1,311.7,74.7))) * 43758.5453); }
+        void main(){
+          vec3 d = normalize(vDir);
+          float h = pow(clamp(d.y, 0.0, 1.0), 0.62);
+          vec3 col = mix(uHor, uTop, h);
+          float sd = max(dot(d, normalize(uSunDir)), 0.0);
+          col += uSunCol * pow(sd, 900.0) * 3.2;
+          col += uSunCol * pow(sd, 14.0) * 0.22;
+          if (uNight > 0.01){
+            float st = step(0.9986, hash(floor(d * 320.0)));
+            float tw = 0.65 + 0.35 * sin(uTime * 2.0 + hash(floor(d*120.0)) * 30.0);
+            col += vec3(0.85,0.9,1.0) * st * uNight * tw * smoothstep(-0.02, 0.22, d.y);
+          }
+          col = mix(col, uHor * 0.92, smoothstep(0.12, -0.06, d.y));
+          gl_FragColor = vec4(col, 1.0);
+        }`,
+      side: THREE.BackSide, depthWrite: false, fog: false
+    });
+    const sky = new THREE.Mesh(new THREE.SphereGeometry(620, 40, 24), skyMat);
+    sky.renderOrder = -10;
+    sky.frustumCulled = false;
+    scene.add(sky);
+
+    const WAVES = [
+      { dir:0.60, steep:0.22, wl:34.0 }, { dir:1.15, steep:0.16, wl:19.0 },
+      { dir:0.25, steep:0.12, wl:10.5 }, { dir:1.80, steep:0.08, wl:6.2 }
+    ];
+    const oceanMat = new THREE.ShaderMaterial({
+      uniforms: {
+        uWaveA:{ value:new THREE.Vector4(34,19,10.5,6.2) },
+        uWaveB:{ value:new THREE.Vector4(0.60,1.15,0.25,1.80) },
+        uTime:{ value:0 }, uAmp:{ value:0.30 }, uChop:{ value:0.50 },
+        uAlpha:{ value:0.42 }, uFoam:{ value:1.0 }, uG:{ value:9.81 },
+        uDeep:{ value:new THREE.Color(0x06121c) }, uShallow:{ value:new THREE.Color(0x0e3040) },
+        uSunDir:{ value:new THREE.Vector3(0.55,0.72,0.42).normalize() },
+        uSunCol:{ value:new THREE.Color(0xfff0d8) },
+        uSkyTop:{ value:new THREE.Color(0x14304a) }, uSkyHor:{ value:new THREE.Color(0x86a0b8) },
+        uFogColor:{ value:new THREE.Color(0x0d1a26) }, uFogNear:{ value:24 }, uFogFar:{ value:340 }
+      },
+      vertexShader: `
+        uniform float uTime, uAmp, uChop, uG; uniform vec4 uWaveA, uWaveB;
+        varying vec3 vWorld; varying vec3 vNormal; varying float vCrest;
+        const float TAU = 6.28318530718;
+        void main(){
+          vec3 pos = position; vec3 disp = vec3(0.0);
+          vec3 tangent = vec3(1.0,0.0,0.0); vec3 binormal = vec3(0.0,0.0,1.0);
+          for (int i = 0; i < 4; i++){
+            float wl = uWaveA[i]; float ang = uWaveB[i];
+            float steep = (i==0)?0.22:(i==1)?0.16:(i==2)?0.12:0.08;
+            vec2 D = vec2(cos(ang), sin(ang));
+            float k = TAU / max(wl, 1.0); float c = sqrt(max(uG,0.5) / k);
+            float f = k * dot(D, pos.xz) - c * k * uTime;
+            float a = steep * uAmp / k;
+            disp.x += D.x * a * cos(f); disp.z += D.y * a * cos(f);
+            disp.y += a * sin(f) * uChop * 3.0;
+            tangent  += vec3(-D.x*D.x*steep*sin(f), D.x*steep*cos(f), -D.x*D.y*steep*sin(f));
+            binormal += vec3(-D.x*D.y*steep*sin(f), D.y*steep*cos(f), -D.y*D.y*steep*sin(f));
+          }
+          pos += disp;
+          vNormal = normalize(cross(binormal, tangent));
+          vWorld = (modelMatrix * vec4(pos,1.0)).xyz;
+          vCrest = disp.y;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(pos,1.0);
+        }`,
+      fragmentShader: `
+        uniform vec3 uDeep, uShallow, uSunDir, uSunCol, uSkyTop, uSkyHor, uFogColor;
+        uniform float uFogNear, uFogFar, uTime, uAlpha, uFoam;
+        varying vec3 vWorld; varying vec3 vNormal; varying float vCrest;
+        float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1,311.7))) * 43758.5453); }
+        void main(){
+          vec3 N = normalize(vNormal); vec3 V = normalize(cameraPosition - vWorld);
+          float crestMix = smoothstep(-0.15, 1.05, vCrest);
+          vec3 base = mix(uDeep, uShallow, crestMix);
+          float fres = pow(1.0 - max(dot(N, V), 0.0), 5.0); fres = 0.02 + 0.98 * fres;
+          vec3 skyCol = mix(uSkyHor, uSkyTop, smoothstep(0.0, 1.0, N.y*0.5+0.5));
+          vec3 col = mix(base, skyCol, fres);
+          vec3 H = normalize(uSunDir + V);
+          float spec = pow(max(dot(N, H), 0.0), 220.0);
+          col += uSunCol * spec * 2.2;
+          float foamMask = smoothstep(0.55, 1.35, vCrest) * smoothstep(0.3, 0.7, abs(N.x)+abs(N.z)) * uFoam;
+          float n = hash(floor(vWorld.xz * 2.6 + uTime * 0.35));
+          foamMask *= 0.55 + 0.45 * n;
+          col = mix(col, vec3(0.84,0.88,0.9), clamp(foamMask, 0.0, 0.75));
+          float d = length(cameraPosition - vWorld);
+          col = mix(col, uFogColor, smoothstep(uFogNear, uFogFar, d));
+          gl_FragColor = vec4(col, uAlpha);
+        }`,
+      side: THREE.DoubleSide, transparent: true, depthWrite: false
+    });
+    const oceanGeo = new THREE.BufferGeometry();
+    {
+      const rings = 110, segs = 120, pos = [0,0,0], idx = [];
+      for (let r = 0; r < rings; r++) {
+        const t = r/(rings-1), rad = 0.4 + (360-0.4)*Math.pow(t, 2.2);
+        for (let s = 0; s < segs; s++) pos.push(Math.cos((s/segs)*Math.PI*2)*rad, 0, Math.sin((s/segs)*Math.PI*2)*rad);
+      }
+      for (let s = 0; s < segs; s++) idx.push(0, 1+s, 1+(s+1)%segs);
+      for (let r = 0; r < rings-1; r++) {
+        const a0 = 1 + r*segs, b0 = 1 + (r+1)*segs;
+        for (let s = 0; s < segs; s++) {
+          const a1 = a0 + (s+1)%segs, b1 = b0 + (s+1)%segs;
+          idx.push(a0+s, b0+s, b1, a0+s, b1, a1);
+        }
+      }
+      oceanGeo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+      oceanGeo.setIndex(idx);
+    }
+    const oceanMesh = new THREE.Mesh(oceanGeo, oceanMat);
+    oceanMesh.frustumCulled = false;
+    scene.add(oceanMesh);
+
+    const hemi = new THREE.HemisphereLight(0x8fb8d8, 0x0a0e12, 0.85);
+    scene.add(hemi);
+    const sun = new THREE.DirectionalLight(0xffe8c8, 2.1);
+    sun.position.set(20, 30, 24); sun.castShadow = true;
+    sun.shadow.mapSize.set(2048, 2048);
+    Object.assign(sun.shadow.camera, { left:-22, right:22, top:22, bottom:-22, near:1, far:120 });
+    sun.shadow.bias = -0.0007; sun.shadow.normalBias = 0.02;
+    scene.add(sun);
+    const moon = new THREE.DirectionalLight(0x8fb0d0, 0.0);
+    moon.position.set(-20, 24, -16);
+    scene.add(moon);
+    const fill = new THREE.DirectionalLight(0x7896b4, 0.55);
+    fill.position.set(-16, 9, -12);
+    scene.add(fill);
+    const rim = new THREE.DirectionalLight(0xffd9a0, 0.30);
+    rim.position.set(-8, 4, 20);
+    scene.add(rim);
+
+    /* =================================================================
+       8. 材质
+       ================================================================= */
+    window.Progress.setStage(2, '生成材质');
+    await window.sleep(20);
+    function woodTex(base, dark, rx, ry) {
+      const c = document.createElement('canvas'); c.width = c.height = 256;
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = base; ctx.fillRect(0,0,256,256);
+      for (let i = 0; i < 150; i++) {
+        ctx.strokeStyle = dark; ctx.globalAlpha = 0.03 + Math.random()*0.10;
+        ctx.lineWidth = 0.4 + Math.random()*2.0;
+        const y = Math.random()*256;
+        ctx.beginPath(); ctx.moveTo(0, y);
+        ctx.bezierCurveTo(85, y+(Math.random()-0.5)*14, 170, y+(Math.random()-0.5)*14, 256, y);
+        ctx.stroke();
+      }
+      const t = new THREE.CanvasTexture(c);
+      t.colorSpace = THREE.SRGBColorSpace;
+      t.wrapS = t.wrapT = THREE.RepeatWrapping;
+      t.repeat.set(rx, ry);
+      return t;
+    }
+    const woodMat = (base, dark, rough, rx, ry) => new THREE.MeshStandardMaterial({
+      map: woodTex(base, dark, rx, ry), roughness: rough, metalness: 0, side: THREE.DoubleSide
+    });
+    const MAT = {
+      pine: woodMat('#8a6b3f','#3f2a10',0.85,2,6),
+      camphor: woodMat('#7a4a28','#3a1c0a',0.80,2,2),
+      fir: woodMat('#9a8452','#5a4a28',0.88,2,2),
+      oak: woodMat('#5e4a32','#2a1a10',0.90,2,2),
+      deck: woodMat('#b08a54','#685030',0.86,3,3),
+      teak: woodMat('#a07040','#5a3a18',0.85,2,2),
+      caulking: new THREE.MeshStandardMaterial({ color:0x221a12, roughness:0.95, side:THREE.DoubleSide }),
+      copper: new THREE.MeshStandardMaterial({ color:0xb87333, metalness:0.85, roughness:0.34 }),
+      dark: new THREE.MeshStandardMaterial({ color:0x0b1016, roughness:0.82, side:THREE.DoubleSide }),
+      sail: new THREE.MeshStandardMaterial({ color:0xe0d2ae, roughness:0.94, side:THREE.DoubleSide, transparent:true, opacity:0.97 }),
+      rope: new THREE.MeshStandardMaterial({ color:0x4a3a24, roughness:0.92 })
+    };
+    const SRC_COLOR = { m:0x2f8aa8, r:0x8a6f1c, i:0x8a4a24 };
+
+    /* =================================================================
+       9. 集合
+       ================================================================= */
+    const shipRoot = new THREE.Group();
+    scene.add(shipRoot);
+    COLL_DEFS.forEach(c => {
+      const g = new THREE.Group(); g.name = c.id;
+      GROUPS[c.id] = g; shipRoot.add(g);
+    });
+
+    const D = (k, v, s) => ({ k, v, s });
+
+    window.Progress.setStage(3, '构建船体');
+    window.Progress.setPct(2, 1);
+    await window.sleep(10);
+
+    /* =================================================================
+       10. 龙骨系统
+       ================================================================= */
+    {
+      const s2 = new THREE.Shape();
+      s2.moveTo(0, 0);
+      s2.lineTo(MAIN_KEEL_LEN, 0);
+      s2.lineTo(MAIN_KEEL_LEN, KEEL_H*0.5);
+      s2.lineTo(MAIN_KEEL_LEN - SCARF, KEEL_H*0.5);
+      s2.lineTo(MAIN_KEEL_LEN - SCARF, KEEL_H);
+      s2.lineTo(SCARF, KEEL_H);
+      s2.lineTo(SCARF, KEEL_H*0.5);
+      s2.lineTo(0, KEEL_H*0.5);
+      s2.lineTo(0, 0);
+      const g = new THREE.ExtrudeGeometry(s2, { depth: KEEL_W, bevelEnabled:false, steps:1 });
+      g.translate(0, 0, -KEEL_HALF);
+      const m = new THREE.Mesh(g, MAT.pine);
+      defPart({
+        id:'QS_Keel_Main', coll:'00_Keel', sub:'主龙骨', cn:'主龙骨', species:'松木 Pine',
+        source:'measured', dims:'12.400 × 0.420 × 0.270 m',
+        dimTable:[D('长度','12.400 m','measured'), D('断面','420 × 270 mm','measured'), D('树种','松木','measured'), D('同口长度','340 mm','measured')],
+        sources:['model','fujian'],
+        note:'全船尺度锚点。主龙骨长 12.4 m，断面 420×270 mm；与尾龙骨合计 17.65 m，与海交馆公布「龙骨全长 17.65 米」一致。两端作 340 mm 直角同口阶梯端面，未见铁钉。',
+        extra:{ section_mm:'420x270', joint_type:'right_angle_scarf', joint_length_mm:340, fastener:'none_visible' }
+      });
+      attach(m, 'QS_Keel_Main');
+
+      const N = 26, posArr = [], idxArr = [];
+      for (let i = 0; i <= N; i++) {
+        const t = i/N, x = -STERN_KEEL_LEN*t;
+        const yb = STERN_RISE * Math.pow(t, 1.25);
+        const top = yb + KEEL_H;
+        const bot = (x > -SCARF) ? yb + KEEL_H*0.5 : yb;
+        const w = KEEL_HALF;
+        posArr.push(x, bot, -w, x, bot, w, x, top, w, x, top, -w);
+      }
+      for (let i = 0; i < N; i++) {
+        const a = i*4, b = (i+1)*4;
+        for (let j = 0; j < 4; j++) { const k = (j+1)%4; idxArr.push(a+j, b+j, b+k, a+j, b+k, a+k); }
+      }
+      idxArr.push(0,1,2, 0,2,3);
+      const L = N*4;
+      idxArr.push(L, L+2, L+1, L, L+3, L+2);
+      const gs = new THREE.BufferGeometry();
+      gs.setAttribute('position', new THREE.Float32BufferAttribute(posArr, 3));
+      gs.setIndex(idxArr); gs.computeVertexNormals();
+      const ms = new THREE.Mesh(gs, MAT.pine);
+      defPart({
+        id:'QS_Keel_Stern', coll:'00_Keel', sub:'尾龙骨', cn:'尾龙骨', species:'松木 Pine',
+        source:'measured', dims:'长 5.250 m · 根部 420 × 270 mm',
+        dimTable:[D('长度','5.250 m','measured'), D('根部断面','420 × 270 mm','measured'), D('尾端上翘','0.75 m','inferred'), D('同口长度','340 mm','measured')],
+        sources:['model'],
+        note:'尾龙骨自 X=0 延伸至 −5.250，根部断面严格 420×270 mm；尾端上翘量为推演值，与主龙骨以 340 mm 直角同口衔接。',
+        extra:{ section_mm:'420x270', joint_type:'right_angle_scarf', joint_length_mm:340 }
+      });
+      attach(ms, 'QS_Keel_Stern');
+
+      const nrm = ribbonNormals(stemPts);
+      const mstem = new THREE.Mesh(sweptRect(stemPts, nrm, new THREE.Vector3(0,0,1), 0.40, 0.36), MAT.camphor);
+      defPart({
+        id:'QS_Stem', coll:'00_Keel', sub:'首柱', cn:'首柱', species:'樟木 Camphor',
+        source:'measured_line_length', dims:`弧长 ${stemLen.toFixed(3)} m · 断面 0.36 × 0.40 m`,
+        dimTable:[D('曲线弧长', `${stemLen.toFixed(3)} m`,'measured_line_length'), D('断面','360 × 400 mm','inferred'), D('曲率','参数化圆弧','inferred'), D('树种','樟木','measured')],
+        sources:['model'],
+        note:'首柱自主龙骨首端 X=12.4 前上弯曲，曲线弧长实测 4.500 m（允许 ±5 mm）；断面尺寸与具体曲率为推演。',
+        extra:{ joint_type:'right_angle_scarf', joint_length_mm:340 }
+      });
+      attach(mstem, 'QS_Stem');
+
+      [['QS_Anchor_Keel_Fore','龙骨首端锚点', MAIN_KEEL_LEN, KEEL_TOP],
+       ['QS_Anchor_Keel_Aft','主龙骨尾端（接头）锚点', 0, KEEL_TOP],
+       ['QS_Anchor_Sternpost','尾龙骨末端锚点', -STERN_KEEL_LEN, 1.02],
+       ['QS_Marker_Baoshou_Fore','首接头保寿孔中心标记', MAIN_KEEL_LEN, KEEL_TOP],
+       ['QS_Marker_Baoshou_Aft','尾接头保寿孔中心标记', 0, KEEL_TOP]].forEach(([id,cn,x,y]) => {
+        const o = new THREE.Object3D(); o.position.set(x, y, 0); o.name = id;
+        GROUPS['00_Keel'].add(o);
+        defPart({
+          id, coll:'00_Keel', sub:'定位锚点', cn, species:'空物体', source:'measured', dims:'空物体',
+          dimTable:[D('坐标', `X ${x.toFixed(2)} · Y ${y.toFixed(2)}`,'measured')],
+          sources:['fujian'], note:'拆解定位锚点，不参与结构受力。'
+        });
+      });
+    }
+    window.Progress.setPct(3, 0.08, '龙骨 · 首柱');
+    await window.sleep(0);
+
+    /* =================================================================
+       11. 尾封板 + 壳板
+       ================================================================= */
+    {
+      // 尾封板
+      const x = -STERN_KEEL_LEN;
+      const shape = new THREE.Shape();
+      const N = 16, ptsL = [];
+      for (let i = 0; i <= N; i++) {
+        const s = i/N, p = hullPoint(x, s);
+        ptsL.push([-p.z, p.y]);
+      }
+      shape.moveTo(ptsL[0][0], ptsL[0][1]);
+      for (let i = 1; i < ptsL.length; i++) shape.lineTo(ptsL[i][0], ptsL[i][1]);
+      for (let i = ptsL.length-1; i >= 0; i--) shape.lineTo(-ptsL[i][0], ptsL[i][1]);
+      shape.lineTo(ptsL[0][0], ptsL[0][1]);
+      const tg = new THREE.ExtrudeGeometry(shape, { depth: 0.09, bevelEnabled:false, steps:1 });
+      tg.rotateY(Math.PI/2);
+      tg.translate(x + 0.045, 0, 0);
+      const tm = new THREE.Mesh(tg, MAT.fir);
+      defPart({
+        id:'QS_Transom', coll:'03_Planking', sub:'尾封板', cn:'尾封板', species:'杉木 Fir',
+        source:'inferred_from_hull_curvature', dims:'厚 90 mm · 随尾剖面',
+        dimTable:[D('板厚','90 mm','inferred'), D('宽度','艉底 420 mm → 舷侧 4600 mm','inferred'), D('高度','尾龙骨面 → 舷侧','inferred')],
+        sources:['guide'],
+        note:'封闭船尾端面，避免从尾部直接看穿船体。史料未给出尾封板厚度，按杉木船板常规取值，形制随尾剖面收敛。'
+      });
+      attach(tm, 'QS_Transom');
+    }
+
+    const PLANK_X0 = X_STERN + 0.001, PLANK_X1 = X_BOW - 0.15, SEAM_X = 4.70;
+    const bandOffset = c => (c < 2 ? 0 : c < 5 ? 1 : c < 8 ? 2 : c < 11 ? 3 : 4) * 0.014;
+    const sideCN = side => side > 0 ? '左舷' : '右舷';
+
+    function buildPlate(layerKey, col, side, x0, x1) {
+      const def = PLATE_LAYERS[layerKey];
+      const sA = col/N_STRIPES, sB = (col+1)/N_STRIPES;
+      const gap = 0.0016;
+      const offOut = def.offOut + (layerKey === 'outer' ? bandOffset(col) : 0);
+      const N = 17, pos = [], idx = [];
+      for (let i = 0; i <= N; i++) {
+        const x = x0 + (x1-x0)*i/N;
+        const sLo = Math.min(sB, sA + gap), sHi = Math.max(sLo + 0.002, sB - gap);
+        const pLo = hullPoint(x, sLo), pHi = hullPoint(x, sHi);
+        const nLo = hullNormal(x, sLo), nHi = hullNormal(x, sHi);
+        pos.push(x, pLo.y + nLo.ny*def.offIn, side*(pLo.z + nLo.nz*def.offIn));
+        pos.push(x, pHi.y + nHi.ny*def.offIn, side*(pHi.z + nHi.nz*def.offIn));
+        pos.push(x, pHi.y + nHi.ny*offOut, side*(pHi.z + nHi.nz*offOut));
+        pos.push(x, pLo.y + nLo.ny*offOut, side*(pLo.z + nLo.nz*offOut));
+      }
+      for (let i = 0; i < N; i++) {
+        const a = i*4, b = (i+1)*4;
+        for (let j = 0; j < 4; j++) { const k = (j+1)%4; idx.push(a+j, b+j, b+k, a+j, b+k, a+k); }
+      }
+      idx.push(0,1,2, 0,2,3);
+      const L = N*4;
+      idx.push(L, L+2, L+1, L, L+3, L+2);
+      const g = new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+      g.setIndex(idx); g.computeVertexNormals();
+      const m = new THREE.Mesh(g, col < 2 ? MAT.camphor : MAT.fir);
+      const seg = x0 < SEAM_X ? 1 : 2;
+      const sideKey = side > 0 ? 'P' : 'S';
+      const id = `QS_Planking_${def.key}_P${String(col+1).padStart(2,'0')}_S${String(seg).padStart(2,'0')}_${sideKey}`;
+      defPart({
+        id, coll:'03_Planking', sub:`${def.label} · ${sideCN(side)}`,
+        cn:`第${String(col+1).padStart(2,'0')}列 · ${seg === 1 ? '艉段' : '艏段'}`,
+        species: col < 2 ? '樟木 Camphor' : '杉木 Fir', source:'measured',
+        dims:`厚 ${(def.th*1000).toFixed(0)} mm · 段长 ${(x1-x0).toFixed(2)} m`,
+        dimTable:[
+          D('板厚', `${(def.th*1000).toFixed(0)} mm`, layerKey === 'inner' ? 'measured' : 'measured'),
+          D('段长', `${(x1-x0).toFixed(2)} m`,'measured'),
+          D('板宽', `约 ${(0.96*5.2/N_STRIPES).toFixed(2)} m`,'inferred'),
+          D('搭接阶', layerKey === 'outer' ? `第 ${bandOffset(col)/0.014 + 1} 级` : '—','inferred'),
+          D('端接台阶', `${Math.round(def.th*1000/3)} mm`,'inferred')
+        ],
+        sources:['fujian','model'],
+        note:`${def.label}壳板第 ${col+1} 列（${sideCN(side)}）第 ${seg} 段，X ${x0.toFixed(2)}→${x1.toFixed(2)}。三重板叠合，板端子母口台阶深取板厚 1/3；接缝填麻丝、桐油灰。`,
+        extra:{ thickness_mm: Math.round(def.th*1000), strake_column: col+1, layer: layerKey }
+      });
+      attach(m, id, [0, 0, side * (layerKey === 'outer' ? 3.9 : layerKey === 'mid' ? 2.6 : 1.4)]);
+      return m;
+    }
+
+    for (const side of [1, -1]) {
+      for (const lk of ['inner','mid','outer']) {
+        for (let c = 0; c < N_STRIPES; c++) {
+          buildPlate(lk, c, side, PLANK_X0, SEAM_X);
+          buildPlate(lk, c, side, SEAM_X, PLANK_X1);
+        }
+      }
+      const pts = [], nrms = [];
+      for (let j = 0; j <= 12; j++) {
+        const s = j/12, p = hullPoint(SEAM_X, s), n = hullNormal(SEAM_X, s);
+        const off = (0.181 + 0.028)*0.5;
+        pts.push(new THREE.Vector3(SEAM_X, p.y + n.ny*off, side*(p.z + n.nz*off)));
+        nrms.push(new THREE.Vector3(0, n.ny, side*n.nz));
+      }
+      const gm = sweptRect(pts, nrms, new THREE.Vector3(1,0,0), 0.022, 0.185);
+      const mm = new THREE.Mesh(gm, MAT.caulking);
+      const cid = `QS_Caulking_Seam_${side>0?'Port':'Starboard'}`;
+      defPart({
+        id: cid, coll:'03_Planking', sub:`捻料缝 · ${sideCN(side)}`, cn:'横向接缝捻料', species:'麻丝 · 桐油灰',
+        source:'measured', dims:'缝宽 22 mm', dimTable:[D('缝宽','22 mm','measured'), D('位置','X = 4.70 m','measured')],
+        sources:['fujian'], note:'壳板端接缝以麻丝、竹茹、桐油灰捣合的艌料填塞，并用铁钉钉合。', noShadow:true
+      });
+      attach(mm, cid, [0,0,side*1.8]);
+    }
+    window.Progress.setPct(3, 0.34, '尾封板 · 三重壳板');
+    await window.sleep(0);
+
+    /* =================================================================
+       12. 舱壁
+       ================================================================= */
+    for (let i = 0; i < BULK_X.length; i++) {
+      const bx = BULK_X[i];
+      const yTop = deckY(bx), yBot = keelTopAt(bx);
+      const inset = 0.10;
+      const shape = new THREE.Shape();
+      const N = 14, left = [];
+      for (let j = 0; j <= N; j++) {
+        const s = j/N, y = yBot + (yTop-yBot)*s;
+        const z = Math.max(0.10, zAtY(bx, y) - inset);
+        left.push([-z, y]);
+      }
+      shape.moveTo(left[0][0], left[0][1]);
+      for (let j = 1; j < left.length; j++) shape.lineTo(left[j][0], left[j][1]);
+      for (let j = left.length-1; j >= 0; j--) shape.lineTo(-left[j][0], left[j][1]);
+      shape.lineTo(left[0][0], left[0][1]);
+      const hole = new THREE.Path();
+      const hh = FLOW_HOLE/2, hy = yBot + 0.035;
+      hole.moveTo(-hh, hy); hole.lineTo(hh, hy);
+      hole.lineTo(hh, hy+FLOW_HOLE); hole.lineTo(-hh, hy+FLOW_HOLE); hole.lineTo(-hh, hy);
+      shape.holes.push(hole);
+      const g = new THREE.ExtrudeGeometry(shape, { depth: BULK_TH, bevelEnabled:true, bevelSize:0.005, bevelThickness:0.005, bevelSegments:1, steps:1 });
+      g.rotateY(Math.PI/2);
+      g.translate(bx - BULK_TH/2, 0, 0);
+      const m = new THREE.Mesh(g, MAT.fir);
+      const id = `QS_Bulkhead_B${String(i+1).padStart(2,'0')}`;
+      defPart({
+        id, coll:'01_Bulkheads', sub:'舱壁板', cn:`第 ${String(i+1).padStart(2,'0')} 号舱壁`,
+        species:'杉木 Fir（最下一列橡木）', source:'inferred_from_hull_curvature',
+        dims:`板厚 110 mm · 流水孔 120 × 120 mm`,
+        dimTable:[D('板厚','110 mm','measured'), D('流水孔','120 × 120 mm','measured'), D('孔缘倒角','5 mm','inferred'), D('位置',`X = ${bx.toFixed(2)} m`,'inferred_from_hull_curvature')],
+        sources:['guide','fujian','bjnews'],
+        note:`第 ${i+1} 道水密舱壁。海交馆与史料一致记载全船 12 道隔舱板、分为 13 个水密隔舱；舱壁外形随该肋位内壳线型贴合，逐道位置为受控推演。近龙骨处开 120×120 mm 流水孔。`,
+        extra:{ thickness_mm:110, lowest_strake_material:'Oak', upper_strakes_material:'Fir', flow_hole_mm:120, x:bx }
+      });
+      attach(m, id);
+
+      const oakShape = new THREE.Shape();
+      const oz = Math.max(0.35, Math.min(2.4, zAtY(bx, yBot+0.30) - 0.10));
+      oakShape.moveTo(-oz, yBot); oakShape.lineTo(oz, yBot);
+      oakShape.lineTo(oz, yBot+0.30); oakShape.lineTo(-oz, yBot+0.30);
+      oakShape.lineTo(-oz, yBot);
+      const oh = new THREE.Path();
+      oh.moveTo(-hh, hy); oh.lineTo(hh, hy); oh.lineTo(hh, hy+FLOW_HOLE); oh.lineTo(-hh, hy+FLOW_HOLE); oh.lineTo(-hh, hy);
+      oakShape.holes.push(oh);
+      const oakG = new THREE.ExtrudeGeometry(oakShape, { depth: BULK_TH+0.006, bevelEnabled:false, steps:1 });
+      oakG.rotateY(Math.PI/2);
+      oakG.translate(bx - (BULK_TH+0.006)/2, 0, 0);
+      const oak = new THREE.Mesh(oakG, MAT.oak);
+      defPart({
+        id:`QS_Bulkhead_B${String(i+1).padStart(2,'0')}_Oak`,
+        coll:'01_Bulkheads', sub:'橡木底列', cn:`第 ${String(i+1).padStart(2,'0')} 号舱壁 · 橡木底列`,
+        species:'橡木 Oak', source:'measured', dims:'厚 110 mm · 高 300 mm',
+        dimTable:[D('板厚','110 mm','measured'), D('高度','300 mm','inferred'), D('树种','橡木','measured')],
+        sources:['fujian'], note:'舱壁最下一列用橡木，耐腐蚀；中部让出 120×120 mm 流水孔。', noShadow:true
+      });
+      attach(oak, `QS_Bulkhead_B${String(i+1).padStart(2,'0')}_Oak`);
+    }
+    {
+      const o = new THREE.Object3D(); o.position.set(BX0, KEEL_TOP, 0);
+      GROUPS['01_Bulkheads'].add(o);
+      defPart({
+        id:'QS_Bulkhead_Spacing', coll:'01_Bulkheads', sub:'舱段间距', cn:'13 舱段间距序列', species:'—',
+        source:'inferred_from_hull_curvature', dims:`13 段 · ${Math.min(...BAYS).toFixed(2)}–${Math.max(...BAYS).toFixed(2)} m`,
+        dimTable:[D('舱段数','13','measured'), D('舱长区间',`${Math.min(...BAYS).toFixed(2)}–${Math.max(...BAYS).toFixed(2)} m`,'inferred_from_hull_curvature'), D('水线范围',`X ${BX0} → ${BX1}`,'inferred')],
+        sources:['guide','fujian'],
+        note:'13 个舱段的不等距序列（首尾短、中部长）。隔舱板随船体线型拐点与结构强度布置；在获得肋位实测图前为受控推演，不宣称实测。',
+        extra:{ spacing_profile: BAYS.map(v => +v.toFixed(3)) }
+      });
+    }
+    window.Progress.setPct(3, 0.52, '水密舱壁 ×12');
+    await window.sleep(0);
+
+    /* =================================================================
+       13. 肋骨
+       ================================================================= */
+    for (let i = 0; i < BULK_X.length; i++) {
+      const bx = BULK_X[i];
+      const aftOf = bx < X_MID;
+      const offsetX = (aftOf ? -1 : 1) * (BULK_TH/2 + 0.14/2 + 0.005);
+      for (const side of [-1, 1]) {
+        const pts = [], nrms = [], NS = 16;
+        for (let j = 0; j <= NS; j++) {
+          const s = 0.03 + 0.94*(j/NS);
+          const p = hullPoint(bx, s), n = hullNormal(bx, s);
+          const off = 0.083 + 0.070;
+          pts.push(new THREE.Vector3(bx + offsetX, p.y - n.ny*off, side*(p.z - n.nz*off)));
+          nrms.push(new THREE.Vector3(0, -n.ny, -side*n.nz));
+        }
+        const g = sweptRect(pts, nrms, new THREE.Vector3(1,0,0), 0.28, 0.14);
+        const m = new THREE.Mesh(g, MAT.camphor);
+        const sideName = side > 0 ? 'Port' : 'Starboard';
+        const id = `QS_Frame_B${String(i+1).padStart(2,'0')}_${sideName}`;
+        defPart({
+          id, coll:'02_Frames', sub: sideCN(side), cn:`第 ${String(i+1).padStart(2,'0')} 号肋骨${aftOf ? '（壁后装位）' : '（壁前装位）'}`,
+          species:'樟木 Camphor', source:'measured_rule', dims:'宽 280 mm × 厚 140 mm · 长 4–5 m',
+          dimTable:[
+            D('宽','280 mm','measured_rule'), D('厚','140 mm','inferred'),
+            D('长度','约 5.2 m','inferred'), D('树种','樟木','measured'),
+            D('装位', aftOf ? '壁板之后' : '壁板之前','measured_rule')
+          ],
+          sources:['guide','fujian'],
+          note: aftOf
+            ? `第 ${i+1} 道舱壁肋骨位于壁板之后（aft_of_bulkhead）——船中以前。X=${bx.toFixed(2)} m < 船中 ${X_MID.toFixed(2)} m。`
+            : `第 ${i+1} 道舱壁肋骨位于壁板之前（forward_of_bulkhead）——船中以后。X=${bx.toFixed(2)} m > 船中 ${X_MID.toFixed(2)} m。`,
+          extra:{ mount_side: aftOf ? 'aft_of_bulkhead' : 'forward_of_bulkhead' }
+        });
+        attach(m, id, [0, 0, side*2.6]);
+      }
+    }
+    window.Progress.setPct(3, 0.68, '抱梁肋骨 ×24');
+    await window.sleep(0);
+
+    /* =================================================================
+       14. 舵系 / 桅座 / 保寿孔
+       ================================================================= */
+    {
+      const shape = new THREE.Shape();
+      shape.moveTo(-0.48,-0.30); shape.lineTo(0.48,-0.30); shape.lineTo(0.48,0.30); shape.lineTo(-0.48,0.30); shape.lineTo(-0.48,-0.30);
+      const hole = new THREE.Path(); hole.absarc(0,0,0.19,0,Math.PI*2,false);
+      shape.holes.push(hole);
+      const g = new THREE.ExtrudeGeometry(shape, { depth:0.55, bevelEnabled:false, steps:1, curveSegments:24 });
+      g.rotateX(-Math.PI/2); g.translate(0,-0.275,0);
+      const m = new THREE.Mesh(g, MAT.camphor);
+      m.rotation.z = 22*Math.PI/180;
+      m.position.set(-4.62, 1.30, 0);
+      defPart({
+        id:'QS_Rudder_Bearing', coll:'04_Rudder', sub:'舵承座', cn:'舵承座', species:'樟木 Camphor',
+        source:'measured', dims:'孔径 Ø0.380 m · 孔轴倾角 22°',
+        dimTable:[D('孔径','380 mm','measured'), D('孔轴斜度','22°','measured'), D('埋深','1/3 龙骨厚','inferred'), D('位置','尾龙骨末端上方','measured')],
+        sources:['fujian','fuchuan'],
+        note:'船尾舵承座，舵轴孔径约 38 cm，由此推得舵杆直径不小于 35 cm；舵孔斜度 22°，孔埋入尾龙骨但不穿透。',
+        extra:{ hole_diameter_m:0.38, rake_deg:22 }
+      });
+      attach(m, 'QS_Rudder_Bearing');
+
+      const stock = new THREE.Mesh(new THREE.CylinderGeometry(0.175,0.175,5.2,18), MAT.camphor);
+      stock.rotation.z = 22*Math.PI/180;
+      const axis = new THREE.Vector3(-Math.sin(22*Math.PI/180), Math.cos(22*Math.PI/180), 0);
+      stock.position.copy(new THREE.Vector3(-4.62,1.30,0)).addScaledVector(axis, 2.3);
+      defPart({
+        id:'QS_Rudder_Stock_Inferred', coll:'04_Rudder', sub:'舵杆（推演）', cn:'舵杆占位（推演）', species:'—',
+        source:'inferred_from_bearing', dims:'Ø0.350 m × 5.200 m',
+        dimTable:[D('直径','350 mm','inferred'), D('长度','5.200 m','inferred'), D('斜度','22°','measured'), D('依据','舵承座孔径反推','inferred')],
+        sources:['fujian'],
+        note:'出土时舵属具已不存，舵杆仅作占位圆柱，直径由舵承座孔径反推；舵叶未生成。残体模式下隐藏。',
+        extra:{ from_bearing_mm:380 }, modeOnly:'restored'
+      });
+      attach(stock, 'QS_Rudder_Stock_Inferred', [-3.6,0.3,0]);
+    }
+    {
+      const shape = new THREE.Shape();
+      shape.moveTo(-1.5,-0.275); shape.lineTo(1.5,-0.275); shape.lineTo(1.5,0.275); shape.lineTo(-1.5,0.275); shape.lineTo(-1.5,-0.275);
+      const hole = new THREE.Path();
+      hole.moveTo(-0.13,-0.13); hole.lineTo(0.13,-0.13); hole.lineTo(0.13,0.13); hole.lineTo(-0.13,0.13); hole.lineTo(-0.13,-0.13);
+      shape.holes.push(hole);
+      const g = new THREE.ExtrudeGeometry(shape, { depth:0.30, bevelEnabled:false, steps:1 });
+      g.rotateX(-Math.PI/2);
+      const m = new THREE.Mesh(g, MAT.camphor);
+      m.position.set(6.6, KEEL_TOP, 0);
+      defPart({
+        id:'QS_Mast_Step_Main_Inferred', coll:'05_Mast_Step', sub:'桅座', cn:'主桅座（推演）', species:'樟木 Camphor',
+        source:'inferred', dims:'3.000 × 0.550 × 0.300 m · 桅孔 0.260 × 0.260 m',
+        dimTable:[D('长','3.000 m','inferred'), D('宽','0.550 m','inferred'), D('高','0.300 m','inferred'), D('桅孔','260 × 260 mm','inferred')],
+        sources:['fuchuan'],
+        note:'泉州宋船未保存桅、帆、索具。桅座尺寸与位置按福船常规布置推演，桅孔 260×260 mm，全部为推演值。',
+        extra:{ mast_hole_mm:260 }
+      });
+      attach(m, 'QS_Mast_Step_Main_Inferred');
+    }
+    {
+      const DIPPER = [[-0.95,0.50],[-0.80,-0.28],[-0.34,-0.60],[0.06,-0.10],[0.52,0.22],[0.86,0.58],[1.10,0.04]];
+      const R = 0.105, HOLE_DEPTH = KEEL_H/3;
+      function baoshou(jointX, tag, label) {
+        const moonR = 0.065;
+        const moonId = `QS_Baoshou_Moon_${tag}_inferred`;
+        defPart({
+          id: moonId, coll:'06_Cultural_Marks', sub:`${label}`, cn:'月位（铜镜）', species:'—',
+          source:'inferred', dims:`Ø${(moonR*2000).toFixed(0)} mm · 深 ${(HOLE_DEPTH*1000).toFixed(0)} mm`,
+          dimTable:[D('孔径',`${(moonR*2000).toFixed(0)} mm`,'inferred'), D('孔深',`${(HOLE_DEPTH*1000).toFixed(0)} mm`,'inferred'), D('内置','铜镜','measured'), D('位置',label,'measured')],
+          sources:['fuchuan','fujian'],
+          note:`「七星伴月」保寿孔之月位：大圆孔内原置铜镜。位于${label}；孔径与孔深为推演值。`,
+          extra:{ diameter_mm: Math.round(moonR*2000) }
+        });
+        const wall = new THREE.Mesh(new THREE.CylinderGeometry(moonR,moonR,HOLE_DEPTH,26,1,true), MAT.dark);
+        wall.position.set(jointX, KEEL_TOP - HOLE_DEPTH/2, 0);
+        attach(wall, moonId, [0,2.8,0]);
+        const disc = new THREE.Mesh(new THREE.CircleGeometry(moonR*0.96,26), MAT.copper);
+        disc.rotation.x = -Math.PI/2; disc.position.set(jointX, KEEL_TOP-HOLE_DEPTH+0.004, 0);
+        attach(disc, moonId, [0,2.8,0]);
+
+        for (let k = 0; k < 7; k++) {
+          const r = 0.0225, px = jointX + DIPPER[k][0]*R, pz = DIPPER[k][1]*R;
+          const sid = `QS_Baoshou_Star_${tag}_${String(k+1).padStart(2,'0')}_inferred`;
+          defPart({
+            id: sid, coll:'06_Cultural_Marks', sub:`${label}`, cn:`北斗第 ${k+1} 星位`, species:'—',
+            source:'inferred', dims:`Ø${(r*2000).toFixed(0)} mm · 深 ${(HOLE_DEPTH*1000).toFixed(0)} mm`,
+            dimTable:[D('孔径',`${(r*2000).toFixed(0)} mm`,'inferred'), D('孔深',`${(HOLE_DEPTH*1000).toFixed(0)} mm`,'inferred'), D('排列半径','约 105 mm','inferred'), D('内置','铜钱','measured')],
+            sources:['fuchuan','fujian'],
+            note:`北斗七星第 ${k+1} 星位小孔，内原置铜钱；七孔按北斗七星排列，整体与中心铜镜构成「七星伴月」保寿孔。`,
+            extra:{ diameter_mm: Math.round(r*2000) }
+          });
+          const w2 = new THREE.Mesh(new THREE.CylinderGeometry(r,r,HOLE_DEPTH,16,1,true), MAT.dark);
+          w2.position.set(px, KEEL_TOP-HOLE_DEPTH/2, pz);
+          attach(w2, sid, [0,2.8,0]);
+          const d2 = new THREE.Mesh(new THREE.CircleGeometry(r*0.95,16), MAT.copper);
+          d2.rotation.x = -Math.PI/2; d2.position.set(px, KEEL_TOP-HOLE_DEPTH+0.004, pz);
+          attach(d2, sid, [0,2.8,0]);
+        }
+      }
+      baoshou(0.0, 'Aft', '主龙骨与尾龙骨榫合处');
+      baoshou(MAIN_KEEL_LEN, 'Fore', '主龙骨与首柱榫合处');
+    }
+    window.Progress.setPct(3, 0.84, '舵系 · 桅座 · 七星伴月');
+    await window.sleep(0);
+
+    /* =================================================================
+       15. 复原推演层
+       ================================================================= */
+    {
+      const xs = [], NX = 34;
+      for (let i = 0; i <= NX; i++) xs.push(-4.7 + (13.7+4.7)*i/NX);
+      const pos = [], idx = [];
+      for (let i = 0; i < xs.length; i++) {
+        const x = xs[i], y = deckY(x), hw = Math.max(0.15, halfBeam(x) - 0.16);
+        for (let j = 0; j <= 8; j++) {
+          const t = -1 + 2*j/8;
+          pos.push(x, y + 0.06*(1-t*t), t*hw);
+        }
+      }
+      for (let i = 0; i < xs.length-1; i++) {
+        for (let j = 0; j < 8; j++) {
+          const a = i*9+j, b = a+1, c = (i+1)*9+j, d = c+1;
+          idx.push(a,c,d, a,d,b);
+        }
+      }
+      const g = new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+      g.setIndex(idx); g.computeVertexNormals();
+      const m = new THREE.Mesh(g, MAT.deck);
+      defPart({
+        id:'QS_Deck_Inferred', coll:RIG, sub:'甲板', cn:'甲板（推演）', species:'杉木 Fir',
+        source:'inferred', dims:'甲板面高出龙骨底约 2.6 m',
+        dimTable:[D('甲板高','约 2.6 m','inferred'), D('板厚','60 mm','inferred'), D('拱度','60 mm','inferred')],
+        sources:['people'], note:'出土时甲板以上无存，甲板线按舷弧与型深推演，仅用于复原视图。'
+      });
+      attach(m, 'QS_Deck_Inferred');
+
+      for (const side of [-1, 1]) {
+        const pts = [], nrms = [];
+        for (let i = 0; i <= 26; i++) {
+          const x = -4.6 + (13.6+4.6)*i/26, hw = Math.max(0.15, halfBeam(x) - 0.12);
+          pts.push(new THREE.Vector3(x, deckY(x)+0.20, side*hw));
+          nrms.push(new THREE.Vector3(0,1,0));
+        }
+        const g1 = sweptRect(pts, nrms, new THREE.Vector3(0,0,1), 0.10, 0.40);
+        const m1 = new THREE.Mesh(g1, MAT.fir);
+        const id1 = `QS_Bulwark_${side>0?'Port':'Starboard'}_Inferred`;
+        defPart({
+          id: id1, coll:RIG, sub:`舷墙 · ${sideCN(side)}`, cn:'舷墙（推演）', species:'杉木 Fir',
+          source:'inferred', dims:'高 0.40 m · 厚 0.10 m',
+          dimTable:[D('高','400 mm','inferred'), D('厚','100 mm','inferred')],
+          sources:['people'], note:'舷墙高度无实测，按福船常规取 0.40 m，仅复原视图显示。'
+        });
+        attach(m1, id1);
+
+        const railPts = pts.map(p => new THREE.Vector3(p.x, p.y+0.24, p.z));
+        const g2 = sweptRect(railPts, nrms, new THREE.Vector3(0,0,1), 0.14, 0.10);
+        const m2 = new THREE.Mesh(g2, MAT.camphor);
+        const id2 = `QS_RailCap_${side>0?'Port':'Starboard'}_Inferred`;
+        defPart({
+          id: id2, coll:RIG, sub:`舷墙 · ${sideCN(side)}`, cn:'舷墙压条（推演）', species:'樟木 Camphor',
+          source:'inferred', dims:'0.14 × 0.10 m',
+          dimTable:[D('宽','140 mm','inferred'), D('厚','100 mm','inferred')],
+          sources:['people'], note:'舷墙压条（扶栏）为推演构件。'
+        });
+        attach(m2, id2);
+      }
+
+      const baseY = deckY(6.2);
+      const house = new THREE.Mesh(new THREE.BoxGeometry(5.6,1.9,3.3), MAT.teak);
+      house.position.set(6.2, baseY+0.95, 0);
+      defPart({
+        id:'QS_Deckhouse_Inferred', coll:RIG, sub:'甲板室', cn:'甲板室（推演）', species:'杉木 Fir',
+        source:'inferred', dims:'5.60 × 3.30 × 1.90 m',
+        dimTable:[D('长','5.60 m','inferred'), D('宽','3.30 m','inferred'), D('高','1.90 m','inferred')],
+        sources:['people','bjnews'], note:'甲板室体量与位置无实测依据，按宋代海船舱面建筑推演。'
+      });
+      attach(house, 'QS_Deckhouse_Inferred');
+      const roof = new THREE.Mesh(new THREE.BoxGeometry(6.4,0.14,3.9), MAT.camphor);
+      roof.position.set(6.2, baseY+1.97, 0);
+      attach(roof, 'QS_Deckhouse_Inferred');
+      for (const side of [-1,1]) {
+        for (let i = 0; i < 4; i++) {
+          const w = new THREE.Mesh(new THREE.BoxGeometry(0.72,0.56,0.06), MAT.dark);
+          w.position.set(4.2+i*1.32, baseY+1.18, side*1.67);
+          attach(w, 'QS_Deckhouse_Inferred');
+        }
+      }
+
+      const MASTS = [
+        { x:11.3, h:10.6, r:0.15, tag:'Fore', cn:'头桅' },
+        { x:6.6,  h:14.0, r:0.20, tag:'Main', cn:'中桅' },
+        { x:1.6,  h:7.8,  r:0.12, tag:'Mizzen', cn:'尾桅' }
+      ];
+      for (const mm of MASTS) {
+        const dy = deckY(mm.x);
+        const mast = new THREE.Mesh(new THREE.CylinderGeometry(mm.r*0.66, mm.r, mm.h, 12), MAT.camphor);
+        mast.position.set(mm.x, dy+mm.h/2, 0);
+        const id = `QS_Mast_${mm.tag}_Inferred`;
+        defPart({
+          id, coll:RIG, sub:'桅帆 · 索具', cn:`${mm.cn}（推演）`, species:'杉木 Fir',
+          source:'scaled_from_22m_fuchuan_replica', dims:`高 ${mm.h.toFixed(1)} m · 径 ${(mm.r*2).toFixed(2)} m`,
+          dimTable:[D('高度',`${mm.h.toFixed(1)} m`,'scaled_from_22m_fuchuan_replica'), D('最大直径',`${(mm.r*2).toFixed(2)} m`,'inferred'), D('依据','22 m 级福船等比','scaled_from_22m_fuchuan_replica')],
+          sources:['bjnews','fuchuan'],
+          note:`按 22 m 级福船复原比例（中桅 12.8 / 头桅 9.8 / 尾桅 7.2 m）等比放大至本船。泉州宋船未保存桅帆，此为纯推演。`
+        });
+        attach(mast, id);
+
+        const sailH = mm.h*0.50, sailW = mm.h*0.44, NN = 8;
+        const sp = [], si = [];
+        const topY = dy+mm.h-0.6, botY = topY-sailH;
+        for (let j = 0; j <= NN; j++) {
+          const t = j/NN, y = botY+sailH*t, ws = 0.72+0.28*Math.sin(t*Math.PI);
+          for (let i = 0; i <= NN; i++) {
+            const u = (i/NN-0.5)*2;
+            sp.push(mm.x + Math.sin(t*Math.PI)*Math.cos(u*Math.PI/2)*0.30, y, u*sailW*0.5*ws);
+          }
+        }
+        for (let j = 0; j < NN; j++) for (let i = 0; i < NN; i++) {
+          const a = j*(NN+1)+i, b = a+1, c = a+NN+2, d = a+NN+1;
+          si.push(a,b,c, a,c,d);
+        }
+        const sg = new THREE.BufferGeometry();
+        sg.setAttribute('position', new THREE.Float32BufferAttribute(sp,3));
+        sg.setIndex(si); sg.computeVertexNormals();
+        const sail = new THREE.Mesh(sg, MAT.sail);
+        const sid = `QS_Sail_${mm.tag}_Inferred`;
+        defPart({
+          id: sid, coll:RIG, sub:'桅帆 · 索具', cn:`${mm.cn}帆（推演）`, species:'帆布',
+          source:'inferred', dims:`高 ${sailH.toFixed(1)} m · 宽 ${sailW.toFixed(1)} m`,
+          dimTable:[D('高',`${sailH.toFixed(1)} m`,'inferred'), D('宽',`${sailW.toFixed(1)} m`,'inferred'), D('形制','硬帆带横桁','inferred')],
+          sources:['bjnews'], note:'帆装无任何实测依据，仅作复原视图的视觉占位；帆面积与索具布置不作考证。'
+        });
+        attach(sail, sid);
+
+        const bars = [];
+        for (let k = 1; k < 7; k++) {
+          const t = k/7, y = botY+sailH*t, ws = 0.72+0.28*Math.sin(t*Math.PI);
+          bars.push(new THREE.CylinderGeometry(0.032,0.032,sailW*ws,6).rotateX(Math.PI/2).translate(mm.x, y, 0));
+        }
+        attach(new THREE.Mesh(mergePositions(bars), MAT.camphor), sid);
+
+        const ropes = [];
+        for (const side of [-1,1]) {
+          for (let k = 0; k < 3; k++) {
+            const top = new THREE.Vector3(mm.x, dy+mm.h*0.92, 0);
+            const bot = new THREE.Vector3(mm.x+(k-1)*1.5, dy+0.4, side*(zAtY(mm.x, dy+0.1)-0.15+k*0.35));
+            ropes.push(new THREE.TubeGeometry(new THREE.QuadraticBezierCurve3(
+              top, top.clone().lerp(bot,0.5).add(new THREE.Vector3(0,0,side*0.2)), bot), 5, 0.02, 4, false));
+          }
+        }
+        attach(new THREE.Mesh(mergePositions(ropes), MAT.rope), sid);
+        await window.sleep(0);
+      }
+    }
+    window.Progress.setPct(3, 0.96, '复原推演层');
+    await window.sleep(0);
+
+    /* =================================================================
+       16. 残深参考线
+       ================================================================= */
+    const cutGroup = new THREE.Group();
+    {
+      const y = 1.98, pts = [];
+      for (let i = 0; i <= 60; i++) {
+        const x = X_STERN + (X_BOW - X_STERN)*i/60;
+        const z = zAtY(x, Math.min(y, sheerY(x)));
+        pts.push(new THREE.Vector3(x, y, z), new THREE.Vector3(x, y, -z));
+      }
+      const g = new THREE.BufferGeometry().setFromPoints(pts);
+      const mat = new THREE.LineBasicMaterial({ color: 0xc9a227, transparent:true, opacity:0.55 });
+      const lines = new THREE.LineSegments(g, mat);
+      lines.frustumCulled = false;
+      cutGroup.add(lines);
+      cutGroup.visible = false;
+      shipRoot.add(cutGroup);
+    }
+
+    /* =================================================================
+       17. 审计与自检
+       ================================================================= */
+    function bboxOf(id) {
+      const box = new THREE.Box3(); let found = false;
+      for (const m of PART_MESHES) if (m.userData.partId === id) { box.expandByObject(m); found = true; }
+      return found ? box : null;
+    }
+    const AUDIT = [];
+    function addAudit(label, target, actual, tol, unit, fmt) {
+      AUDIT.push({ label, target, actual, tol, unit, ok: Math.abs(actual-target) <= tol, fmt: fmt || (v => v.toFixed(3)) });
+    }
+    {
+      const km = bboxOf('QS_Keel_Main');
+      addAudit('主龙骨 X 长度', 12.400, km ? km.max.x-km.min.x : 0, 0.005, 'm');
+      addAudit('主龙骨横向宽', 0.420, km ? km.max.z-km.min.z : 0, 0.002, 'm');
+      addAudit('主龙骨竖向厚', 0.270, km ? km.max.y-km.min.y : 0, 0.002, 'm');
+      const ks = bboxOf('QS_Keel_Stern');
+      addAudit('尾龙骨 X 长度', 5.250, ks ? ks.max.x-ks.min.x : 0, 0.005, 'm');
+      addAudit('首柱曲线弧长', 4.500, stemLen, 0.005, 'm');
+      const nBulk = [...PARTS.keys()].filter(k => /^QS_Bulkhead_B\d\d$/.test(k)).length;
+      addAudit('舱壁对象数', 12, nBulk, 0, '个', v => String(v));
+      addAudit('舱壁流水孔截面', 0.120, FLOW_HOLE, 0.002, 'm');
+      addAudit('壳板内层厚度', 0.083, PLATE_LAYERS.inner.th, 0.002, 'm');
+      addAudit('壳板中层厚度', 0.050, PLATE_LAYERS.mid.th, 0.002, 'm');
+      addAudit('壳板外层厚度', 0.048, PLATE_LAYERS.outer.th, 0.002, 'm');
+      addAudit('直角同口长度', 0.340, SCARF, 0.005, 'm');
+    }
+
+    const selfCheck = [];
+    function runSelfCheck() {
+      selfCheck.length = 0;
+      const degen = [], out = [];
+      for (const m of PART_MESHES) {
+        const g = m.geometry;
+        if (!g.boundingBox) g.computeBoundingBox();
+        const b = g.boundingBox;
+        const sx = b.max.x-b.min.x, sy = b.max.y-b.min.y, sz = b.max.z-b.min.z;
+        if (sx < 0.002 && sy < 0.002 && sz < 0.002) degen.push(m.userData.partId);
+        const t = new THREE.Box3().copy(b).translate(m.position);
+        if (t.min.x < -6.6 || t.max.x > 16.2 || t.min.y < -1.6 || t.max.y > 19.0 || t.min.z < -6.0 || t.max.z > 6.0) out.push(m.userData.partId);
+      }
+      selfCheck.push({ label:'退化构件', ok: degen.length === 0, detail: degen.slice(0,3).join('、') });
+      selfCheck.push({ label:'越界构件', ok: out.length === 0, detail: out.slice(0,3).join('、') });
+
+      let unreg = '';
+      for (const m of PART_MESHES) {
+        const id = m.userData.partId;
+        if (!id || !PARTS.has(id)) { unreg = id || '未登记网格'; break; }
+      }
+      selfCheck.push({ label:'构件登记完整性', ok: !unreg, detail: unreg });
+
+      const cols = new Set();
+      for (const k of PARTS.keys()) {
+        const mm = k.match(/^QS_Planking_(Inner|Mid|Outer)_P(\d\d)_S\d\d_[PS]$/);
+        if (mm) cols.add(mm[1] + mm[2]);
+      }
+      const hasTransom = PARTS.has('QS_Transom');
+      selfCheck.push({ label:'壳板覆盖与端面封闭', ok: cols.size >= 39 && hasTransom, detail: `壳板 ${cols.size}/39 · 尾封板 ${hasTransom ? '有' : '缺'}` });
+    }
+    runSelfCheck();
+
+    /* =================================================================
+       18. 环境参数
+       ================================================================= */
+    const env = {
+      time: 10, elev: 55, azim: 150, sun: 2.1, warm: 55, amb: 0.85, exposure: 1.05,
+      fog: 0.0022, shadow: 2,
+      amp: 0.30, chop: 0.50, wl: 1.0, dir: 0, foam: 1.0, alpha: 0.42,
+      deep: '#06121c', shallow: '#0e3040',
+      g: 9.81, bk: 1.0, bc: 1.0, paused: false
+    };
+    const WEATHER = {
+      clear:  { time:10.0, sun:2.3, warm:60, amb:0.90, exposure:1.06, fog:0.0018, amp:0.26, chop:0.45, wl:1.0,   foam:0.9,  alpha:0.42 },
+      cloudy: { time:14.0, sun:1.2, warm:45, amb:1.15, exposure:1.02, fog:0.0042, amp:0.38, chop:0.60, wl:1.05,  foam:1.1,  alpha:0.5 },
+      mist:   { time:7.0,  sun:0.8, warm:35, amb:1.05, exposure:1.0,  fog:0.0135, amp:0.12, chop:0.28, wl:0.9,   foam:0.5,  alpha:0.55 },
+      dusk:   { time:18.4, sun:1.6, warm:12, amb:0.55, exposure:1.12, fog:0.0032, amp:0.22, chop:0.5,  wl:1.0,   foam:0.8,  alpha:0.42 },
+      storm:  { time:15.0, sun:0.9, warm:30, amb:0.6,  exposure:0.94, fog:0.016,  amp:0.85, chop:0.92, wl:1.25,  foam:1.5,  alpha:0.62 }
+    };
+    const C = (h) => new THREE.Color(h);
+    function skyPalette(elev) {
+      if (elev > 35) return { top:0x14304a, hor:0x86a0b8, fog:0x0d1a26 };
+      if (elev > 12) return { top:0x1b3450, hor:0xa08a78, fog:0x131a20 };
+      if (elev > 0)  return { top:0x1d2a3a, hor:0xd08a52, fog:0x1a1512 };
+      if (elev > -8) return { top:0x141c2c, hor:0x8a4a34, fog:0x120e10 };
+      return { top:0x05080f, hor:0x0c141f, fog:0x050a10 };
+    }
+    let sunDir = new THREE.Vector3();
+    function applyEnv() {
+      const pal = skyPalette(env.elev);
+      const er = env.elev*Math.PI/180, ar = env.azim*Math.PI/180;
+      sunDir.set(Math.cos(er)*Math.cos(ar), Math.sin(er), Math.cos(er)*Math.sin(ar)).normalize();
+      const day = Math.max(0, Math.sin(er));
+      const warmMix = Math.min(1, Math.max(0, (env.elev+2)/34)) * (0.35 + 0.65*env.warm/100);
+      const sunCol = C(0xff9a4a).lerp(C(0xfff4e2), warmMix);
+
+      sun.position.copy(sunDir).multiplyScalar(70);
+      sun.intensity = env.sun * day;
+      sun.color.copy(sunCol);
+      sun.castShadow = env.shadow > 0;
+      renderer.shadowMap.enabled = env.shadow > 0;
+      const size = env.shadow === 2 ? 2048 : 1024;
+      if (sun.shadow.mapSize.x !== size) {
+        sun.shadow.mapSize.set(size, size);
+        if (sun.shadow.map) { sun.shadow.map.dispose(); sun.shadow.map = null; }
+      }
+      moon.intensity = env.elev < 4 ? 0.22 * (1 - Math.max(0, env.elev/4)) : 0;
+      hemi.intensity = env.amb;
+      fill.intensity = 0.22 + env.amb*0.32;
+      rim.intensity = 0.12 + env.amb*0.22;
+      renderer.toneMappingExposure = env.exposure;
+
+      skyMat.uniforms.uTop.value.copy(C(pal.top));
+      skyMat.uniforms.uHor.value.copy(C(pal.hor));
+      skyMat.uniforms.uSunDir.value.copy(sunDir);
+      skyMat.uniforms.uSunCol.value.copy(sunCol);
+      skyMat.uniforms.uNight.value = env.elev < 0 ? Math.min(1, (-env.elev)/8) : 0;
+
+      scene.fog.color.copy(C(pal.fog));
+      scene.fog.density = env.fog;
+
+      const wlBase = [34,19,10.5,6.2].map(v => v*env.wl);
+      oceanMat.uniforms.uWaveA.value.set(wlBase[0], wlBase[1], wlBase[2], wlBase[3]);
+      const baseDir = [0.60,1.15,0.25,1.80];
+      const dShift = env.dir*Math.PI/180;
+      oceanMat.uniforms.uWaveB.value.set(baseDir[0]+dShift, baseDir[1]+dShift, baseDir[2]+dShift, baseDir[3]+dShift);
+      oceanMat.uniforms.uAmp.value = env.amp;
+      oceanMat.uniforms.uChop.value = env.chop;
+      oceanMat.uniforms.uFoam.value = env.foam;
+      oceanMat.uniforms.uAlpha.value = env.alpha;
+      oceanMat.uniforms.uG.value = env.g;
+      oceanMat.uniforms.uSunDir.value.copy(sunDir);
+      oceanMat.uniforms.uSunCol.value.copy(sunCol);
+      oceanMat.uniforms.uSkyTop.value.copy(C(pal.top));
+      oceanMat.uniforms.uSkyHor.value.copy(C(pal.hor));
+      oceanMat.uniforms.uFogColor.value.copy(C(pal.fog));
+      const fogFar = Math.max(60, 380*(1 - Math.min(0.85, env.fog*55)));
+      oceanMat.uniforms.uFogNear.value = Math.max(8, fogFar*0.08);
+      oceanMat.uniforms.uFogFar.value = fogFar;
+      oceanMat.uniforms.uDeep.value.set(env.deep);
+      oceanMat.uniforms.uShallow.value.set(env.shallow);
+      oceanMat.transparent = env.alpha < 0.995;
+      oceanMat.depthWrite = env.alpha >= 0.9;
+    }
+    function sunFromTime(t) {
+      const ph = (t - 6)/13;
+      return { elev: Math.sin(ph*Math.PI)*62, azim: 90 + ph*180 };
+    }
+
+    /* =================================================================
+       19. 交互状态
+       ================================================================= */
+    let mode = 'remains';
+    const layerOn = {};
+    COLL_DEFS.forEach(c => layerOn[c.id] = true);
+    let selectedId = null, hoveredId = null, isolateId = null;
+    let sourceColor = false, wireOn = false;
+    let explodeTarget = 0, explodeCur = 0;
+    const fade = { v: 0, target: 0 };
+    const iso = { v: 0, target: 0 };
+    let paused = false;
+    let preView = null, flyTween = null;
+    let autoRotate = false;
+
+    function applyVisibility() {
+      for (const c of COLL_DEFS) {
+        let vis = layerOn[c.id];
+        if (c.id === RIG) vis = vis && (mode === 'restored' || fade.v > 0.01 || fade.target > 0);
+        GROUPS[c.id].visible = vis;
+      }
+      for (const m of PART_MESHES) {
+        const meta = PARTS.get(m.userData.partId);
+        let v = !(meta && meta.modeOnly === 'restored' && mode !== 'restored');
+        if (meta && meta.coll === RIG) {
+          v = v && !(fade.v < 0.01 && fade.target === 0);
+        }
+        m.visible = v;
+      }
+    }
+    function setMatOpacity(mat, o) {
+      mat.opacity = o;
+      const tr = o < 0.999;
+      if (mat.transparent !== tr) { mat.transparent = tr; mat.needsUpdate = true; }
+      mat.depthWrite = o > 0.6;
+    }
+    function applyOpacity() {
+      for (const m of PART_MESHES) {
+        let o = 1;
+        if (m.userData.coll === RIG) o *= fade.v;
+        if (isolateId && m.userData.partId !== isolateId) o *= 1 - iso.v*0.94;
+        setMatOpacity(m.userData.ownMat, o);
+        m.castShadow = o > 0.6 && !(PARTS.get(m.userData.partId) && PARTS.get(m.userData.partId).noShadow);
+      }
+    }
+    function applyExplode() {
+      for (const m of PART_MESHES) {
+        const d = m.userData.explodeDir;
+        m.position.copy(m.userData.basePos).addScaledVector(d, explodeCur);
+      }
+    }
+    function refreshMaterial(m) {
+      const meta = PARTS.get(m.userData.partId);
+      const mat = m.userData.ownMat, base = m.userData.baseMat;
+      if (sourceColor) {
+        mat.map = null; mat.color.setHex(SRC_COLOR[srcCls(meta.source)]);
+      } else {
+        mat.map = base.map;
+        if (base.color) mat.color.copy(base.color);
+      }
+      mat.wireframe = wireOn;
+      mat.needsUpdate = true;
+    }
+    function refreshAllMaterials() { for (const m of PART_MESHES) refreshMaterial(m); }
+    function setHighlight() {
+      for (const m of PART_MESHES) {
+        const isSel = m.userData.partId === selectedId;
+        const isHov = m.userData.partId === hoveredId && !isSel;
+        if (isSel) { m.userData.ownMat.emissive.setHex(0x2c6f86); m.userData.ownMat.emissiveIntensity = 0.9; }
+        else if (isHov) { m.userData.ownMat.emissive.setHex(0x1d4a5c); m.userData.ownMat.emissiveIntensity = 0.7; }
+        else { m.userData.ownMat.emissive.setHex(0x000000); m.userData.ownMat.emissiveIntensity = 0; }
+      }
+    }
+
+    // ===== 相机 =====
+    function easeInOutCubic(k) { return k < 0.5 ? 4*k*k*k : 1 - Math.pow(-2*k+2,3)/2; }
+    function flyTo(pos, target, dur, onDone) {
+      controls.enabled = false;
+      flyTween = { t:0, dur, p0: camera.position.clone(), p1: pos.clone(), t0: controls.target.clone(), t1: target.clone(), onDone };
+    }
+    function updateFly(dt) {
+      if (!flyTween) return;
+      flyTween.t += dt*1000;
+      let k = Math.min(flyTween.t/flyTween.dur, 1);
+      k = easeInOutCubic(k);
+      camera.position.lerpVectors(flyTween.p0, flyTween.p1, k);
+      controls.target.lerpVectors(flyTween.t0, flyTween.t1, k);
+      camera.lookAt(controls.target);
+      if (flyTween.t >= flyTween.dur) {
+        const cb = flyTween.onDone; flyTween = null;
+        controls.syncFromCamera(); controls.enabled = true;
+        if (cb) cb();
+      }
+    }
+    function partCamera(id) {
+      const box = bboxOf(id); if (!box || box.isEmpty()) return null;
+      const center = box.getCenter(new THREE.Vector3());
+      const size = box.getSize(new THREE.Vector3()).length();
+      const dir = camera.position.clone().sub(controls.target).normalize();
+      const dist = Math.max(2.4, Math.min(16, size*2.2));
+      return { center, pos: center.clone().add(dir.multiplyScalar(dist)).add(new THREE.Vector3(0, size*0.3, 0)) };
+    }
+
+    // ===== 详情卡 =====
+    const cardEl = document.getElementById('infoCard');
+    function showCard(id) {
+      const meta = PARTS.get(id); if (!meta) return;
+      selectedId = id;
+      document.getElementById('icName').textContent = meta.cn;
+      const badge = document.getElementById('icSrc');
+      const sm = SRC_META[meta.source] || SRC_META.inferred;
+      badge.textContent = sm.label;
+      badge.style.color = sm.cls === 'm' ? '#4ac8e8' : sm.cls === 'r' ? '#c9a227' : '#d97a3d';
+      badge.style.borderColor = badge.style.color;
+      document.getElementById('icPath').textContent = `${meta.cnPath} · ${meta.species}`;
+      document.getElementById('icDim').innerHTML = meta.dimTable.map(d =>
+        `<div class="dimrow"><span class="k">${d.k}</span><span class="v">${d.v}</span><i class="tag ${srcCls(d.s)}">${(SRC_META[d.s]||SRC_META.inferred).label}</i></div>`
+      ).join('');
+      document.getElementById('icNote').textContent = meta.note;
+      document.getElementById('icSources').innerHTML = meta.sources.map(k => {
+        const s = SOURCES[k]; if (!s) return '';
+        return `<a href="${s.url}" target="_blank" rel="noopener noreferrer">${s.org} · ${s.title} ↗</a>`;
+      }).join('');
+      cardEl.classList.add('show');
+      document.getElementById('icIsolate').classList.toggle('active', isolateId === id);
+      document.getElementById('icIsolate').textContent = isolateId === id ? '取消隔离' : '隔离此件';
+      setHighlight();
+      document.querySelectorAll('.lv3').forEach(el => el.classList.toggle('sel', el.dataset.id === id));
+    }
+    function hideCard(restoreCam) {
+      selectedId = null; isolateId = null; iso.target = 0;
+      cardEl.classList.remove('show');
+      setHighlight();
+      document.querySelectorAll('.lv3').forEach(el => el.classList.remove('sel'));
+      if (restoreCam && preView) {
+        flyTo(preView.pos, preView.target, 900);
+      }
+      preView = null;
+      applyVisibility();
+    }
+    document.getElementById('icClose').onclick = () => hideCard(true);
+    document.getElementById('icIsolate').onclick = () => {
+      if (!selectedId) return;
+      isolateId = isolateId === selectedId ? null : selectedId;
+      iso.target = isolateId ? 1 : 0;
+      document.getElementById('icIsolate').classList.toggle('active', !!isolateId);
+      document.getElementById('icIsolate').textContent = isolateId ? '取消隔离' : '隔离此件';
+      applyVisibility();
+    };
+    document.getElementById('icFocus').onclick = () => {
+      if (!selectedId) return;
+      const pc = partCamera(selectedId);
+      if (pc) flyTo(pc.pos, pc.center, 900);
+    };
+
+    function selectPart(id, fly) {
+      const meta = PARTS.get(id); if (!meta) return;
+      if (meta.coll === RIG && mode !== 'restored') {
+        const rb = document.querySelector('[data-mode="restored"]');
+        if (rb) rb.click();
+      }
+      if (!preView) preView = { pos: camera.position.clone(), target: controls.target.clone() };
+      showCard(id);
+      if (fly) {
+        const pc = partCamera(id);
+        if (pc) flyTo(pc.pos, pc.center, 900);
+      }
+    }
+
+    /* =================================================================
+       20. 图层树
+       ================================================================= */
+    const treeEl = document.getElementById('tree');
+    const searchEl = document.getElementById('treeSearch');
+    function buildTree() {
+      let html = '';
+      for (const c of COLL_DEFS) {
+        const parts = [...PARTS.values()].filter(p => p.coll === c.id);
+        if (!parts.length) continue;
+        html += `<div class="node" data-sys="${c.id}"><span class="caret">▶</span>
+          <input class="cb" type="checkbox" data-coll="${c.id}" ${layerOn[c.id]?'checked':''} title="显示/隐藏">
+          <span class="nm">${c.label}</span><span class="n">${parts.length}</span></div>
+          <div class="children" data-children="${c.id}">`;
+        const subs = [];
+        parts.forEach(p => { if (!subs.includes(p.sub)) subs.push(p.sub); });
+        for (const sub of subs) {
+          const list = parts.filter(p => p.sub === sub);
+          if (list.length === 1) {
+            const p = list[0];
+            html += `<div class="node lv3" data-id="${p.id}" data-key="${(p.cn+p.species+p.id).toLowerCase()}">
+              <span class="dot" style="background:${(SRC_META[p.source]||SRC_META.inferred).cls==='m'?'#4ac8e8':(SRC_META[p.source]||SRC_META.inferred).cls==='r'?'#c9a227':'#d97a3d'}"></span>
+              <span class="nm">${p.cn}</span></div>`;
+          } else {
+            html += `<div class="node lv2" data-sub="${sub}"><span class="caret">▶</span><span class="nm">${sub}</span><span class="n">${list.length}</span></div>
+              <div class="children" data-subchildren="${sub}">`;
+            for (const p of list) {
+              html += `<div class="node lv3" data-id="${p.id}" data-key="${(p.cn+p.species+p.id).toLowerCase()}">
+                <span class="dot" style="background:${(SRC_META[p.source]||SRC_META.inferred).cls==='m'?'#4ac8e8':(SRC_META[p.source]||SRC_META.inferred).cls==='r'?'#c9a227':'#d97a3d'}"></span>
+                <span class="nm">${p.cn}</span></div>`;
+            }
+            html += `</div>`;
+          }
+        }
+        html += `</div>`;
+      }
+      treeEl.innerHTML = html;
+
+      treeEl.querySelectorAll('[data-coll]').forEach(cb => {
+        cb.addEventListener('click', e => e.stopPropagation());
+        cb.addEventListener('change', e => {
+          layerOn[e.target.dataset.coll] = e.target.checked;
+          applyVisibility();
+        });
+      });
+      treeEl.querySelectorAll('[data-sys]').forEach(el => {
+        el.addEventListener('click', e => {
+          if (e.target.classList.contains('cb')) return;
+          const kids = treeEl.querySelector(`[data-children="${el.dataset.sys}"]`);
+          el.classList.toggle('open');
+          if (kids) kids.classList.toggle('open');
+        });
+      });
+      treeEl.querySelectorAll('[data-sub]').forEach(el => {
+        el.addEventListener('click', () => {
+          el.classList.toggle('open');
+          const kids = treeEl.querySelector(`[data-subchildren="${el.dataset.sub}"]`);
+          if (kids) kids.classList.toggle('open');
+        });
+      });
+      treeEl.querySelectorAll('.lv3').forEach(el => {
+        el.addEventListener('click', () => selectPart(el.dataset.id, true));
+      });
+    }
+    function filterTree(q) {
+      q = (q||'').trim().toLowerCase();
+      const leaves = [...treeEl.querySelectorAll('.lv3')];
+      for (const el of leaves) {
+        const hit = !q || (el.dataset.key || '').includes(q) || (PARTS.get(el.dataset.id)?.species || '').toLowerCase().includes(q);
+        el.style.display = hit ? '' : 'none';
+      }
+      // 显示含命中叶的父级并展开
+      treeEl.querySelectorAll('[data-sub]').forEach(sub => {
+        const kids = treeEl.querySelector(`[data-subchildren="${sub.dataset.sub}"]`);
+        const any = kids && [...kids.querySelectorAll('.lv3')].some(el => el.style.display !== 'none');
+        sub.style.display = any ? '' : 'none';
+        if (kids) { kids.classList.toggle('open', !!q && any); sub.classList.toggle('open', !!q && any); }
+      });
+      treeEl.querySelectorAll('[data-sys]').forEach(sys => {
+        const kids = treeEl.querySelector(`[data-children="${sys.dataset.sys}"]`);
+        const any = kids && [...kids.querySelectorAll('.lv3')].some(el => el.style.display !== 'none');
+        sys.style.display = any ? '' : 'none';
+        if (kids) { kids.classList.toggle('open', !!q && any); sys.classList.toggle('open', !!q && any); }
+      });
+    }
+    searchEl.addEventListener('input', e => filterTree(e.target.value));
+
+    /* =================================================================
+       21. 面板 / 天气 / 控件
+       ================================================================= */
+    const panelEl = document.getElementById('panel');
+    const openBtn = document.getElementById('panelOpen');
+    document.getElementById('panelClose').onclick = () => {
+      panelEl.classList.add('collapsed');
+      openBtn.classList.add('show');
+    };
+    openBtn.onclick = () => {
+      panelEl.classList.remove('collapsed');
+      openBtn.classList.remove('show');
+    };
+    document.querySelectorAll('.tab').forEach(t => {
+      t.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+        document.querySelectorAll('.tab-body').forEach(x => x.classList.remove('show'));
+        t.classList.add('active');
+        document.getElementById('tab-' + t.dataset.tab).classList.add('show');
+      });
+    });
+
+    function syncEnvUI() {
+      const map = [
+        ['e-time','time','v-time', v => `${String(Math.floor(v)).padStart(2,'0')}:${String(Math.round((v%1)*60)).padStart(2,'0')}`],
+        ['e-elev','elev','v-elev', v => `${v.toFixed(0)}°`],
+        ['e-azim','azim','v-azim', v => `${v.toFixed(0)}°`],
+        ['e-sun','sun','v-sun', v => v.toFixed(2)],
+        ['e-warm','warm','v-warm', v => v.toFixed(0)],
+        ['e-amb','amb','v-amb', v => v.toFixed(2)],
+        ['e-exp','exposure','v-exp', v => v.toFixed(2)],
+        ['e-amp','amp','v-amp', v => v.toFixed(2)],
+        ['e-chop','chop','v-chop', v => v.toFixed(2)],
+        ['e-wl','wl','v-wl', v => `${(v*100).toFixed(0)}%`],
+        ['e-dir','dir','v-dir', v => `${v.toFixed(0)}°`],
+        ['e-foam','foam','v-foam', v => `${(v*100).toFixed(0)}%`],
+        ['e-alpha','alpha','v-alpha', v => `${(v*100).toFixed(0)}%`],
+        ['e-g','g','v-g', v => v.toFixed(2)],
+        ['e-bk','bk','v-bk', v => v.toFixed(2)],
+        ['e-bc','bc','v-bc', v => v.toFixed(2)]
+      ];
+      for (const [id, key, vid, fmt] of map) {
+        const el = document.getElementById(id);
+        if (!el) continue;
+        el.value = env[key];
+        const vEl = document.getElementById(vid);
+        if (vEl) vEl.textContent = fmt(env[key]);
+      }
+      document.getElementById('e-shadow').value = String(env.shadow);
+      document.getElementById('e-deep').value = env.deep;
+      document.getElementById('e-shallow').value = env.shallow;
+    }
+    function bindEnv() {
+      const bindRange = (id, key, vid, fmt, after) => {
+        const el = document.getElementById(id);
+        el.addEventListener('input', () => {
+          env[key] = parseFloat(el.value);
+          const vEl = document.getElementById(vid);
+          if (vEl) vEl.textContent = fmt(env[key]);
+          if (after) after();
+          applyEnv();
+        });
+      };
+      const f2 = v => v.toFixed(2), f0 = v => v.toFixed(0), pct = v => `${(v*100).toFixed(0)}%`, deg = v => `${v.toFixed(0)}°`;
+      bindRange('e-time','time','v-time', v => `${String(Math.floor(v)).padStart(2,'0')}:${String(Math.round((v%1)*60)).padStart(2,'0')}`, () => {
+        const s = sunFromTime(env.time); env.elev = s.elev; env.azim = s.azim;
+        document.getElementById('e-elev').value = env.elev;
+        document.getElementById('e-azim').value = env.azim;
+        document.getElementById('v-elev').textContent = `${env.elev.toFixed(0)}°`;
+        document.getElementById('v-azim').textContent = `${env.azim.toFixed(0)}°`;
+      });
+      bindRange('e-elev','elev','v-elev', deg);
+      bindRange('e-azim','azim','v-azim', deg);
+      bindRange('e-sun','sun','v-sun', f2);
+      bindRange('e-warm','warm','v-warm', f0);
+      bindRange('e-amb','amb','v-amb', f2);
+      bindRange('e-exp','exposure','v-exp', f2);
+      bindRange('e-amp','amp','v-amp', f2);
+      bindRange('e-chop','chop','v-chop', f2);
+      bindRange('e-wl','wl','v-wl', pct);
+      bindRange('e-dir','dir','v-dir', deg);
+      bindRange('e-foam','foam','v-foam', pct);
+      bindRange('e-alpha','alpha','v-alpha', pct);
+      bindRange('e-g','g','v-g', f2);
+      bindRange('e-bk','bk','v-bk', f2);
+      bindRange('e-bc','bc','v-bc', f2);
+      document.getElementById('e-shadow').addEventListener('change', e => { env.shadow = parseInt(e.target.value); applyEnv(); });
+      document.getElementById('e-deep').addEventListener('input', e => { env.deep = e.target.value; applyEnv(); });
+      document.getElementById('e-shallow').addEventListener('input', e => { env.shallow = e.target.value; applyEnv(); });
+
+      document.querySelectorAll('[data-weather]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('[data-weather]').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          const w = WEATHER[btn.dataset.weather];
+          Object.assign(env, w);
+          const s = sunFromTime(env.time);
+          env.elev = s.elev; env.azim = s.azim;
+          env.exposure = w.exposure; env.amb = w.amb;
+          syncEnvUI();
+          applyEnv();
+        });
+      });
+    }
+
+    /* =================================================================
+       22. 启动环境
+       ================================================================= */
+    applyEnv();
+    syncEnvUI();
+    bindEnv();
+
+    /* =================================================================
+       23. 显示控件 / 模式
+       ================================================================= */
+    document.querySelectorAll('[data-mode]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const m = btn.dataset.mode;
+        if (m === mode) return;
+        mode = m;
+        document.querySelectorAll('[data-mode]').forEach(b => b.classList.toggle('active', b.dataset.mode === m));
+        const badge = document.getElementById('modeBadge');
+        badge.textContent = m === 'remains' ? '残体 · 甲板以下结构' : '复原 · 含推演层';
+        badge.classList.toggle('warn', m !== 'remains');
+        fade.target = m === 'restored' ? 1 : 0;
+        if (m === 'restored') { GROUPS[RIG].visible = layerOn[RIG]; }
+        applyVisibility();
+        applyOpacity();
+      });
+    });
+    document.getElementById('d-explode').addEventListener('input', e => {
+      explodeTarget = parseFloat(e.target.value)/100;
+      document.getElementById('v-explode').textContent = e.target.value + '%';
+    });
+    document.getElementById('d-wire').addEventListener('change', e => { wireOn = e.target.checked; refreshAllMaterials(); });
+    document.getElementById('d-src').addEventListener('change', e => { sourceColor = e.target.checked; refreshAllMaterials(); });
+    document.getElementById('d-xray').addEventListener('change', e => {
+      env.alpha = e.target.checked ? 0.42 : 1.0;
+      document.getElementById('e-alpha').value = Math.round(env.alpha*100);
+      document.getElementById('v-alpha').textContent = Math.round(env.alpha*100) + '%';
+      applyEnv();
+    });
+    document.getElementById('d-cut').addEventListener('change', e => { cutGroup.visible = e.target.checked; });
+    document.getElementById('d-auto').addEventListener('change', e => { controls.auto = e.target.checked ? 1 : 0; });
+
+    /* =================================================================
+       24. 物理
+       ================================================================= */
+    const SAMPLE_LOCAL = [
+      { x:-4.2, z:0, w:0.10 }, { x:-2.0, z:0, w:0.13 }, { x:1.0, z:0, w:0.15 },
+      { x:4.0, z:0, w:0.16 }, { x:7.0, z:0, w:0.16 }, { x:10.0, z:0, w:0.15 }, { x:12.6, z:0, w:0.15 }
+    ];
+    const TOTAL_W = SAMPLE_LOCAL.reduce((s,p)=>s+p.w, 0);
+    const shipState = { y:0, pitch:0, roll:0, vy:0, vp:0, vr:0 };
+    function gerstner(x, z, t) {
+      let dx = 0, dy = 0, dz = 0;
+      const wlScale = env.wl, dShift = env.dir*Math.PI/180;
+      for (const w of WAVES) {
+        const k = (Math.PI*2)/(w.wl*wlScale), c = Math.sqrt(Math.max(0.5, env.g)/k);
+        const ang = w.dir + dShift;
+        const Dx = Math.cos(ang), Dz = Math.sin(ang);
+        const f = k*(Dx*x + Dz*z) - c*k*t, a = w.steep*env.amp/k;
+        dx += Dx*a*Math.cos(f); dz += Dz*a*Math.cos(f); dy += a*Math.sin(f)*env.chop;
+      }
+      return { x:x+dx, y:dy, z:z+dz };
+    }
+    function waterHeight(wx, wz, t) {
+      let sx = wx, sz = wz;
+      for (let i = 0; i < 3; i++) { const d = gerstner(sx, sz, t); sx += wx - d.x; sz += wz - d.z; }
+      return gerstner(sx, sz, t).y;
+    }
+    function updateBuoyancy(dt, t) {
+      if (env.paused) return;
+      const samples = SAMPLE_LOCAL.map(p => ({ ...p, h: waterHeight(p.x, p.z, t) }));
+      let targetY = 0;
+      for (const s of samples) targetY += s.h*s.w;
+      targetY /= TOTAL_W;
+      let numP = 0, denP = 0, numR = 0, denR = 0;
+      for (const s of samples) {
+        numP += s.w*(s.h-targetY)*s.x; denP += s.w*s.x*s.x;
+        numR += s.w*(s.h-targetY)*s.z; denR += s.w*s.z*s.z;
+      }
+      const targetPitch = denP > 1e-6 ? Math.atan2(numP, denP) : 0;
+      const targetRoll  = denR > 1e-6 ? Math.atan2(numR, denR) : 0;
+      const KY = 1.9*env.bk, CY = 2.4*env.bc, KP = 1.2*env.bk, CP = 1.8*env.bc, KR = 1.5*env.bk, CR = 1.9*env.bc;
+      shipState.vy += (KY*(targetY-shipState.y) - CY*shipState.vy)*dt;
+      shipState.y += shipState.vy*dt;
+      shipState.vp += (KP*(targetPitch-shipState.pitch) - CP*shipState.vp)*dt;
+      shipState.pitch += shipState.vp*dt;
+      shipState.vr += (KR*(targetRoll-shipState.roll) - CR*shipState.vr)*dt;
+      shipState.roll += shipState.vr*dt;
+      shipRoot.position.y = shipState.y - DRAFT;
+      shipRoot.rotation.z = -shipState.pitch;
+      shipRoot.rotation.x = shipState.roll;
+    }
+    document.getElementById('btnPause').addEventListener('click', e => {
+      env.paused = !env.paused; paused = env.paused;
+      e.target.classList.toggle('active', env.paused);
+      e.target.textContent = env.paused ? '继续物理' : '物理暂停';
+    });
+    document.getElementById('btnResetPose').addEventListener('click', () => {
+      shipState.y = 0; shipState.pitch = 0; shipState.roll = 0;
+      shipState.vy = 0; shipState.vp = 0; shipState.vr = 0;
+      shipRoot.position.y = -DRAFT;
+      shipRoot.rotation.set(0,0,0);
+    });
+
+    /* =================================================================
+       25. 视角 / 拾取 / 悬停
+       ================================================================= */
+    const VIEWS = {
+      orbit:     { pos:[22.3, 14.1, 21.9], target:[5.2, 0.5, 0] },
+      chase:     { pos:[-16, 5, 10],    target:[3.0, 1.2, 0] },
+      waterline: { pos:[8, 1.7, 26],    target:[3.4, 1.0, 0] },
+      bird:      { pos:[2.5, 30, 6],    target:[2.4, 0.5, 0] },
+      bow:       { pos:[30, 4.5, 0],    target:[6.0, 1.5, 0] },
+      stern:     { pos:[-24, 4.5, 0],   target:[0.5, 1.2, 0] },
+      keel:      { pos:[2, -5, 14],     target:[2.4, 0.7, 0] },
+      joint:     { pos:[4.2, 2.0, 3.4], target:[0.1, -0.2, 0] }
+    };
+    document.querySelectorAll('[data-view]').forEach(b => {
+      b.addEventListener('click', () => {
+        const v = VIEWS[b.dataset.view]; if (!v) return;
+        document.querySelectorAll('[data-view]').forEach(x => x.classList.remove('active'));
+        b.classList.add('active');
+        document.getElementById('viewTag').textContent = b.textContent;
+        flyTo(new THREE.Vector3(...v.pos), new THREE.Vector3(...v.target), 900);
+      });
+    });
+    document.getElementById('btnResetView').onclick = () => {
+      preView = null;
+      flyTo(new THREE.Vector3(...VIEWS.orbit.pos), new THREE.Vector3(...VIEWS.orbit.target), 900);
+      document.getElementById('viewTag').textContent = '自由视角';
+    };
+
+    const raycaster = new THREE.Raycaster();
+    const ndc = new THREE.Vector2();
+    let hoverTimer = 0;
+    function pick(e) {
+      const r = renderer.domElement.getBoundingClientRect();
+      ndc.x = ((e.clientX-r.left)/r.width)*2 - 1;
+      ndc.y = -((e.clientY-r.top)/r.height)*2 + 1;
+      raycaster.setFromCamera(ndc, camera);
+      const hits = raycaster.intersectObjects(PART_MESHES, false);
+      const hit = hits.find(h => {
+        let o = h.object;
+        while (o) { if (o.visible === false) return false; o = o.parent; }
+        return h.object.userData.ownMat.opacity > 0.35;
+      });
+      return hit ? hit.object.userData.partId : null;
+    }
+    renderer.domElement.addEventListener('pointermove', e => {
+      if (controls._drag) return;
+      const now = performance.now();
+      if (now - hoverTimer < 70) return;
+      hoverTimer = now;
+      const id = pick(e);
+      if (id !== hoveredId) {
+        hoveredId = id;
+        renderer.domElement.style.cursor = id ? 'pointer' : 'default';
+        setHighlight();
+      }
+    });
+    renderer.domElement.addEventListener('pointerup', e => {
+      if (controls.moved > 6 || e.button !== 0) return;
+      const id = pick(e);
+      if (id) selectPart(id, true);
+      else hideCard(true);
+    });
+
+    /* =================================================================
+       26. 审计 / 出处渲染
+       ================================================================= */
+    function renderAudit() {
+      let pass = 0;
+      document.getElementById('audit').innerHTML = AUDIT.map(a => {
+        if (a.ok) pass++;
+        const dev = a.actual-a.target;
+        const devTxt = a.unit === '个' ? '' : (Math.abs(dev) < 0.0005 ? ' ±0' : (dev > 0 ? ' +' : ' ') + dev.toFixed(3));
+        return `<div class="arow ${a.ok?'ok':'bad'}"><span class="s">${a.ok?'✓':'✗'}</span>
+          <span class="k">${a.label}</span><span class="v">${a.fmt(a.actual)}${a.unit==='个'?' 个':''}${devTxt}</span></div>`;
+      }).join('');
+      const sum = document.getElementById('auditSum');
+      sum.textContent = `${pass}/${AUDIT.length} 通过`;
+      sum.classList.toggle('bad-txt', pass !== AUDIT.length);
+      sum.classList.toggle('ok-txt', pass === AUDIT.length);
+    }
+    function renderSelfCheck() {
+      const pass = selfCheck.filter(c => c.ok).length;
+      document.getElementById('selfCheck').innerHTML = selfCheck.map(c =>
+        `<div class="arow ${c.ok?'ok':'bad'}"><span class="s">${c.ok?'✓':'✗'}</span>
+          <span class="k">${c.label}</span><span class="v">${c.ok?'通过':(c.detail||'异常')}</span></div>`
+      ).join('');
+      const sum = document.getElementById('checkSum');
+      sum.textContent = `${pass}/${selfCheck.length} 通过`;
+      sum.classList.toggle('bad-txt', pass !== selfCheck.length);
+      sum.classList.toggle('ok-txt', pass === selfCheck.length);
+    }
+    function renderSources() {
+      document.getElementById('srcList').innerHTML = Object.entries(SOURCES).map(([k,s]) =>
+        `<div class="src-item"><a href="${s.url}" target="_blank" rel="noopener noreferrer">${s.title} ↗</a>
+          <div class="org">${s.org} · 支撑：${s.cover}</div></div>`
+      ).join('');
+    }
+
+    /* =================================================================
+       27. 启动
+       ================================================================= */
+    buildTree();
+    applyVisibility();
+    applyOpacity();
+    applyExplode();
+    renderAudit();
+    renderSelfCheck();
+    renderSources();
+    document.getElementById('d-cut').checked = false;
+
+    shipRoot.position.y = -DRAFT;
+
+    window.Progress.setStage(4, '预编译 Shader');
+    await window.sleep(30);
+    try { renderer.compile(scene, camera); } catch(e) { window.Progress.log('Shader 警告: ' + e.message); }
+    window.Progress.setPct(4, 1);
+
+    window.Progress.setStage(5, '首帧渲染');
+    await window.sleep(30);
+    for (let i = 0; i < 40; i++) updateBuoyancy(1/60, 0);
+    shipState.vy = shipState.vp = shipState.vr = 0;
+    renderer.render(scene, camera);
+    window.Progress.setPct(5, 1);
+
+    /* =================================================================
+       28. 主循环
+       ================================================================= */
+    let elapsed = 0, clock = new THREE.Clock();
+    let fpsFrames = 0, fpsLast = performance.now();
+
+    addEventListener('keydown', e => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+      const k = e.key.toLowerCase();
+      if (k === 'escape') hideCard(true);
+      else if (k === '1') document.querySelector('[data-view="orbit"]')?.click();
+      else if (k === '2') document.querySelector('[data-view="chase"]')?.click();
+      else if (k === '3') document.querySelector('[data-view="waterline"]')?.click();
+      else if (k === '4') document.querySelector('[data-view="bird"]')?.click();
+    });
+
+    function animate() {
+      requestAnimationFrame(animate);
+      const dt = Math.min(clock.getDelta(), 0.05);
+      elapsed += dt;
+      oceanMat.uniforms.uTime.value = elapsed;
+      skyMat.uniforms.uTime.value = elapsed;
+
+      if (flyTween) updateFly(dt);
+      else controls.update(dt);
+
+      updateBuoyancy(dt, elapsed);
+
+      // 阻尼爆炸
+      if (Math.abs(explodeCur - explodeTarget) > 0.0005) {
+        explodeCur += (explodeTarget - explodeCur) * Math.min(1, dt*7);
+        applyExplode();
+      }
+      // 淡化
+      let opacityDirty = false;
+      if (Math.abs(fade.v - fade.target) > 0.002) {
+        fade.v += (fade.target - fade.v) * Math.min(1, dt*7);
+        if (Math.abs(fade.v - fade.target) < 0.004) fade.v = fade.target;
+        if (fade.v < 0.01 && fade.target === 0) GROUPS[RIG].visible = false;
+        opacityDirty = true;
+      }
+      if (Math.abs(iso.v - iso.target) > 0.002) {
+        iso.v += (iso.target - iso.v) * Math.min(1, dt*8);
+        if (Math.abs(iso.v - iso.target) < 0.004) iso.v = iso.target;
+        opacityDirty = true;
+      }
+      if (opacityDirty) applyOpacity();
+
+      renderer.render(scene, camera);
+      fpsFrames++;
+      const now = performance.now();
+      if (now - fpsLast >= 1000) {
+        document.getElementById('fpsText').textContent = (fpsFrames*1000/(now-fpsLast)).toFixed(0);
+        fpsFrames = 0; fpsLast = now;
+      }
+    }
+    addEventListener('resize', () => {
+      camera.aspect = innerWidth/innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(innerWidth, innerHeight);
+    });
+
+    animate();
+    window.Progress.complete();
+
+  } catch (err) {
+    console.error(err);
+    window.Progress.error(err.message);
+  }
+})();
+</script>
+</body>
+</html>
