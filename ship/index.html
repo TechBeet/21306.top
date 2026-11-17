@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>泉州湾宋代海船 · 结构考古三维重建</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ctext y='26' font-size='26'%3E%E2%9B%B5%3C/text%3E%3C/svg%3E">
 <style>
@@ -87,6 +87,7 @@
     margin:0 0 6px;font-weight:600}
   .row{display:flex;align-items:center;gap:8px;margin:7px 0}
   .row label{color:var(--dim);font-size:10.5px;flex:1;cursor:pointer;user-select:none}
+  .row .lbl{color:var(--dim);font-size:10.5px;flex:1}
   .row input[type=range]{flex:0 0 118px;min-width:0;accent-color:var(--accent);height:3px}
   .row input[type=checkbox]{accent-color:var(--accent);width:13px;height:13px;cursor:pointer;flex:0 0 auto}
   .row .val{color:var(--txt);font-size:10px;font-variant-numeric:tabular-nums;min-width:44px;text-align:right}
@@ -229,6 +230,10 @@
     color:var(--txt);font:inherit;font-size:11.5px;cursor:pointer;backdrop-filter:blur(12px)}
   #panelOpen.show{display:flex}
 
+  /* ---------- 无脚本提示 ---------- */
+  .noscript{position:fixed;inset:0;display:grid;place-items:center;padding:24px;z-index:99;
+    background:#050a10;color:#d6e2ee;font:14px/1.7 "Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;text-align:center}
+
   /* ---------- 加载（始终深色，保证读得清） ---------- */
   #loading{position:fixed;inset:0;display:flex;flex-direction:column;
     align-items:center;justify-content:center;
@@ -273,6 +278,15 @@
   /* 主题过渡 */
   #infoBar,#viewTag,#panelOpen,#hud .mode-pill,.mini-btn,.btn,.row select,
   #treeSearch,#loading .status,#loading .logWrap{transition:background-color .2s,color .2s,border-color .2s}
+  .sr-only{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
+    clip:rect(0,0,0,0);white-space:nowrap;border:0}
+  /* 键盘焦点可见性 */
+  button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible,[tabindex]:focus-visible{
+    outline:2px solid var(--accent) !important;outline-offset:2px}
+  @media (prefers-reduced-motion: reduce){
+    *,*::before,*::after{animation-duration:.01ms !important;animation-iteration-count:1 !important;
+      transition-duration:.01ms !important;scroll-behavior:auto !important}
+  }
 
   /* ---------- 多端适配 ---------- */
   html,body{overscroll-behavior:none;-webkit-tap-highlight-color:transparent}
@@ -301,6 +315,7 @@
     .g-title{font-size:10px;margin-bottom:8px}
     .row{margin:9px 0;min-height:34px}
     .row label{font-size:11.5px}
+    .row .lbl{font-size:11.5px}
     .row input[type=range]{flex:0 0 132px;height:26px}
     .row input[type=checkbox]{width:20px;height:20px}
     .row .val{font-size:11px;min-width:48px}
@@ -358,6 +373,7 @@
 </style>
 </head>
 <body>
+<noscript><div class="noscript">本页面使用 Three.js 实时渲染，需启用 JavaScript 才能查看。</div></noscript>
 <div id="app"></div>
 <div class="vignette"></div>
 
@@ -398,7 +414,7 @@
 </div>
 <div id="viewTag">船队全景</div>
 
-<button id="panelOpen">设置</button>
+<button id="panelOpen" aria-controls="panel" aria-expanded="false">设置</button>
 <div id="panel">
   <div class="p-head">
     <span class="p-title">环境与结构设置</span>
@@ -474,7 +490,7 @@
 
     <div class="group">
       <div class="g-title">自定义预设</div>
-      <div class="row"><input id="presetName" placeholder="预设名称"><button class="mini-btn" id="btnSavePreset">保存</button></div>
+      <div class="row"><label class="sr-only" for="presetName">预设名称</label><input id="presetName" placeholder="预设名称" aria-label="预设名称"><button class="mini-btn" id="btnSavePreset">保存</button></div>
       <div class="btns" id="presetList"></div>
       <div class="btns" style="margin-top:6px"><button class="btn" id="btnResetParams">恢复默认</button></div>
     </div>
@@ -493,7 +509,7 @@
 
   <div class="tab-body" id="tab-struct">
     <div class="hint" style="margin-bottom:8px">按「船 → 结构系统 → 部位 / 舷别 → 构件」四级分类；点击船级可聚焦，点击构件可飞行定位。</div>
-    <input id="treeSearch" placeholder="搜索构件 / 编号 / 树种…">
+    <label class="sr-only" for="treeSearch">搜索构件、编号或树种</label><input id="treeSearch" placeholder="搜索构件 / 编号 / 树种…" aria-label="搜索构件、编号或树种">
     <div class="tree" id="tree"></div>
   </div>
 
@@ -543,7 +559,7 @@
       <div class="row"><label for="d-xray">水面半透</label><input id="d-xray" type="checkbox" checked><span class="val"></span></div>
       <div class="row"><label for="d-cut">残深参考线 1.98 m</label><input id="d-cut" type="checkbox"><span class="val"></span></div>
       <div class="row"><label for="d-auto">相机自动环绕</label><input id="d-auto" type="checkbox"><span class="val"></span></div>
-      <div class="row"><label>实时帧率</label><span class="val" id="fpsText">—</span></div>
+      <div class="row"><span class="lbl">实时帧率</span><span class="val" id="fpsText">—</span></div>
     </div>
   </div>
 
@@ -603,7 +619,7 @@
   </div>
 </div>
 
-<div id="infoCard">
+<div id="infoCard" aria-hidden="true" inert>
   <span id="icClose">×</span>
   <div class="ic-head"><span class="ic-name" id="icName">—</span><span class="ic-src" id="icSrc">—</span></div>
   <div class="ic-ship" id="icShip">—</div>
@@ -714,6 +730,15 @@ window.Progress = {
   }
 };
 window.Progress.init();
+/* 尽早建立 label 与控件的关联：面板 HTML 已解析，先于 three.js 下载与 JS 审计 */
+document.querySelectorAll('.row').forEach((r, i) => {
+  const l = r.querySelector('label');
+  const inp = r.querySelector('input, select');
+  if (!l || !inp) return;
+  if (!inp.id) inp.id = 'ctrl-' + i;
+  l.htmlFor = inp.id;
+  if (!inp.getAttribute('aria-label')) inp.setAttribute('aria-label', l.textContent.trim());
+});
 window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
 </script>
 
@@ -3107,6 +3132,7 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
        7. 渲染器 / 场景 / 天空 / 海洋 / 灯光
        ================================================================= */
     const IS_TOUCH = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+    const REDUCED_MOTION = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
     const renderer = new THREE.WebGLRenderer({ antialias:true, logarithmicDepthBuffer:true, powerPreference:'high-performance' });
     renderer.setPixelRatio(Math.min(devicePixelRatio, IS_TOUCH ? 1.75 : 2));
     renderer.setSize(innerWidth, innerHeight);
@@ -3116,6 +3142,7 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     document.getElementById('app').appendChild(renderer.domElement);
+    renderer.domElement.setAttribute('aria-label', '三维船队场景：拖拽旋转，滚轮缩放，右键平移，点击构件查看详情');
     window.Progress.setPct(0, 1, '渲染器就绪 · 装配天空 / 海面');
     /* 移动端降低宝船壳板列数：15 → 9（运行期覆盖，桌面精度不变） */
     if (IS_TOUCH) FLEET_SPEC.zhenghe.planks.colCount = 9;
@@ -4876,7 +4903,7 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
     function easeInOutCubic(k) { return k < 0.5 ? 4*k*k*k : 1 - Math.pow(-2*k+2,3)/2; }
     function flyTo(pos, target, dur, onDone) {
       controls.enabled = false;
-      flyTween = { t:0, dur, p0: camera.position.clone(), p1: pos.clone(), t0: controls.target.clone(), t1: target.clone(), onDone };
+      flyTween = { t:0, dur: REDUCED_MOTION ? 1 : dur, p0: camera.position.clone(), p1: pos.clone(), t0: controls.target.clone(), t1: target.clone(), onDone };
     }
     function updateFly(dt) {
       if (!flyTween) return;
@@ -4930,6 +4957,8 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
         return `<a href="${s.url}" target="_blank" rel="noopener noreferrer">${s.org} · ${s.title} ↗</a>`;
       }).join('');
       cardEl.classList.add('show');
+      cardEl.inert = false;
+      cardEl.setAttribute('aria-hidden', 'false');
       document.getElementById('icIsolate').classList.toggle('active', isolateId === id);
       document.getElementById('icIsolate').textContent = isolateId === id ? '取消隔离' : '隔离此件';
       setHighlight();
@@ -4938,6 +4967,8 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
     function hideCard(restoreCam) {
       selectedId = null; isolateId = null; iso.target = 0;
       cardEl.classList.remove('show');
+      cardEl.inert = true;
+      cardEl.setAttribute('aria-hidden', 'true');
       setHighlight();
       document.querySelectorAll('.lv3').forEach(el => el.classList.remove('sel'));
       if (restoreCam && preView) {
@@ -5006,7 +5037,7 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
           /* 壳板系统名按船型区分（泉州为二重/三重、蓬莱等为单层…） */
           const sysLabel = (c.id === '03_Planking' && PLANK_LABEL[sid]) ? PLANK_LABEL[sid] : c.label;
           html += `<div class="node sys-node" data-sys="${sysKey}" style="padding-left:14px"><span class="caret">▶</span>
-            <input class="cb" type="checkbox" data-coll="${c.id}" ${layerOn[c.id]?'checked':''} title="显示/隐藏">
+            <input class="cb" type="checkbox" data-coll="${c.id}" ${layerOn[c.id]?'checked':''} title="显示/隐藏" aria-label="显示或隐藏${sysLabel}" name="layer-${sysKey}">
             <span class="nm">${sysLabel}</span><span class="n">${parts.length}</span></div>
             <div class="children" data-children="${sysKey}">`;
           const subs = [];
@@ -5113,6 +5144,10 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
       panelEl.classList.toggle('collapsed', collapsed);
       openBtn.classList.toggle('show', collapsed);
       document.body.classList.toggle('panel-collapsed', collapsed);
+      /* 折叠后移出 Tab 顺序与读屏；展开时恢复 */
+      panelEl.inert = !!collapsed;
+      panelEl.setAttribute('aria-hidden', collapsed ? 'true' : 'false');
+      openBtn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
     }
     document.getElementById('panelClose').onclick = () => setPanelCollapsed(true);
     openBtn.onclick = () => setPanelCollapsed(false);
@@ -5131,6 +5166,7 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
     setTheme(document.documentElement.dataset.theme || 'dark');
     themeBtn.onclick = () => setTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');
     if (innerWidth <= 900) setPanelCollapsed(true);
+    else setPanelCollapsed(false);
     document.querySelectorAll('.tab').forEach(t => {
       t.addEventListener('click', () => {
         document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
@@ -5178,6 +5214,8 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
           num.value = (Math.round(env[key] / s.step) * s.step).toFixed(s.step >= 1 ? 0 : (s.step >= 0.1 ? 1 : 2));
           num.setAttribute('inputmode', 'decimal');
           num.setAttribute('aria-label', s.label);
+          num.id = 'num-' + key;
+          num.name = 'param-' + key;
           el.insertAdjacentElement('afterend', num);
         }
         num.title = s.label + s.unit;
@@ -6970,6 +7008,7 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
       }
     }
     let wasNarrow = innerWidth <= 900;
+    let resizeFitTimer = 0;
     addEventListener('resize', () => {
       camera.aspect = innerWidth/innerHeight;
       updateViewOffset();
@@ -6980,6 +7019,19 @@ window.sleep = (ms) => new Promise(r => setTimeout(r, ms));
         wasNarrow = narrow;
         setPanelCollapsed(narrow);
       }
+      /* 宽高比变化后船队全景必须重新取景，否则会沿用旧机距导致偏小/偏移。
+         防抖到尺寸稳定后执行，避免拖拽过程中反复做投影迭代。 */
+      clearTimeout(resizeFitTimer);
+      resizeFitTimer = setTimeout(() => {
+        if (!fleetOverview) return;
+        flyTween = null;
+        controls.enabled = true;
+        const v = VIEWS.fleet();
+        camera.position.copy(v.pos);
+        controls.target.copy(v.tgt);
+        controls.syncFromCamera();
+        applyViewOffset();
+      }, 120);
     });
 
     /* =================================================================
